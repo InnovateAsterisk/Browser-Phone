@@ -1,5 +1,175 @@
 /* Style Sheet for Raspberry Phone */
 
+/* CSS_dhtmlxUi */
+
+.NoSelect {
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none;     /* Firefox all */
+    -ms-user-select: none;      /* IE 10+ */
+    user-select: none;          /* Likely future */
+}
+
+.UiText {
+    font-family: Roboto, Arial, Helvetica;
+    color:#333333;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.UiButtonBar {
+    text-align:center; 
+    border-top:1px solid #e6e6e6; 
+    background-color:#F3F3F3; 
+    height:49px;
+    vertical-align: middle;
+    line-height: 49px;
+}
+
+.UiButtonBar button {
+    margin: 0px;
+    line-height: 100%;
+    padding: 0px;
+    padding-left: 7px;
+    padding-right: 7px;
+    border: 1px solid #0b213a;
+    background-color: #395f88;
+    border-radius: 4px;
+    min-width: 30px;
+    min-height: 24px;
+    font-family: Roboto, Arial, Helvetica;
+    color: #FFFFFF;
+    font-size: 14px;
+    margin-left: 1px;
+    margin-right: 1px;
+    outline: none;
+    cursor: pointer;
+    box-shadow: inset 1px 1px 1px 0px rgba(250, 250, 250, 0.2), inset -1px -1px 1px rgba(0, 0, 0, 0.2);
+}
+.UiButtonBar button:hover {
+    background-color: #2c5077;
+    background-image: linear-gradient(#597ca2, #2c5077);
+    border: 1px solid #092139;
+
+    color: #FFFFFF;
+}
+.UiButtonBar button:active {
+    border: 1px solid #092139;
+    background-color: #092139;
+    background-image: none;
+
+    color: #FFFFFF;
+}
+.UiButtonBar button:focus {
+	outline: none;
+}
+.UiButtonBar button:disabled {
+    cursor: default;
+    color: #CCCCCC;
+}
+
+.UiButtonBarHtml {
+    position: absolute;
+    left: 0px;
+    width: 100%;
+    bottom: 0px;
+}
+
+.UiWindowButtonBar {
+    text-align:center; 
+    height: 49px;
+    vertical-align: middle;
+    line-height: 49px;
+}
+.UiWindowButtonBar button {
+    margin: 0px;
+    line-height: 100%;
+    padding: 0px;
+    padding-left: 7px;
+    padding-right: 7px;
+    border: 1px solid #0b213a;
+    background-color: #395f88;
+    border-radius: 4px;
+    min-width: 80px;
+    font-family: Roboto, Arial, Helvetica;
+    color: #FFFFFF;
+    font-size: 14px;
+    margin-left: 1px;
+    margin-right: 1px;
+    outline: none;
+    cursor: pointer;
+    box-shadow: inset 1px 1px 1px 0px rgba(250, 250, 250, 0.2), inset -1px -1px 1px rgba(0, 0, 0, 0.2);
+}
+.UiWindowButtonBar button:hover {
+    background-color: #2c5077;
+    background-image: linear-gradient(#597ca2, #2c5077);
+    border: 1px solid #092139;
+
+    color: #FFFFFF;
+}
+.UiWindowButtonBar button:active {
+    border: 1px solid #092139;
+    background-color: #092139;
+    background-image: none;
+
+    color: #FFFFFF;
+}
+.UiWindowButtonBar button:focus {
+	outline: none;
+}
+.UiWindowButtonBar button:disabled {
+    cursor: default;
+    color: #CCCCCC;
+}
+
+.UiInputText{
+    margin-bottom: 5px !important;
+    font-size: 18px !important;
+    color: #333333 !important;
+    width: 100% !important;
+
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    padding-left: 3px !important;
+}
+.UiWindowField{
+    padding-top:0px;
+    padding-bottom:0px;
+    padding-left:15%;
+    padding-right:15%;
+
+    font-family: Roboto, Arial, Helvetica;
+    color:#333333;
+    font-size: 14px;
+    line-height: 1.5;
+
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.PastePreviewContainer {
+    display: block;
+    width: 150px;
+    height: 150px;
+    border: 10px solid #FFFFFF;
+    border-radius: 200px;
+    background-color: #F3F3F3;
+    box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+}
+.PastePreview {
+    max-width: 340px;
+    max-height : 340px;
+    border: 1px solid #CCCCCC;
+    box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.25);
+    margin: 5px;
+
+    background-color: #F3F3F3;
+    border: 10px solid #FFFFFF;
+    border-radius: 200px;
+}
+
+
+
 /* CSS_TabPageTemplate */
 
 html {
@@ -10,7 +180,7 @@ html {
 
 body {
     height: 100%;
-    min-width: 340px;
+    min-width: 320px;
     max-width: 1240px;
     margin-left: auto;
     margin-right: auto;
@@ -20,9 +190,9 @@ body {
     font-family: Roboto, Arial, Helvetica;
     font-size: 14px;
     line-height: 1.5;
-    color: #272f39;
+    color: #CCCCCC;
     cursor: default;
-    background-color: #f9f9f9;
+    background-color: #222222;;
     overflow: hidden;
     user-select: none !important;
 }
@@ -143,16 +313,6 @@ body {
     box-sizing: border-box;
 }
 
-.searchClean {
-    border: 1px solid #80add4 !important;
-    border-radius: 5px;
-    padding-left: 3px !important;
-    line-height: 22px !important;
-    background-color: #f7f7f7 !important;
-    box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.25);
-    box-sizing: border-box;
-}
-
 .contentLoading {
     display: none;
     /* Start Hidden - must activate me :) */
@@ -183,13 +343,115 @@ body {
     margin-right: 3px;
 }
 
+/* CSS_dhtmlxUiImportant */
+/* ====================================================================================== */
+
+/* Windows */
+.dhxwin_fr_cover_dnd {
+    display:block !important;
+}
+.dhxwins_vp_material div.dhxwins_mcover {
+    background-color: #000000 !important;
+    opacity: .6 !important;
+}
+.dhxwins_vp_material div.dhxwin_active {
+    background-color: #FFFFFF !important;
+    border-radius: 5px 5px 0px 0px !important;
+}
+.dhxwins_vp_material div.dhxwin_hdr {
+    background-color: #FFFFFF !important;
+    color: #222222 !important;
+}
+.dhxwins_vp_material div.dhxwin_brd {
+    border-color: #FFFFFF !important;
+}
+.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button, .dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button_dis {
+    margin-top: 0px !important;
+    background-image: none !important;
+}
+.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_help:before {
+    content: "\f128"; /* Help */
+    font-family: FontAwesome;
+    position: absolute;
+    line-height: 24px;
+    height: 24px;
+    width: 24px;
+    text-align: center;
+    font-size: 13px;
+}
+.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_park:before {
+    content: "\f2d1"; /* Minimise */
+    font-family: FontAwesome;
+    position: absolute;
+    line-height: 24px;
+    height: 24px;
+    width: 24px;
+    text-align: center;
+    font-size: 13px;
+}
+.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_minmax:before {
+    content: "\f2d0"; /* Maximise */
+    font-family: FontAwesome;
+    position: absolute;
+    line-height: 24px;
+    height: 24px;
+    width: 24px;
+    text-align: center;
+    font-size: 13px;
+}
+.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_minmaxed:before {
+    content: "\f2d2"; /* Restore */
+    font-family: FontAwesome;
+    position: absolute;
+    line-height: 24px;
+    height: 24px;
+    width: 24px;
+    text-align: center;
+    font-size: 13px;
+}
+.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_close:before {
+    content: "\f00d"; /* Close */
+    font-family: FontAwesome;
+    position: absolute;
+    line-height: 24px;
+    height: 24px;
+    width: 24px;
+    text-align: center;
+    font-size: 13px;
+}
+.dhxwins_vp_material div.dhxwin_active div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button:hover {
+    background-color: #b01607 !important;
+    box-shadow: inset 0px 0px 0 1px #b01607 !important;
+    border-radius: 5px !important;
+    color: #FFFFFF;
+}
+.dhxwins_vp_material div.dhxwin_active div.dhx_cell_wins div.dhx_cell_statusbar_def div.dhx_cell_statusbar_text, .dhxwins_vp_material div.dhxwin_inactive div.dhx_cell_wins div.dhx_cell_statusbar_def div.dhx_cell_statusbar_text{
+    height: 49px !important;
+}
+/* Sidebar */
+.dhxsidebar_base_material div.dhxsidebar_cont div.dhx_cell_sidebar div.dhx_cell_sidebar_hdr div.dhx_cell_sidebar_hdr_icon{
+    background-image: none !important;
+    cursor: pointer !important;
+}
+.dhxsidebar_base_material div.dhxsidebar_cont div.dhx_cell_sidebar div.dhx_cell_sidebar_hdr div.dhx_cell_sidebar_hdr_icon:before{
+    content: "\f0c9"; /* Bars */
+    font-family: FontAwesome;
+    position: absolute;
+    font-size: 18px;
+}
+.dhxsidebar_base_material div.dhxsidebar_cont div.dhxsidebar_side.dhxsidebar_tpl_details div.dhxsidebar_side_items div.dhxsidebar_item img.dhxsidebar_item_icon{
+    display: none !important;
+}
+.dhxsidebar_base_material div.dhxsidebar_cont div.dhxsidebar_side.dhxsidebar_tpl_details div.dhxsidebar_side_items div.dhxsidebar_item div.dhxsidebar_item_text{
+    padding-left: 16px!important;
+}
+
 /* CSS_HtmlElements */
 /* ====================================================================================== */
 fieldset {
-    border: 1px solid #9cb5d7;
+    border: 1px solid #333333;
     border-radius: 5px;
     margin: 0px;
-    background-color: #ffffff;
     padding-left: 8px;
     padding-right: 8px;
     padding-bottom: 8px;
@@ -198,11 +460,7 @@ fieldset {
 }
 
 legend {
-    color: #416493;
     line-height: initial !important;
-    background-color: #f9f9f9;
-    background-image: linear-gradient(to top, #FFFFFF, transparent);
-    border-radius: 3px;
     text-align: left;
 }
 
@@ -219,14 +477,13 @@ button {
     padding: 0px;
     padding-left: 7px;
     padding-right: 7px;
-    border: 1px solid #d0d0d0;
-    background-color: #CCCCCC;
-    background-image: linear-gradient(#fefefe, #d0d0d0);
+    border: 1px solid transparent;
+    background-color: transparent;
     border-radius: 5px;
     min-width: 30px;
     min-height: 24px;
     font-family: Roboto, Arial, Helvetica;
-    color: #416493;
+    color: #dedede;
     font-size: 14px;
     margin-left: 1px;
     margin-right: 1px;
@@ -235,15 +492,14 @@ button {
 }
 
 button:hover {
-    background-color: #697ca2;
-    background-image: linear-gradient(#516896, #34425d);
-    border: 1px solid #34425d;
+    background-color: #333333;
+    border: 1px solid #404040;
     color: #FFFFFF;
 }
 
 button:active {
-    border: 1px solid #697ca2;
-    background-color: #34425d;
+    border: 1px solid #333333;
+    background-color: #222222;
     background-image: none;
     color: #FFFFFF;
     box-shadow: 0px 0px 0px 2px rgba(65, 100, 147, 0.25);
@@ -271,7 +527,7 @@ button:disabled:active {
 
 /* Text Field */
 input[type=text] {
-    color: #416493;
+    color: #dcdcdc;
     font-size: 14px;
     padding: 0px;
     line-height: 22px;
@@ -307,7 +563,7 @@ select {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    background-image: url(https://dtd6jl0d42sve.cloudfront.net/lib/dhtmlx/svg/caret-down.svg);
+    background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxzdmcKICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIgogICB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgeG1sbnM6c29kaXBvZGk9Imh0dHA6Ly9zb2RpcG9kaS5zb3VyY2Vmb3JnZS5uZXQvRFREL3NvZGlwb2RpLTAuZHRkIgogICB4bWxuczppbmtzY2FwZT0iaHR0cDovL3d3dy5pbmtzY2FwZS5vcmcvbmFtZXNwYWNlcy9pbmtzY2FwZSIKICAgdmlld0JveD0iMCAwIDMyMCA1MTIiCiAgIHZlcnNpb249IjEuMSIKICAgaWQ9InN2ZzQiCiAgIHNvZGlwb2RpOmRvY25hbWU9ImNhcmV0LWRvd24uc3ZnIgogICBpbmtzY2FwZTp2ZXJzaW9uPSIwLjkyLjMgKDI0MDU1NDYsIDIwMTgtMDMtMTEpIj4KICA8bWV0YWRhdGEKICAgICBpZD0ibWV0YWRhdGExMCI+CiAgICA8cmRmOlJERj4KICAgICAgPGNjOldvcmsKICAgICAgICAgcmRmOmFib3V0PSIiPgogICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2Uvc3ZnK3htbDwvZGM6Zm9ybWF0PgogICAgICAgIDxkYzp0eXBlCiAgICAgICAgICAgcmRmOnJlc291cmNlPSJodHRwOi8vcHVybC5vcmcvZGMvZGNtaXR5cGUvU3RpbGxJbWFnZSIgLz4KICAgICAgPC9jYzpXb3JrPgogICAgPC9yZGY6UkRGPgogIDwvbWV0YWRhdGE+CiAgPGRlZnMKICAgICBpZD0iZGVmczgiIC8+CiAgPHNvZGlwb2RpOm5hbWVkdmlldwogICAgIHBhZ2Vjb2xvcj0iI2ZmZmZmZiIKICAgICBib3JkZXJjb2xvcj0iIzY2NjY2NiIKICAgICBib3JkZXJvcGFjaXR5PSIxIgogICAgIG9iamVjdHRvbGVyYW5jZT0iMTAiCiAgICAgZ3JpZHRvbGVyYW5jZT0iMTAiCiAgICAgZ3VpZGV0b2xlcmFuY2U9IjEwIgogICAgIGlua3NjYXBlOnBhZ2VvcGFjaXR5PSIwIgogICAgIGlua3NjYXBlOnBhZ2VzaGFkb3c9IjIiCiAgICAgaW5rc2NhcGU6d2luZG93LXdpZHRoPSIyMDI2IgogICAgIGlua3NjYXBlOndpbmRvdy1oZWlnaHQ9IjE0NzciCiAgICAgaWQ9Im5hbWVkdmlldzYiCiAgICAgc2hvd2dyaWQ9ImZhbHNlIgogICAgIGlua3NjYXBlOnpvb209IjEuNDEwMTU2MiIKICAgICBpbmtzY2FwZTpjeD0iNzMuNzYyNzEyIgogICAgIGlua3NjYXBlOmN5PSIyNjAuMzM4OTgiCiAgICAgaW5rc2NhcGU6d2luZG93LXg9IjAiCiAgICAgaW5rc2NhcGU6d2luZG93LXk9IjAiCiAgICAgaW5rc2NhcGU6d2luZG93LW1heGltaXplZD0iMCIKICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJzdmc0IiAvPgogIDxwYXRoCiAgICAgZD0iTTMxLjMgMTkyaDI1Ny4zYzE3LjggMCAyNi43IDIxLjUgMTQuMSAzNC4xTDE3NC4xIDM1NC44Yy03LjggNy44LTIwLjUgNy44LTI4LjMgMEwxNy4yIDIyNi4xQzQuNiAyMTMuNSAxMy41IDE5MiAzMS4zIDE5MnoiCiAgICAgaWQ9InBhdGgyIgogICAgIHN0eWxlPSJmaWxsOiM0MTY0OTM7ZmlsbC1vcGFjaXR5OjEiIC8+Cjwvc3ZnPgo8IS0tCkZvbnQgQXdlc29tZSBGcmVlIDUuNC4xIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tCkxpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgKEljb25zOiBDQyBCWSA0LjAsIEZvbnRzOiBTSUwgT0ZMIDEuMSwgQ29kZTogTUlUIExpY2Vuc2UpCi0tPgoK');
     background-size: 10px;
     background-position: center right;
     background-repeat: no-repeat;
@@ -322,6 +578,7 @@ select {
     background-color: transparent;
     cursor: pointer;
     white-space: nowrap !important;
+    border-radius: 0px !important;
 }
 
 select:focus {
@@ -404,6 +661,59 @@ input[type=radio]:checked + label:before {
     font-size: 16px;
     vertical-align: middle;
 }
+/*
+input[type=range]{
+
+}
+*/
+
+.pill-nav {
+    display: inline-block;
+    color: black;
+    text-align: center;
+    font-size: 16px;
+    border: 1px solid #416493;
+    border-radius: 3px;
+    font-size: 0;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.pill-nav input[type=radio]{
+    display:none;
+}
+.pill-nav .radio_pill{
+    cursor: pointer;
+    font-size: 14px;
+}
+.pill-nav input[type=radio] + label {
+    color: #416493;
+    padding-left: 7px;
+    padding-right: 7px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    vertical-align: middle;
+    display: inline-block;
+    cursor: pointer;
+    margin-right: 0px;
+}
+.pill-nav input[type=radio] + label:before {
+    font-family: initial !important;
+    content:  initial !important;
+    margin-right: initial !important;
+    font-size:  initial !important;
+    vertical-align:  initial !important;
+}
+.pill-nav input[type=radio]:checked + label{
+    background-color: #416493;
+    color: white;
+}
+.pill-nav input[type=radio]:checked + label:before {
+    font-family: initial !important;
+    content: initial !important;
+    margin-right: initial !important;
+    font-size: initial !important;
+    vertical-align:  initial !important;
+}
 
 /* CSS_dhtmlxTemplateImportant */
 /* ====================================================================================== */
@@ -483,11 +793,27 @@ div.dhx_popup_material div.dhx_popup_area {
 
 /* CSS_Phone */
 /* ====================================================================================== */
-
-
 .noneSelected {
     text-align: center;
     padding: 25px
+}
+
+.Settings_VolumeOutput_Container{
+    display: inline-block;
+    width: 100%;
+    height: 4px;
+    border-radius: 50px;
+    border: 1px solid #CCCCCC;
+    margin-top: 10px;
+    background-color: #FFFFFF;
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+.Settings_VolumeOutput{
+    width: 5%;
+    height: 4px;
+    border-radius: 50px;
+    background-color: rgb(14, 192, 23);
+    box-shadow: inset 2px 2px 3px rgba(255, 255, 255, 0.2), inset -2px -2px 3px rgba(0, 0, 0, 0.2);
 }
 
 .clearsearchTextBtn {
@@ -523,7 +849,7 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .cleanScroller::-webkit-scrollbar-thumb {
-    background: #516896;
+    background: #a6a6a6;
     border-radius: 5px;
 }
 
@@ -543,11 +869,12 @@ div.dhx_popup_material div.dhx_popup_area {
     cursor: pointer;
     color: #333333;
     border-left: 3px solid transparent;
-    position: relative
+    position: relative;
+    border-top: 1px solid #333333;
 }
 
 .buddy:hover {
-    background-color: #F3F3F3;
+    background-color: #333333;
 }
 
 .buddySelected {
@@ -555,18 +882,19 @@ div.dhx_popup_material div.dhx_popup_area {
     height: 38px;
     cursor: pointer;
     color: #333333;
-    background-color: #ffebc1;
-    border-left: 3px solid #dda52e;
-    position: relative
+    background-color: #404040;
+    border-left: 3px solid #3c5f82;
+    position: relative;
+    border-top: 1px solid #333333;
 }
 
 .buddyIcon {
     border-radius: 50px;
-    width: 32px;
-    height: 32px;
-    background-size: 32px;
+    width: 36px;
+    height: 36px;
+    background-size: 36px;
     background-color: #CCCCCC;
-    border: 3px solid #FFFFFF;
+    border: 1px solid #3e3e3e;
     box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
     float: left;
 }
@@ -584,7 +912,7 @@ div.dhx_popup_material div.dhx_popup_area {
     margin-left: 50px;
     margin-top: 3px;
     font-size: 14px;
-    color: #4c4c4c;
+    color: #cdcdcd;
 }
 
 .contactDate {
@@ -601,17 +929,19 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .searchClean {
-    border: 1px solid #80add4;
+    border: 1px solid #404040;
     border-radius: 5px;
     padding: 3px;
-    background-color: #f7f7f7;
+    background-color: #222222;
     box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.25);
+    line-height: 22px !important;
+    box-sizing: border-box;
 }
 
 .searchClean:before {
     content: "\f002";
     font-family: FontAwesome;
-    color: #5d8bb3;
+    color: #393f47;
     text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.25);
 }
 
@@ -658,9 +988,9 @@ div.dhx_popup_material div.dhx_popup_area {
 
 .streamSection {
     padding: 5px;
-    background-color: #FFFFFF;
+    background-color: #292929;
     border-radius: 5px;
-    border: 1px solid #9cb5d7;
+    border: 1px solid #404040;
     vertical-align: top;
 }
 
@@ -681,23 +1011,23 @@ div.dhx_popup_material div.dhx_popup_area {
     width: 32px;
     height: 32px;
     line-height: 32px;
-    border: 1px solid #CCCCCC;
-    background-color: #ececec;
+    border: 1px solid #404040;
+    background-color: transparent;
     padding: 0px;
     font-size: 16px;
     box-shadow: none;
-    color: #333333;
+    color: #dcdcdc;
     min-width: 0px;
 }
 
 .roundButtons:hover {
-    border: 1px solid #CCCCCC;
-    background-color: #CCCCCC;
+    border: 1px solid #404040;
+    background-color: #333333;
 }
 
 .roundButtons:active {
-    border: 1px solid #666666;
-    background-color: #666666;
+    border: 1px solid #404040;
+    background-color: #222222;
     color: #FFFFFF;
 }
 
@@ -778,9 +1108,6 @@ div.dhx_popup_material div.dhx_popup_area {
 
 .sendMessagePreviewSend {
     float: right;
-    width: 25px;
-    height: 25px;
-    font-size: 13px;
 }
 
 .sendMessagePreviewHtml {
@@ -811,7 +1138,8 @@ div.dhx_popup_material div.dhx_popup_area {
     resize: none;
     font-family: Roboto, Arial, Helvetica;
     font-size: 14px;
-    color: #272f39;
+    color: #cccccc;
+    background-color: transparent;
 }
 
 .buddyIconSmall {
@@ -821,7 +1149,7 @@ div.dhx_popup_material div.dhx_popup_area {
     height: 18px;
     background-size: 18px;
     background-color: #CCCCCC;
-    border: 2px solid #FFFFFF;
+    border: 1px solid #FFFFFF;
     box-shadow: 1px 1px 3px rgba(0,0,0,0.25);
 }
 
@@ -837,7 +1165,7 @@ div.dhx_popup_material div.dhx_popup_area {
 
 .theirChatMessageText {
     display: inline-block;
-    background-color: #e7e7e7;
+    background-color: rgba(231, 231, 231, 0.8);
     padding: 5px;
     border-radius: 5px;
     font-size: 14px;
@@ -856,7 +1184,7 @@ div.dhx_popup_material div.dhx_popup_area {
 
 .ourChatMessageText {
     display: inline-block;
-    background-color: #d7e8f7;
+    background-color: rgba(215, 232, 247, 0.8);
     padding: 5px;
     border-radius: 5px;
     font-size: 14px;
@@ -872,12 +1200,19 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .addEmoji {
-    width: 20px;
-    height: 20px;
     font-size: 14px;
     position: absolute;
     right: -24px;
     top: 5px;
+}
+
+.previewVideo{
+    width: 100%;
+    background-color: #666666;
+    border: 1px solid #222222;
+    box-shadow: 1px 1px 5px rgba(0, 0, 0, .25);
+    border-radius: 5px;
+    transform: rotateY(180deg);  
 }
 
 .remoteVideo {
@@ -892,19 +1227,18 @@ background-position: center center;
 
 .localVideo {
     width: 160px;
-    height: 120px;
     background-color: #666666;
     border: 1px solid #222222;
-    border: 1px solid #000000;
     box-shadow: 1px 1px 5px rgba(0, 0, 0, .25);
     border-radius: 5px;
     position: absolute;
     top: 5px;
     left: 5px;
+    transform: rotateY(180deg);
 }
 
 .callStatus {
-    background-color: #f1f1f1;
+    background-color: #333333;
     border-radius: 50px;
     padding: 5px;
     padding-left: 15px;
@@ -943,7 +1277,6 @@ background-position: center center;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
-    cursor: default;
 }
 
 .dotOffline {
@@ -962,7 +1295,6 @@ background-position: center center;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
-    cursor: default;
 }
 
 .dotRinging {
@@ -981,15 +1313,14 @@ background-position: center center;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
-    cursor: default;
 }
 
 .dotRinging:before {
     content: "\f2a0";
     font-family: FontAwesome;
     position: absolute;
-    left: 2px;
-    top: 2px;
+    left: 2.5px;
+    top: 0px;
 }
 
 .dotInUse {
@@ -1008,15 +1339,14 @@ background-position: center center;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
-    cursor: default;
 }
 
 .dotInUse:before {
     content: "\f095";
     font-family: FontAwesome;
     position: absolute;
-    left: 2px;
-    top: 2px;
+    left: 2.5px;
+    top: 0px;
 }
 
 .dotReady {
@@ -1035,7 +1365,6 @@ background-position: center center;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
-    cursor: default;
 }
 
 .dotOnHold {
@@ -1054,16 +1383,15 @@ background-position: center center;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
-    cursor: default;
 }
 
 .dotOnHold:before {
     content: "\f095";
     font-family: FontAwesome;
     position: absolute;
-    left: 2px;
-    top: 2px;
-    color: #656565;
+    left: 2.5px;
+    top: 0px;
+    color: #CCCCCC;
 }
 
 .dotFailed {
@@ -1082,7 +1410,6 @@ background-position: center center;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
-    cursor: default;
 }
 
 .missedNotifyer {
@@ -1103,7 +1430,6 @@ background-position: center center;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
-    cursor: default;
     text-align: center;
 }
 
@@ -1131,17 +1457,10 @@ background-position: center center;
 
 .audioGraphSection {
     overflow: hidden;
-    background-color: #f7f7f7;
-    box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.25);
-    padding-right: 0px;
-}
-
-.audioGraphSection legend {
-    background-image: linear-gradient(to top, #f7f7f7, white);
+    padding: 0px;
 }
 
 .audioGraph {
-    border: 1px solid #CCCCCC;
     background-color: #FFFFFF;
     border-radius: 5px;
     box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.25);
