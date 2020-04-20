@@ -1,8 +1,8 @@
 /*
 
-===================
- Raspberry Phone ☎️ 
- [A fully features browser based SIP phone]
+====================
+ ☎️ Raspberry Phone ☎️ 
+ [A fully featured browser based SIP phone for Asterisk]
 -------------------------------------------------------------
  Copyright (c) 2020  - Conrad de Wet - All Rights Reserved.
 =============================================================
@@ -17,14 +17,14 @@ Git: https://github.com/InnovateAsterisk/Browser-Phone
 =========
 Requires:
 =========
-    ✅sip-0.11.6.js
-    ✅jquery-3.3.1.min.js
-    ✅jquery.md5-min.js
-    ✅Chart.bundle-2.7.2.js
-    ✅dhtmlx.js
-    ✅fabric-2.4.6.min.js
-    ✅moment-with-locales-2.24.0.min.js
-    ✅croppie.min.js
+    ✅ sip-0.11.6.js
+    ✅ jquery-3.3.1.min.js
+    ✅ jquery.md5-min.js
+    ✅ Chart.bundle-2.7.2.js
+    ✅ dhtmlx.js
+    ✅ fabric-2.4.6.min.js
+    ✅ moment-with-locales-2.24.0.min.js
+    ✅ croppie.min.js
 
 ===============
 Features to do:
@@ -39,21 +39,14 @@ Features to do:
 ========================================================
 */
 
+var userAgentStr = "Raspberry Phone (SipJS - 0.11.6)";
+var hostingPrefex = "";
+
+// =====================================================
+
 // Local Storage
 var localDB = window.localStorage;
 
-// User may need to choose this:
-var wssServer = localDB.getItem("wssServer"); // "b827ebd13eb8.blueberrypbx.net"; // window.location.hostname; //"raspberrypi.local"; b827ebd13eb8.blueberrypbx.net
-var profileUserID = localDB.getItem("profileUserID"); // "8D68B3EFEC8D0F5";
-var profileUser = localDB.getItem("profileUser"); // "100";
-var profileName = localDB.getItem("profileName"); // "Keyla James";
-var WebSocketPort = localDB.getItem("WebSocketPort"); // 444; // 4443
-var ServerPath = localDB.getItem("ServerPath"); // "/ws";
-var SipUsername = localDB.getItem("SipUsername"); // webrtc
-var SipPassword = localDB.getItem("SipPassword"); // webrtc
-
-var userAgentStr = "Raspberry Phone (SipJS - 0.11.6)";
-var hostingPrefex = "";
 var userAgent = null;
 
 var CallSessions = new Array();
@@ -76,8 +69,17 @@ var promptObj = null;
 var windowsCollection = null;
 var messagingCollection = null;
 
-// User Settings
-// =============
+// User Settings & Defaults
+// ========================
+var wssServer = localDB.getItem("wssServer");           // eg: raspberrypi.local
+var profileUserID = localDB.getItem("profileUserID");   // eg: 8D68B3EFEC8D0F5
+var profileUser = localDB.getItem("profileUser");       // eg: 100
+var profileName = localDB.getItem("profileName");       // eg: Keyla James
+var WebSocketPort = localDB.getItem("WebSocketPort");   // eg: 444 | 4443
+var ServerPath = localDB.getItem("ServerPath");         // eg: /ws
+var SipUsername = localDB.getItem("SipUsername");       // eg: webrtc
+var SipPassword = localDB.getItem("SipPassword");       // eg: webrtc
+
 var AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");
 var DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");
 var CallWaitingEnabled = (getDbItem("CallWaitingEnabled", "1") == "1");
@@ -86,14 +88,15 @@ var AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");
 var EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");
 var NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");
 var MirrorVideo = getDbItem("VideoOrientation", "rotateY(180deg)");
-var maxFrameRate = parseInt(getDbItem("FrameRate", "10"));
-var videoHeight = parseInt(getDbItem("VideoHeight", "240"));
-var videoAspectRatio = parseFloat(getDbItem("AspectRatio", "1.77"));  // square (1) | 1.33 (4:3) | 1.77 (16:9);
+var maxFrameRate = getDbItem("FrameRate", "");
+var videoHeight = getDbItem("VideoHeight", "");
+var videoAspectRatio = getDbItem("AspectRatio", "");
+var NotificationsActive = (getDbItem("Notifications", "0") == "1");
 
 // Utilities
 // =========
 function uniqueId() {
-    return "id-" + Math.random().toString(36).substr(2, 16);
+    return "id-" + Math.random().toString(36).substr(2, 16).toUpperCase();
 }
 function uID(){
     return Date.now().toString(16).toUpperCase();
@@ -105,6 +108,18 @@ function getDbItem(itemIndex, defaultValue){
     if(localDB.getItem(itemIndex) != null) return localDB.getItem(itemIndex);
     return defaultValue;
 }
+var getAudioSrcID = function(){
+    var id = localDB.getItem("AudioSrcId");
+    return (id != null)? id : "default";
+}
+var getAudioOutputID = function(){
+    var id = localDB.getItem("AudioOutputId");
+    return (id != null)? id : "default";    
+}
+var getVideoSrcID = function(){
+    var id = localDB.getItem("VideoSrcId");
+    return (id != null)? id : "default";    
+}
 
 // Window and Document Events
 // ==========================
@@ -115,6 +130,9 @@ window.onbeforeunload = function () {
 $(window).on('resize', function () {
     UpdateUI();
 });
+
+// User Interface
+// ==============
 function UpdateUI(){
     var windowWidth = $(window).outerWidth();
     if(windowWidth < 920){
@@ -153,6 +171,8 @@ function UpdateUI(){
     }
 }
 
+// UI Windows
+// ==========
 function AddSomeoneWindow(){
     try{
         dhtmlxPopup.hide();
@@ -181,11 +201,11 @@ function AddSomeoneWindow(){
     html += "<div class=UiText>Contact Number 2:</div>";
     html += "<div><input id=AddSomeone_Num2 class=UiInputText type=text placeholder='eg: +441234567890'></div>";
     html += "</div>"
-    OpenWindow(html, "Add Someone", 480, 640, false, false, "Add", function(){
+    OpenWindow(html, "Add Someone", 480, 640, false, true, "Add", function(){
 
         // Add Contact / Extension
         var json = JSON.parse(localDB.getItem("UserBuddiesJson"));
-        if(json == null) InitUserBuddies(json);
+        if(json == null) json = InitUserBuddies();
 
         if($("#AddSomeone_Exten").val() == ""){
             // Add Regular Contact
@@ -250,7 +270,7 @@ function AddSomeoneWindow(){
     });
 }
 function CreateGroupWindow(){
-    OpenWindow("", "Create Group", 480, 640, false, false, null, function(){
+    OpenWindow("", "Create Group", 480, 640, false, true, null, function(){
 
         // Create Group
 
@@ -264,7 +284,7 @@ function ConfigureExtensionWindow(){
         dhtmlxPopup.hide();
     } catch(e){}
 
-    OpenWindow("...", "Configure Extension", 480, 640, false, false, "Save", function(){
+    OpenWindow("...", "Configure Extension", 480, 640, false, true, "Save", function(){
 
         // 1 Account
         if(localDB.getItem("profileUserID") == null) localDB.setItem("profileUserID", uID()); // For first time only
@@ -275,8 +295,20 @@ function ConfigureExtensionWindow(){
         localDB.setItem("profileName", $("#Configure_Account_profileName").val());
         localDB.setItem("SipUsername", $("#Configure_Account_SipUsername").val());
         localDB.setItem("SipPassword", $("#Configure_Account_SipPassword").val());
+        getVideoSrcID();
 
         // 2 Audio & Video
+        localDB.setItem("AudioOutputId", $("#playbackSrc").val());
+        localDB.setItem("VideoSrcId", $("#previewVideoSrc").val());
+        localDB.setItem("VideoHeight", $("input[name=Settings_Quality]:checked").val());
+        localDB.setItem("FrameRate", $("input[name=Settings_FrameRate]:checked").val());
+        localDB.setItem("AspectRatio", $("input[name=Settings_AspectRatio]:checked").val());
+        localDB.setItem("VideoOrientation", $("input[name=Settings_Oriteation]:checked").val());
+        localDB.setItem("AudioSrcId", $("#microphoneSrc").val());
+        localDB.setItem("AutoGainControl", ($("#Settings_AutoGainControl").is(':checked'))? "1" : "0");
+        localDB.setItem("EchoCancellation", ($("#Settings_EchoCancellation").is(':checked'))? "1" : "0");
+        localDB.setItem("NoiseSuppression", ($("#Settings_NoiseSuppression").is(':checked'))? "1" : "0");
+        localDB.setItem("RingOutputId", $("#ringDevice").val());
 
         // 3 Appearance
         $("#ImageCanvas").croppie('result', { 
@@ -290,7 +322,7 @@ function ConfigureExtensionWindow(){
         });
 
         // 4 Notifications
-
+        localDB.setItem("Notifications", ($("#Settings_Notifications").is(":checked"))? "1" : "0");
 
         Alert("In order to apply these settings, the page must reload, OK?", "Reload Required", function(){
             window.location.reload();
@@ -318,14 +350,33 @@ function ConfigureExtensionWindow(){
             tracks.forEach(function(track) {
                 track.stop();
             });
-            window.SettingsMicrophoneStream = null;
         } catch(e){}
+        window.SettingsMicrophoneStream = null;
 
         try{
-            soundMeter = window.SettingsMicrophoneSoundMeter;
+            var soundMeter = window.SettingsMicrophoneSoundMeter;
             soundMeter.stop();
-            window.SettingsMicrophoneSoundMeter = null;
-        } catch(e){}        
+        } catch(e){}   
+        window.SettingsMicrophoneSoundMeter = null;
+        
+        try{
+            window.SettingsOutputAudio.pause();
+        } catch(e){}
+        window.SettingsOutputAudio = null;
+
+        try{
+            var tracks = window.SettingsOutputStream.getTracks();
+            tracks.forEach(function(track) {
+                track.stop();
+            });
+        } catch(e){}
+        window.SettingsOutputStream = null;
+
+        try{
+            var soundMeter = window.SettingsOutputStreamMeter;
+            soundMeter.stop();
+        } catch(e){}
+        window.SettingsOutputStreamMeter = null;
 
         return true;
     });
@@ -343,6 +394,7 @@ function ConfigureExtensionWindow(){
     });
 
     // 1 Account 
+    // ==================================================================================
     var AccountHtml =  "<div class=\"UiWindowField scroller\">";
     AccountHtml += "<div class=UiText>Asterisk Server Address:</div>";
     AccountHtml += "<div><input id=Configure_Account_wssServer class=UiInputText type=text placeholder='eg: 192.168.1.1 or raspberrypi.local' value='"+ getDbItem("wssServer", "") +"'></div>";
@@ -364,16 +416,18 @@ function ConfigureExtensionWindow(){
 
     AccountHtml += "<div class=UiText>SIP Password:</div>";
     AccountHtml += "<div><input id=Configure_Account_SipPassword class=UiInputText type=password placeholder='eg: 1234' value='"+ getDbItem("SipPassword", "") +"'></div>";
-    AccountHtml += "</div>";
+    AccountHtml += "<br><br></div>";
 
     ConfigureTabbar.tabs("1").attachHTMLString(AccountHtml);
 
     // 2 Audio & Video
+    // ==================================================================================
     var AudioVideoHtml = "<div class=\"UiWindowField scroller\">";
 
     AudioVideoHtml += "<div class=UiText>Speaker:</div>";
     AudioVideoHtml += "<div style=\"text-align:center\"><select id=playbackSrc style=\"width:100%\"></select></div>";
-    AudioVideoHtml += "<div class=Settings_VolumeOutput_Container><div id=Settings_VolumeOutput class=Settings_VolumeOutput></div></div>";
+    AudioVideoHtml += "<div class=Settings_VolumeOutput_Container><div id=Settings_SpeakerOutput class=Settings_VolumeOutput></div></div>";
+    AudioVideoHtml += "<div><button class=on_white id=preview_output_play><i class=\"fa fa-play\"></i></button></div>";
 
     AudioVideoHtml += "<div class=UiText>Microphone:</div>";
     AudioVideoHtml += "<div style=\"text-align:center\"><select id=microphoneSrc style=\"width:100%\"></select></div>";
@@ -394,6 +448,7 @@ function ConfigureExtensionWindow(){
     AudioVideoHtml += "<input name=Settings_FrameRate id=r44 type=radio value=\"20\"><label class=radio_pill for=r44>20</label>";
     AudioVideoHtml += "<input name=Settings_FrameRate id=r45 type=radio value=\"25\"><label class=radio_pill for=r45>25</label>";
     AudioVideoHtml += "<input name=Settings_FrameRate id=r46 type=radio value=\"30\"><label class=radio_pill for=r46>30</label>";
+    AudioVideoHtml += "<input name=Settings_FrameRate id=r47 type=radio value=\"\"><label class=radio_pill for=r47><i class=\"fa fa-trash\"></i></label>";
     AudioVideoHtml += "</div>";
 
     AudioVideoHtml += "<div class=UiText>Quality:</div>";
@@ -402,6 +457,7 @@ function ConfigureExtensionWindow(){
     AudioVideoHtml += "<input name=Settings_Quality id=r31 type=radio value=\"240\"><label class=radio_pill for=r31><i class=\"fa fa-video-camera\" style=\"transform: scale(0.6)\"></i> QVGA</label>";
     AudioVideoHtml += "<input name=Settings_Quality id=r32 type=radio value=\"480\"><label class=radio_pill for=r32><i class=\"fa fa-video-camera\" style=\"transform: scale(0.8)\"></i> VGA</label>";
     AudioVideoHtml += "<input name=Settings_Quality id=r33 type=radio value=\"720\"><label class=radio_pill for=r33><i class=\"fa fa-video-camera\" style=\"transform: scale(1)\"></i> HD</label>";
+    AudioVideoHtml += "<input name=Settings_Quality id=r34 type=radio value=\"\"><label class=radio_pill for=r34><i class=\"fa fa-trash\"></i></label>";
     AudioVideoHtml += "</div>";
     
     AudioVideoHtml += "<div class=UiText>Image Oriteation:</div>";
@@ -415,30 +471,36 @@ function ConfigureExtensionWindow(){
     AudioVideoHtml += "<input name=Settings_AspectRatio id=r10 type=radio value=\"1\"><label class=radio_pill for=r10><i class=\"fa fa-square-o\" style=\"transform: scaleX(1); margin-left: 7px; margin-right: 7px\"></i> 1:1</label>";
     AudioVideoHtml += "<input name=Settings_AspectRatio id=r11 type=radio value=\"1.33\"><label class=radio_pill for=r11><i class=\"fa fa-square-o\" style=\"transform: scaleX(1.33); margin-left: 5px; margin-right: 5px;\"></i> 4:3</label>";
     AudioVideoHtml += "<input name=Settings_AspectRatio id=r12 type=radio value=\"1.77\"><label class=radio_pill for=r12><i class=\"fa fa-square-o\" style=\"transform: scaleX(1.77); margin-right: 3px;\"></i> 16:9</label>";
+    AudioVideoHtml += "<input name=Settings_AspectRatio id=r13 type=radio value=\"\"><label class=radio_pill for=r13><i class=\"fa fa-trash\"></i></label>";
     AudioVideoHtml += "</div>";
     
     AudioVideoHtml += "<div class=UiText>Preview:</div>";
-    AudioVideoHtml += "<div style=\"text-align:center; margin-top:10px\"><video id=local-video-preview class=previewVideo muted></video></div>";
+    AudioVideoHtml += "<div style=\"text-align:center; margin-top:10px\"><video id=local-video-preview class=previewVideo></video></div>";
 
-    AudioVideoHtml += "<div class=UiText>Ringtone:</div>";
-    AudioVideoHtml += "<div style=\"text-align:center\"><select id=ringTone style=\"width:100%\"></select></div>";
-    AudioVideoHtml += "<div>Play</div>";
+    // TODO
+    // AudioVideoHtml += "<div class=UiText>Ringtone:</div>";
+    // AudioVideoHtml += "<div style=\"text-align:center\"><select id=ringTone style=\"width:100%\"></select></div>";
+    // AudioVideoHtml += "<div>Play</div>";
 
+    AudioVideoHtml += "<div id=RingDeviceSection>";
     AudioVideoHtml += "<div class=UiText>Ring Device:</div>";
     AudioVideoHtml += "<div style=\"text-align:center\"><select id=ringDevice style=\"width:100%\"></select></div>";
-    
     AudioVideoHtml += "</div>";
+    
+    AudioVideoHtml += "<BR><BR></div>";
 
     ConfigureTabbar.tabs("2").attachHTMLString(AudioVideoHtml);
 
     // Output
     var selectAudioScr = $("#playbackSrc");
 
+    var playButton = $("#preview_output_play");
+
     // Microphone
     var selectMicScr = $("#microphoneSrc");
-    $("#Settings_AutoGainControl").attr("checked", AutoGainControl);
-    $("#Settings_EchoCancellation").attr("checked", EchoCancellation);
-    $("#Settings_NoiseSuppression").attr("checked", NoiseSuppression);
+    $("#Settings_AutoGainControl").prop("checked", AutoGainControl);
+    $("#Settings_EchoCancellation").prop("checked", EchoCancellation);
+    $("#Settings_NoiseSuppression").prop("checked", NoiseSuppression);
     
     // Webcam
     var selectVideoScr = $("#previewVideoSrc");
@@ -446,40 +508,45 @@ function ConfigureExtensionWindow(){
     // Orientation
     var OriteationSel = $("input[name=Settings_Oriteation]");
     OriteationSel.each(function(){
-        if(this.value == MirrorVideo) $(this).attr("checked", true);
+        if(this.value == MirrorVideo) $(this).prop("checked", true);
     });
     $("#local-video-preview").css("transform", MirrorVideo);
 
     // Frame Rate
     var frameRateSel = $("input[name=Settings_FrameRate]");
     frameRateSel.each(function(){
-        if(this.value == maxFrameRate) $(this).attr("checked", true);
+        if(this.value == maxFrameRate) $(this).prop("checked", true);
     });
 
     // Quality
     var QualitySel = $("input[name=Settings_Quality]");
     QualitySel.each(function(){
-        if(this.value == videoHeight) $(this).attr("checked", true);
+        if(this.value == videoHeight) $(this).prop("checked", true);
     });    
 
     // Aspect Ratio
     var AspectRatioSel = $("input[name=Settings_AspectRatio]");
     AspectRatioSel.each(function(){
-        if(this.value == videoAspectRatio) $(this).attr("checked", true);
+        if(this.value == videoAspectRatio) $(this).prop("checked", true);
     });    
 
     // Ring Tone
     var selectRingTone = $("#ringTone");
-    
+    // TODO
+
     // Ring Device
     var selectRingDevice = $("#ringDevice");
-    
+    // TODO
+
     // Handle Aspect Ratio Change
-    // ==========================
     AspectRatioSel.change(function(){    
         console.log("Call to change Aspect Ratio ("+ this.value +")");
 
         var localVideo = $("#local-video-preview").get(0);
+        localVideo.muted = true;
+        localVideo.playsinline = true;
+        localVideo.autoplay = true;
+
         var tracks = localVideo.srcObject.getTracks();
         tracks.forEach(function(track) {
             track.stop();
@@ -488,19 +555,24 @@ function ConfigureExtensionWindow(){
         var constraints = {
             audio: false,
             video: {
-                height: { exact: $("input[name=Settings_Quality]:checked").val() }, 
-                frameRate: { max: $("input[name=Settings_FrameRate]:checked").val() }, 
-                aspectRatio: this.value, 
-                deviceId: selectVideoScr.val()
+                deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default"
             }
         }
+        if($("input[name=Settings_FrameRate]:checked").val() != ""){
+            constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
+        }
+        if($("input[name=Settings_Quality]:checked").val() != ""){
+            constraints.video.height = $("input[name=Settings_Quality]:checked").val();
+        }
+        if(this.value != ""){
+            constraints.video.aspectRatio = this.value;
+        }        
         console.log("Constraints:", constraints);
         var localStream = new MediaStream();
         if(navigator.mediaDevices){
             navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
                 var videoTrack = newStream.getVideoTracks()[0];
                 localStream.addTrack(videoTrack);
-        
                 localVideo.srcObject = localStream;
                 localVideo.onloadedmetadata = function(e) {
                     localVideo.play();
@@ -513,11 +585,14 @@ function ConfigureExtensionWindow(){
     });
 
     // Handle Video Height Change
-    // ==========================
     QualitySel.change(function(){    
         console.log("Call to change Video Height ("+ this.value +")");
 
         var localVideo = $("#local-video-preview").get(0);
+        localVideo.muted = true;
+        localVideo.playsinline = true;
+        localVideo.autoplay = true;
+
         var tracks = localVideo.srcObject.getTracks();
         tracks.forEach(function(track) {
             track.stop();
@@ -526,19 +601,24 @@ function ConfigureExtensionWindow(){
         var constraints = {
             audio: false,
             video: {
-                height: { exact: this.value }, 
-                frameRate: { max: $("input[name=Settings_FrameRate]:checked").val() }, 
-                aspectRatio: $("input[name=Settings_AspectRatio]:checked").val(), 
-                deviceId: selectVideoScr.val()
+                deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default" ,
             }
         }
+        if($("input[name=Settings_FrameRate]:checked").val() != ""){
+            constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
+        }
+        if(this.value){
+            constraints.video.height = this.value;
+        }
+        if($("input[name=Settings_AspectRatio]:checked").val() != ""){
+            constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
+        } 
         console.log("Constraints:", constraints);
         var localStream = new MediaStream();
         if(navigator.mediaDevices){
             navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
                 var videoTrack = newStream.getVideoTracks()[0];
                 localStream.addTrack(videoTrack);
-        
                 localVideo.srcObject = localStream;
                 localVideo.onloadedmetadata = function(e) {
                     localVideo.play();
@@ -551,11 +631,14 @@ function ConfigureExtensionWindow(){
     });    
 
     // Handle Frame Rate Change 
-    // ========================
     frameRateSel.change(function(){
         console.log("Call to change Frame Rate ("+ this.value +")");
 
         var localVideo = $("#local-video-preview").get(0);
+        localVideo.muted = true;
+        localVideo.playsinline = true;
+        localVideo.autoplay = true;
+
         var tracks = localVideo.srcObject.getTracks();
         tracks.forEach(function(track) {
             track.stop();
@@ -564,19 +647,24 @@ function ConfigureExtensionWindow(){
         var constraints = {
             audio: false,
             video: {
-                height: { exact: $("input[name=Settings_Quality]:checked").val() }, 
-                frameRate: { max: this.value }, 
-                aspectRatio: $("input[name=Settings_AspectRatio]:checked").val(), 
-                deviceId: selectVideoScr.val()
+                deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default" ,
             }
         }
+        if(this.value != ""){
+            constraints.video.frameRate = this.value;
+        }
+        if($("input[name=Settings_Quality]:checked").val() != ""){
+            constraints.video.height = $("input[name=Settings_Quality]:checked").val();
+        }
+        if($("input[name=Settings_AspectRatio]:checked").val() != ""){
+            constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
+        } 
         console.log("Constraints:", constraints);
         var localStream = new MediaStream();
         if(navigator.mediaDevices){
             navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
                 var videoTrack = newStream.getVideoTracks()[0];
                 localStream.addTrack(videoTrack);
-        
                 localVideo.srcObject = localStream;
                 localVideo.onloadedmetadata = function(e) {
                     localVideo.play();
@@ -589,17 +677,119 @@ function ConfigureExtensionWindow(){
     });
 
     // Handle Audio Source changes (Microphone)
-    // ========================================
     selectMicScr.change(function(){
         console.log("Call to change Microphone ("+ this.value +")");
+
         // Change and update visual preview
+        try{
+            var tracks = window.SettingsMicrophoneStream.getTracks();
+            tracks.forEach(function(track) {
+                track.stop();
+            });
+            window.SettingsMicrophoneStream = null;
+        } catch(e){}
+
+        try{
+            soundMeter = window.SettingsMicrophoneSoundMeter;
+            soundMeter.stop();
+            window.SettingsMicrophoneSoundMeter = null;
+        } catch(e){}
+
+        // Get Microphone
+        var constraints = { 
+            audio: {
+                deviceId: { exact: this.value }
+            }, 
+            video: false 
+        }
+        var localMicrophoneStream = new MediaStream();
+        navigator.mediaDevices.getUserMedia(constraints).then(function(mediaStream){
+            var audioTrack = mediaStream.getAudioTracks()[0];
+            if(audioTrack != null){
+                // Display Micrphone Levels
+                localMicrophoneStream.addTrack(audioTrack);
+                window.SettingsMicrophoneStream = localMicrophoneStream;
+                window.SettingsMicrophoneSoundMeter = MeterSettingsOutput(localMicrophoneStream, "Settings_MicrophoneOutput", "width", 50);
+            }
+        }).catch(function(e){
+            console.log("Failed to getUserMedia", e);
+        });
     });
 
     // Handle output change (speaker)
-    // ==============================
     selectAudioScr.change(function(){
         console.log("Call to change Speaker ("+ this.value +")");
-        // Change and update visual preview
+
+        var audioObj = window.SettingsOutputAudio;
+        if(audioObj != null) {
+            if (typeof audioObj.sinkId !== 'undefined') {
+                audioObj.setSinkId(this.value).then(function() {
+                    // User must click play
+                }).catch(function(e){
+                    console.log("Failed not apply setSinkId.", e);
+                });
+            }
+        }
+    });
+
+    // play button press
+    playButton.click(function(){
+
+        try{
+            window.SettingsOutputAudio.pause();
+        } catch(e){}
+        window.SettingsOutputAudio = null;
+
+        try{
+            var tracks = window.SettingsOutputStream.getTracks();
+            tracks.forEach(function(track) {
+                track.stop();
+            });
+        } catch(e){}
+        window.SettingsOutputStream = null;
+
+        try{
+            var soundMeter = window.SettingsOutputStreamMeter;
+            soundMeter.stop();
+        } catch(e){}
+        window.SettingsOutputStreamMeter = null;
+
+        // Load Sample
+        var audioObj = new Audio(hostingPrefex + "/speech_orig.mp3"); //speech_orig.wav: this file failes to play using the Asteriks MiniServer
+        audioObj.onplay = function(){
+            var outputStream = new MediaStream();
+            if (typeof audioObj.captureStream !== 'undefined') {
+                outputStream = audioObj.captureStream();
+            } else if (typeof audioObj.mozCaptureStream !== 'undefined') {
+                return;
+                // BUG: mozCaptureStream() in Firefox does not work the same way as captureStream()
+                // the actual sound does not play out to the speakers... its as if the mozCaptureStream
+                // removes the stream from the <audio> object.
+                outputStream = audioObj.mozCaptureStream();
+            } else if (typeof audioObj.webkitCaptureStream !== 'undefined') {
+                outputStream = audioObj.webkitCaptureStream();
+            } else {
+                console.log("Cannot display Audio Levels")
+                return;
+            }
+            // Monitor Output
+            window.SettingsOutputStream = outputStream;
+            window.SettingsOutputStreamMeter = MeterSettingsOutput(outputStream, "Settings_SpeakerOutput", "width", 50);
+        }
+        audioObj.oncanplaythrough = function(e) {
+            if (typeof audioObj.sinkId !== 'undefined') {
+                audioObj.setSinkId(selectAudioScr.val()).then(function() {
+                    console.log("Set sinkId to:", selectAudioScr.val());
+                }).catch(function(e){
+                    console.log("Failed not apply setSinkId.", e);
+                });
+            }
+            // Play
+            audioObj.play();
+            console.log("Playing sample audio file... ");
+        }
+
+        window.SettingsOutputAudio = audioObj;
     });
 
     // Change Video Image
@@ -609,9 +799,14 @@ function ConfigureExtensionWindow(){
     });
 
     // Handle video input change (WebCam)
-    // ==================================
     selectVideoScr.change(function(){
         console.log("Call to change WebCam ("+ this.value +")");
+
+        var localVideo = $("#local-video-preview").get(0);
+        localVideo.muted = true;
+        localVideo.playsinline = true;
+        localVideo.autoplay = true;
+
         var tracks = localVideo.srcObject.getTracks();
         tracks.forEach(function(track) {
             track.stop();
@@ -620,19 +815,24 @@ function ConfigureExtensionWindow(){
         var constraints = {
             audio: false,
             video: {
-                height: { exact: $("input[name=Settings_Quality]:checked").val() }, 
-                frameRate: { max: $("input[name=Settings_FrameRate]:checked").val() }, 
-                aspectRatio: $("input[name=Settings_AspectRatio]:checked").val(), 
-                deviceId: this.value
+                deviceId: (this.value != "default")? { exact: this.value } : "default"
             }
         }
+        if($("input[name=Settings_FrameRate]:checked").val() != ""){
+            constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
+        }
+        if($("input[name=Settings_Quality]:checked").val() != ""){
+            constraints.video.height = $("input[name=Settings_Quality]:checked").val();
+        }
+        if($("input[name=Settings_AspectRatio]:checked").val() != ""){
+            constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
+        } 
         console.log("Constraints:", constraints);
         var localStream = new MediaStream();
         if(navigator.mediaDevices){
             navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
                 var videoTrack = newStream.getVideoTracks()[0];
                 localStream.addTrack(videoTrack);
-        
                 localVideo.srcObject = localStream;
                 localVideo.onloadedmetadata = function(e) {
                     localVideo.play();
@@ -644,89 +844,151 @@ function ConfigureExtensionWindow(){
         }
     });
 
-    // Only works over HTTPS!!
+    // Note: Only works over HTTPS or via localhost!!
     var localVideo = $("#local-video-preview").get(0);
-    var constraints = { 
-        audio: {
-            deviceId: getAudioSrcID()
-        },
-        video: {
-            height: { exact: $("input[name=Settings_Quality]:checked").val() }, 
-            frameRate: { max: $("input[name=Settings_FrameRate]:checked").val() },
-            aspectRatio: $("input[name=Settings_AspectRatio]:checked").val(), 
-            deviceId: getVideoSrcID()
-        }
-    }
+    localVideo.muted = true;
+    localVideo.playsinline = true;
+    localVideo.autoplay = true;
+
     var localVideoStream = new MediaStream();
     var localMicrophoneStream = new MediaStream();
+    
     if(navigator.mediaDevices){
-
-        // Invoke Permission Promt
         navigator.mediaDevices.enumerateDevices().then(function(deviceInfos){
+            var savedVideoDevice = getVideoSrcID();
+            var videoDeviceFound = false;
+
+            var savedAudioDevice = getAudioSrcID();
+            var audioDeviceFound = false;
+
+            var MicrophoneFound = false;
+            var SpeakerFound = false;
+            var VideoFound = false;
+
             for (var i = 0; i < deviceInfos.length; ++i) {
-                console.log("Found Device: ", deviceInfos[i].label);
-            }
-        }).catch();
+                console.log("Found Device ("+ deviceInfos[i].kind +"): ", deviceInfos[i].label, );
 
-        // Get User Media
-        navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
-            // Display Video
-            localVideoStream.addTrack(newStream.getVideoTracks()[0]);
-            localVideo.srcObject = localVideoStream;
-            localVideo.onloadedmetadata = function(e) {
-                localVideo.play();
-            }
-
-            // Display Micrphone Levels
-            localMicrophoneStream.addTrack(newStream.getAudioTracks()[0]);
-            window.SettingsMicrophoneStream = localMicrophoneStream;
-            window.SettingsMicrophoneSoundMeter = MeterSettingsMicrophone(localMicrophoneStream);
-
-            // Display Output Levels
-
-            // then()
-            return navigator.mediaDevices.enumerateDevices();
-        }).then(function(deviceInfos){
-            for (var i = 0; i < deviceInfos.length; ++i) {
-                var deviceInfo = deviceInfos[i];
-                var devideId = deviceInfo.deviceId;
-                var DisplayName = deviceInfo.label;
-                if(DisplayName.indexOf("(")) DisplayName = DisplayName.substring(0,DisplayName.indexOf("("));
-
-                var option = $('<option/>');
-                option.attr("value", devideId);
-
-                if (deviceInfo.kind === "audioinput") {
-                    option.text((DisplayName != "")? DisplayName : "Microphone");
-                    if(getAudioSrcID() == devideId) option.attr("selected", true);
-                    selectMicScr.append(option);
-                } else if (deviceInfo.kind === "audiooutput") {
-                    option.text((DisplayName != "")? DisplayName : "Speaker");
-                    if(getAudioOutputID() == devideId) option.attr("selected", true);
-                    selectAudioScr.append(option);
-                    selectRingDevice.append(option.clone());
-                } else if (deviceInfo.kind === "videoinput") {
-                    if(getVideoSrcID() == devideId) option.attr("selected", true);
-                    option.text((DisplayName != "")? DisplayName : "Webcam");
-                    selectVideoScr.append(option);
+                // Check Devices
+                if (deviceInfos[i].kind === "audioinput") {
+                    MicrophoneFound = true;
+                    if(savedAudioDevice != "default" && deviceInfos[i].deviceId == savedAudioDevice) {
+                        audioDeviceFound = true;
+                    }                   
+                } else if (deviceInfos[i].kind === "audiooutput") {
+                    SpeakerFound = true;
+                } else if (deviceInfos[i].kind === "videoinput") {
+                    VideoFound = true;
+                    if(savedVideoDevice != "default" && deviceInfos[i].deviceId == savedVideoDevice) {
+                        videoDeviceFound = true;
+                    }
                 }
             }
+
+            var contraints = {
+                audio: MicrophoneFound,
+                video: VideoFound
+            }
+
+            if(MicrophoneFound){
+                contraints.audio = { deviceId: "default" };
+                if(audioDeviceFound) contraints.audio.deviceId = { exact: savedAudioDevice };
+            }
+            if(VideoFound){
+                contraints.video = { deviceId: "default" };
+                if(videoDeviceFound) contraints.video.deviceId = { exact: savedVideoDevice };
+            }
+            // Additional
+            if($("input[name=Settings_FrameRate]:checked").val() != ""){
+                contraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
+            }
+            if($("input[name=Settings_Quality]:checked").val() != ""){
+                contraints.video.height = $("input[name=Settings_Quality]:checked").val();
+            }
+            if($("input[name=Settings_AspectRatio]:checked").val() != ""){
+                contraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
+            } 
+            console.log("Get User Media", contraints);
+            // Get User Media
+            navigator.mediaDevices.getUserMedia(contraints).then(function(mediaStream){
+                // Handle Video
+                var videoTrack = (mediaStream.getVideoTracks().length >= 1)? mediaStream.getVideoTracks()[0] : null;
+                if(VideoFound && videoTrack != null){
+                    localVideoStream.addTrack(videoTrack);
+                    // Display Preview Video
+                    localVideo.srcObject = localVideoStream;
+                    localVideo.onloadedmetadata = function(e) {
+                        localVideo.play();
+                    }
+                } else {
+                    Alert("No video / webcam devices found, make sure one is plugged in.", "Device Error");
+                }
+
+                // Handle Audio
+                var audioTrack = (mediaStream.getAudioTracks().length >= 1)? mediaStream.getAudioTracks()[0] : null ;
+                if(MicrophoneFound && audioTrack != null){
+                    localMicrophoneStream.addTrack(audioTrack);
+                    // Display Micrphone Levels
+                    window.SettingsMicrophoneStream = localMicrophoneStream;
+                    window.SettingsMicrophoneSoundMeter = MeterSettingsOutput(localMicrophoneStream, "Settings_MicrophoneOutput", "width", 50);
+                } else {
+                    Alert("No microphone devices found, make sure one is plugged in.", "Device Error");
+                }
+
+                // Display Output Levels
+                $("#Settings_SpeakerOutput").css("width", "0%");
+                if(!SpeakerFound){
+                    console.log("No speaker devices found, make sure one is plugged in.")
+                    $("#playbackSrc").hide();
+                    $("#RingDeviceSection").hide();
+                }
+
+                // Return .then()
+                return navigator.mediaDevices.enumerateDevices();
+            }).then(function(deviceInfos){
+                for (var i = 0; i < deviceInfos.length; ++i) {
+                    console.log("Found Device ("+ deviceInfos[i].kind +") Again: ", deviceInfos[i].label, deviceInfos[i].deviceId);
+
+                    var deviceInfo = deviceInfos[i];
+                    var devideId = deviceInfo.deviceId;
+                    var DisplayName = deviceInfo.label;
+                    if(DisplayName.indexOf("(") > 0) DisplayName = DisplayName.substring(0,DisplayName.indexOf("("));
+
+                    var option = $('<option/>');
+                    option.prop("value", devideId);
+
+                    if (deviceInfo.kind === "audioinput") {
+                        option.text((DisplayName != "")? DisplayName : "Microphone");
+                        if(getAudioSrcID() == devideId) option.prop("selected", true);
+                        selectMicScr.append(option);
+                    } else if (deviceInfo.kind === "audiooutput") {
+                        option.text((DisplayName != "")? DisplayName : "Speaker");
+                        if(getAudioOutputID() == devideId) option.prop("selected", true);
+                        selectAudioScr.append(option);
+                        selectRingDevice.append(option.clone());
+                    } else if (deviceInfo.kind === "videoinput") {
+                        if(getVideoSrcID() == devideId) option.prop("selected", true);
+                        option.text((DisplayName != "")? DisplayName : "Webcam");
+                        selectVideoScr.append(option);
+                    }
+                }
+            }).catch(function(e){
+                console.error("Error getting User Media.", e);
+                Alert("Error getting User Media.", "Error");
+            });
         }).catch(function(e){
-            console.error(e);
-            Alert("Error getting User Media.", "Error");
+            console.error("Error getting Media Devices", e);
         });
     } else {
-        Alert("navigator.mediaDevices was null -  Check if your connection is secure (HTTPS)", "Error");
+        Alert("MediaDevices was null -  Check if your connection is secure (HTTPS)", "Error");
     }
 
-    var ringTone = $("#ringTone");
-
-    var ringDevice = $("#ringDevice");
-
     // 3 Appearance
-    var AppearanceHtml = "<div id=ImageCanvas style=\"width:150px; height:150px\"></div>";
+    // ==================================================================================
+    var AppearanceHtml = "<div class=\"UiWindowField scroller\">"; 
+    AppearanceHtml += "<div id=ImageCanvas style=\"width:150px; height:150px\"></div>";
     AppearanceHtml += "<div style=\"float:left; margin-left:200px;\"><input id=fileUploader type=file></div>";
     AppearanceHtml += "<div style=\"margin-top: 50px\"></div>";
+    AppearanceHtml += "<div>";
 
     ConfigureTabbar.tabs("3").attachHTMLString(AppearanceHtml);
 
@@ -772,48 +1034,62 @@ function ConfigureExtensionWindow(){
     });
 
     // 4 Notifications
-    var NotificationsHtml = "<div>3 some content</div>";
+    // ==================================================================================
+    var NotificationsHtml = "<div class=\"UiWindowField scroller\">";
+    NotificationsHtml += "<div class=UiText>Notifications:</div>";
+    NotificationsHtml += "<div><input type=checkbox id=Settings_Notifications><label for=Settings_Notifications> Enabled Onscreen Notifictions<label></div>";
+    NotificationsHtml += "<div>";
 
     ConfigureTabbar.tabs("4").attachHTMLString(NotificationsHtml);
 
+    var NotificationsCheck = $("#Settings_Notifications");
+    NotificationsCheck.prop("checked", NotificationsActive);
+    NotificationsCheck.change(function(){
+        if(this.checked){
+            if(Notification.permission != "granted"){
+                if(checkNotificationPromise()){
+                    Notification.requestPermission().then(function(p){
+                        console.log(p);
+                        HandleNotifyPermission(p);
+                    });
+                } else {
+                    Notification.requestPermission(function(p){
+                        console.log(p);
+                        HandleNotifyPermission(p)
+                    });
+                }
+            }
+        }
+    });
+
     // 5 Language
-    var LanguageHtml = "<div>5 some content</div>";
+    // ==================================================================================
+    // TODO
+    var LanguageHtml = "<div class=\"UiWindowField scroller\">";
+    LanguageHtml += "<div>TODO...</div>";
+    LanguageHtml += "<div>";
+
     ConfigureTabbar.tabs("5").attachHTMLString(LanguageHtml);
 }
-function MeterSettingsMicrophone(audioStream){
-    var audioContext = null;
+function checkNotificationPromise() {
     try {
-        audioContext = new AudioContext();
+        Notification.requestPermission().then();
+    } catch(e) {
+        return false;
     }
-    catch(e){
-        console.warn("AudioContext() LocalAudio not available... its fine.")
-    }
-    if(audioContext != null)
-    {
-        var soundMeter = new SoundMeter(audioContext, null, null);
-        soundMeter.startTime = Date.now();
-        soundMeter.connectToSource(audioStream, function (e) {
-            if (e != null) return;
-
-            console.log("SimpleSoundMeter Connected, displaying levels");
-            soundMeter.levelsInterval = window.setInterval(function () {
-                // soundMeter.slow
-                // soundMeter.clip;
-    
-                // Calculate Levels
-                // ================
-                //value="0" max="1" high="0.25" (this seems low... )
-                var level = soundMeter.instant * 4.0;
-                if (level > 1) level = 1;
-                var instPercent = level * 100;
-    
-                $("#Settings_MicrophoneOutput").css("width", instPercent.toFixed(2) +"%");
-            }, 200);
+    return true;
+}
+function HandleNotifyPermission(p){
+    if(p == "granted") {
+        // Good
+    } else {
+        Alert("You need to accept the permission request to allow Notifications", "Permission", function(){
+            console.log("Attempting to uncheck the checkbox...");
+            $("#Settings_Notifications").prop("checked", false);
         });
-
-        return soundMeter;
     }
 }
+
 function EditBuddyWindow(buddy){
     try{
         dhtmlxPopup.hide();
@@ -864,7 +1140,7 @@ function EditBuddyWindow(buddy){
     html += "<div class=UiText>Contact Number 2:</div>";
     html += "<div><input id=AddSomeone_Num2 class=UiInputText type=text placeholder='eg: +441234567890' value='"+ buddyObj.ContactNumber2 +"'></div>";
     html += "</div>"
-    OpenWindow(html, "Edit", 480, 640, false, false, "Save", function(){
+    OpenWindow(html, "Edit", 480, 640, false, true, "Save", function(){
 
         buddyObj.LastActivity = utcDateNow();
         buddyObj.DisplayName = $("#AddSomeone_Name").val();
@@ -986,21 +1262,33 @@ $(document).ready(function () {
     $("#txtFindBuddy").on('keyup', function(event){
         UpdateBuddyList(this.value);
     });
-    
     $("#BtnCreateGroup").on('click', function(event){
         CreateGroupWindow();
     });
-    
-    $("#BtnAddSomeone").on('click', function(event){
+    $("#BtnAddSomeone, #BtnAddSomeone1").on('click', function(event){
         AddSomeoneWindow();
     });
-
+    $("#ConfigureExtension").on('click', function(event){
+        ConfigureExtensionWindow();
+    });
+    $("#UserProfile").on('click', function(event){
+        ShowMyProfileMenu(this);
+    });
+    
     UpdateUI();
     
     // Check if you account is created
     if(profileUserID == null ){
         ConfigureExtensionWindow();
-        return;
+        return; // Dont load any more, after applying settings, the page must reload.
+    }
+
+    PopulateBuddyList();
+
+    // Select Last user
+    if(localDB.getItem("SelectedBuddy") != null){
+        console.log("Selecting previously selected buddy...", localDB.getItem("SelectedBuddy"));
+        SelectBuddy(localDB.getItem("SelectedBuddy"));
     }
 
     // Create User Agent
@@ -1048,7 +1336,6 @@ $(document).ready(function () {
         // Start Subscribe Loop
         // ====================
         if(!isReRegister) {
-            PopulateBuddyList();
             Subscribe();
         }
         isReRegister = true;
@@ -1264,14 +1551,18 @@ function AnswerAudioCall(buddy) {
             sessionDescriptionHandlerOptions: {
                 constraints: {
                     audio: {
-                        deviceId: {
-                            exact: getAudioSrcID()
-                        }
+                        deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
                     },
                     video: false
                 }
             }
         }
+        // Add additional Constraints
+        var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+        if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+        if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+        if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+
         session.accept(spdOptions);
         
         wireupAudioSession(session, "inbound", buddy);
@@ -1284,19 +1575,32 @@ function AnswerAudioCall(buddy) {
 function AnswerVideoCall(buddy) {
     var session = getSession(buddy);
     if (session != null) {
+        // TODO: validate devices
+
         var spdOptions = {
             sessionDescriptionHandlerOptions: {
                 constraints: {
                     audio: {
-                        deviceId: { exact: getAudioSrcID() }
+                        deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
                     },
                     video: {
-                        height: { exact: videoHeight }, frameRate: { max: maxFrameRate }, aspectRatio: videoAspectRatio, deviceId: getVideoSrcID()
+                        deviceId: (getVideoSrcID() != "default")?  { exact: getVideoSrcID() } : "default"
                     }
                 }
             }
         }
+        // Add additional Constraints
+        if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+        if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+        if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+
+        var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+        if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+        if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+        if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+
         session.accept(spdOptions);
+
         wireupVideoSession(session, "inbound", buddy);
         $("#contact-" + buddy + "-msg").html("Audo Call in Progress!");
     } else {
@@ -1357,31 +1661,32 @@ function wireupAudioSession(session, typeStr, buddy) {
     });
     session.on('trackAdded', function () {      
         var pc = session.sessionDescriptionHandler.peerConnection;
+
         // Gets Remote Audio Track
         // =======================
         var remoteStream = new MediaStream();
         pc.getReceivers().forEach(function (receiver) {
-            if(receiver.track){
-                if(receiver.track.kind == "audio"){
-                    try {
-                        remoteStream.addTrack(receiver.track); // MediaStreamTrack
-                    } catch (e) {
-                        console.error(e);
-                    }
+            if(receiver.track && receiver.track.kind == "audio"){
+                try {
+                    remoteStream.addTrack(receiver.track);
+                } catch (e) {
+                    console.error(e);
                 }
             } 
         });
         var remoteAudio = $("#contact-" + buddy + "-remoteAudio").get(0);
         remoteAudio.srcObject = remoteStream;
-        remoteAudio.setSinkId(getAudioOutputID()).then(function(){
-            // setSinkId Applied 
-        }).catch(function(e){
-            console.error("Error using setSinkId: ", e);
-        });
         remoteAudio.onloadedmetadata = function(e) {
+            if (typeof remoteAudio.sinkId !== 'undefined') {
+                remoteAudio.setSinkId(getAudioOutputID()).then(function(){
+                    console.log("sinkId applied: "+ getAudioOutputID());
+                }).catch(function(e){
+                    console.error("Error using setSinkId: ", e);
+                });            
+            }
             remoteAudio.play();
         }
-        
+        /*
         // Note: There appears to be a bug in the peerConnection.getSenders()
         // The array returns but may or may not be fully populated by the RTCRtpSender
         // The track property appears to be null initially and then moments later populated.
@@ -1392,28 +1697,16 @@ function wireupAudioSession(session, typeStr, buddy) {
             var pc = session.sessionDescriptionHandler.peerConnection;
             var localStream = new MediaStream();
             pc.getSenders().forEach(function (sender) {
-                if(sender.track){
-                    if(sender.track.kind == "audio"){
-                        try{
-                            var constraints = { 
-                                autoGainControl: (navigator.mediaDevices.getSupportedConstraints().autoGainControl)? AutoGainControl : false,
-                                echoCancellation: (navigator.mediaDevices.getSupportedConstraints().echoCancellation)? EchoCancellation : false,
-                                noiseSuppression: (navigator.mediaDevices.getSupportedConstraints().noiseSuppression)? NoiseSuppression : false,
-                            }
-                            sender.track.applyConstraints(constraints);
-                        }catch(e){
-                            console.error("Failed to Apply Constraints:", e);
-                        }
-
-                        try {
-                            localStream.addTrack(sender.track);  // MediaStreamTrack
-                        } catch (e) {
-                            console.error("Failed to Add Sender Audio Track:", e);
-                        }
+                if(sender.track && sender.track.kind == "audio"){
+                    try {
+                        localStream.addTrack(sender.track);
+                    } catch (e) {
+                        console.error("Failed to Add Sender Audio Track:", e);
                     }
                 }
             });
         }, 1000);
+        */
     });
     session.on('accepted', function (data) {
         $(MessageObjId).html("Audo Call in Progress!");
@@ -1456,10 +1749,10 @@ function wireupAudioSession(session, typeStr, buddy) {
 
     $("#contact-" + buddy + "-btn-settings").removeAttr('disabled');
     $("#contact-" + buddy + "-btn-shareFiles").removeAttr('disabled');
-    $("#contact-" + buddy + "-btn-audioCall").attr('disabled', 'disabled');
-    $("#contact-" + buddy + "-btn-videoCall").attr('disabled', 'disabled');
+    $("#contact-" + buddy + "-btn-audioCall").prop('disabled', 'disabled');
+    $("#contact-" + buddy + "-btn-videoCall").prop('disabled', 'disabled');
     $("#contact-" + buddy + "-btn-search").removeAttr('disabled');
-    $("#contact-" + buddy + "-btn-remove").attr('disabled', 'disabled');
+    $("#contact-" + buddy + "-btn-remove").prop('disabled', 'disabled');
 
     $("#contact-" + buddy + "-progress").show();
     $("#contact-" + buddy + "-msg").show();
@@ -1506,12 +1799,14 @@ function wireupVideoSession(session, typeStr, buddy) {
         });
         var remoteAudio = $("#contact-" + buddy + "-remoteAudio").get(0);
         remoteAudio.srcObject = remoteAudioStream;
-        remoteAudio.setSinkId(getAudioOutputID()).then(function(){
-            // setSinkId Applied 
-        }).catch(function(e){
-            console.error("Error using setSinkId: ", e);
-        });
         remoteAudio.onloadedmetadata = function(e) {
+            if (typeof remoteAudio.sinkId !== 'undefined') {
+                remoteAudio.setSinkId(getAudioOutputID()).then(function(){
+                    console.log("sinkId applied: "+ getAudioOutputID());
+                }).catch(function(e){
+                    console.error("Error using setSinkId: ", e);
+                });
+            }
             remoteAudio.play();
         }
 
@@ -1526,34 +1821,14 @@ function wireupVideoSession(session, typeStr, buddy) {
         // The track property appears to be null initially and then moments later populated.
         // This does not appear to be the case when oritionisting a call, mostly when receiving a call.
         window.setTimeout(function(){
-            var pc = session.sessionDescriptionHandler.peerConnection;
-            var localAudioStream = new MediaStream();
             var localVideoStream = new MediaStream();
+            var pc = session.sessionDescriptionHandler.peerConnection;
             pc.getSenders().forEach(function (sender) {
-                if(sender.track){
-                    if(sender.track.kind == "audio"){
-                        try{
-                            var constraints = { 
-                                autoGainControl: (navigator.mediaDevices.getSupportedConstraints().autoGainControl)? AutoGainControl : false,
-                                echoCancellation: (navigator.mediaDevices.getSupportedConstraints().echoCancellation)? EchoCancellation : false,
-                                noiseSuppression: (navigator.mediaDevices.getSupportedConstraints().noiseSuppression)? NoiseSuppression : false,
-                            }
-                            sender.track.applyConstraints(constraints);
-                        }catch(e){
-                            console.error("Failed to Apply Constraints:", e);
-                        }
-                        try{
-                            localAudioStream.addTrack(sender.track);
-                        } catch (e) {
-                            console.error("Failed to Add Sender Audio Track:", e);
-                        }                        
-                    }
-                    if(sender.track.kind == "video"){
-                        try{
-                            localVideoStream.addTrack(sender.track);
-                        } catch (e) {
-                            console.error("Failed to Add Sender Video Track:", e);
-                        }
+                if(sender.track && sender.track.kind == "video"){
+                    try{
+                        localVideoStream.addTrack(sender.track);
+                    } catch (e) {
+                        console.error("Failed to Add Sender Video Track:", e);
                     }
                 }
             });
@@ -1621,10 +1896,10 @@ function wireupVideoSession(session, typeStr, buddy) {
 
     $("#contact-" + buddy + "-btn-settings").removeAttr('disabled');
     $("#contact-" + buddy + "-btn-shareFiles").removeAttr('disabled');
-    $("#contact-" + buddy + "-btn-audioCall").attr('disabled','disabled');
-    $("#contact-" + buddy + "-btn-videoCall").attr('disabled','disabled');
+    $("#contact-" + buddy + "-btn-audioCall").prop('disabled','disabled');
+    $("#contact-" + buddy + "-btn-videoCall").prop('disabled','disabled');
     $("#contact-" + buddy + "-btn-search").removeAttr('disabled');
-    $("#contact-" + buddy + "-btn-remove").attr('disabled','disabled');
+    $("#contact-" + buddy + "-btn-remove").prop('disabled','disabled');
 
     $("#contact-" + buddy + "-progress").show();
     $("#contact-" + buddy + "-msg").show();
@@ -1637,10 +1912,6 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
             var soundMeter = RemoteAudioMeters[a];
             if (session.id == soundMeter.sessionId) {
                 console.log("Clearing Audio Levels Interval for call: " + session.id);
-
-                // Clear Interval
-                window.clearInterval(soundMeter.levelsInterval);
-                window.clearInterval(soundMeter.networkInterval);
 
                 // Teardown charts
                 if(soundMeter.ReceiveBitRateChart != null) soundMeter.ReceiveBitRateChart.destroy();
@@ -1667,10 +1938,6 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
             var soundMeter = LocalAudioMeters[a];
             if (session.id == soundMeter.sessionId) {
                 console.log("Clearing Audio Levels Interval for call: " + session.id);
-
-                // Clear Interval
-                window.clearInterval(soundMeter.levelsInterval);
-                window.clearInterval(soundMeter.networkInterval);
 
                 // Teardown charts
                 if(soundMeter.SendBitRateChart != null) soundMeter.SendBitRateChart.destroy();
@@ -1780,11 +2047,11 @@ function MonitorBuddyConference(buddy){
                 else if(JsonEvent.Event == "ConfbridgeTalking") {
                     if(JsonEvent.TalkingStatus == "on"){
                         console.log("Buddy: "+ JsonEvent.CallerIDNum +" is Talking in Conference "+ JsonEvent.Conference);
-                        $("#contact-" + buddy + "-conference #cp-"+ JsonEvent.Conference +"-"+ channel +" #picture").attr("class", "Talking");
+                        $("#contact-" + buddy + "-conference #cp-"+ JsonEvent.Conference +"-"+ channel +" #picture").prop("class", "Talking");
                     }
                     else {
                         console.log("Buddy: "+ JsonEvent.CallerIDNum +" is Not Talking in Conference "+ JsonEvent.Conference);
-                        $("#contact-" + buddy + "-conference #cp-"+ JsonEvent.Conference +"-"+ channel +" #picture").attr("class", "NotTalking");
+                        $("#contact-" + buddy + "-conference #cp-"+ JsonEvent.Conference +"-"+ channel +" #picture").prop("class", "NotTalking");
                     }
                 }
                 else if(JsonEvent.Event == "ConfbridgeLeave") {
@@ -1830,10 +2097,6 @@ function StartRemoteAudioMediaMonitoring(buddy, session) {
             if (session.id == soundMeter.sessionId) {
                 console.log("RemoteAudio AudioContext alerady existing for call: " + session.id);
 
-                // Clear Interval
-                window.clearInterval(soundMeter.levelsInterval);
-                window.clearInterval(soundMeter.networkInterval);
-
                 // Teardown charts
                 if(soundMeter.ReceiveBitRateChart != null) soundMeter.ReceiveBitRateChart.destroy();
                 if(soundMeter.ReceivePacketRateChart != null) soundMeter.ReceivePacketRateChart.destroy();
@@ -1853,15 +2116,11 @@ function StartRemoteAudioMediaMonitoring(buddy, session) {
 
     console.log("Creating RemoteAudio AudioContext for call with " + buddy);
 
-    // Create AudioContext
-    // ===================
-    try {
-        var audioContext = new AudioContext();
-    }
-    catch(e){
-        console.warn("AudioContext() RemoteAudio not available... it fine.")
-        console.error(e)
-
+    // Create local SoundMeter
+    // =======================
+    var soundMeter = new SoundMeter(session.id, buddy);
+    if(soundMeter == null){
+        console.warn("AudioContext() RemoteAudio not available... it fine.");
         return;
     }
 
@@ -1888,9 +2147,6 @@ function StartRemoteAudioMediaMonitoring(buddy, session) {
         }
     });
 
-    // Create local SoundMeter
-    // =======================
-    var soundMeter = new SoundMeter(audioContext, session.id, buddy);
 
     // Setup Charts
     // ============
@@ -2137,10 +2393,6 @@ function StartLocalAudioMediaMonitoring(buddy, session) {
             if (session.id == soundMeter.sessionId) {
                 console.log("LocalAudio AudioContext alerady existing for call: " + session.id);
 
-                // Clear Interval
-                window.clearInterval(soundMeter.levelsInterval);
-                window.clearInterval(soundMeter.networkInterval);
-
                 // Teardown charts
                 if(soundMeter.SendBitRateChart != null) soundMeter.SendBitRateChart.destroy();
                 if(soundMeter.SendPacketRateChart != null) soundMeter.SendPacketRateChart.destroy();
@@ -2156,16 +2408,13 @@ function StartLocalAudioMediaMonitoring(buddy, session) {
     }
     console.log("Creating LocalAudio AudioContext for call with " + buddy);
 
-    // Create AudioContext
-    // ===================
-    try {
-        var audioContext = new AudioContext();
-    }
-    catch(e){
+    // Create local SoundMeter
+    // =======================
+    var soundMeter = new SoundMeter(session.id, buddy);
+    if(soundMeter == null){
         console.warn("AudioContext() LocalAudio not available... its fine.")
         return;
     }
-
 
     // Ready the getStats request
     // ==========================
@@ -2189,14 +2438,10 @@ function StartLocalAudioMediaMonitoring(buddy, session) {
         }
     });
 
-    // Create local SoundMeter
-    // =======================
-    var soundMeter = new SoundMeter(audioContext, session.id, buddy);
-    soundMeter.startTime = Date.now();
-
     // Setup Charts
     // ============
     var maxDataLength = 100;
+    soundMeter.startTime = Date.now();
     Chart.defaults.global.defaultFontSize = 12;
     var ChatHistoryOptions = { 
         responsive: false,    
@@ -2348,7 +2593,18 @@ var MakeDataArray = function (defaultValue, count){
 
 // Sounds Meter Class
 // ==================
-function SoundMeter(context, sessionId, buddy) {
+function SoundMeter(sessionId, buddy) {
+
+    var audioContext = null;
+    try {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+    }
+    catch(e){
+        console.warn("AudioContext() LocalAudio not available... its fine.")
+    }
+    if(audioContext == null) return null;
+
     this.buddy = buddy;
     this.sessionId = sessionId;
 
@@ -2366,14 +2622,14 @@ function SoundMeter(context, sessionId, buddy) {
     this.SendBitRateChart = null;
     this.SendPacketRateChart = null;
 
-    this.context = context;
+    this.context = audioContext;
     this.instant = 0.0;
     this.slow = 0.0;
     this.clip = 0.0;
-    this.script = context.createScriptProcessor(2048, 1, 1);
+    this.script = audioContext.createScriptProcessor(2048, 1, 1);
     const that = this;
     this.script.onaudioprocess = function(event) {
-      const input = event.inputBuffer.getChannelData(0);
+        const input = event.inputBuffer.getChannelData(0);
         let i;
         let sum = 0.0;
         let clipcount = 0;
@@ -2397,7 +2653,7 @@ SoundMeter.prototype.connectToSource = function(stream, callback) {
         this.script.connect(this.context.destination);
         callback(null);
     } catch (e) {
-        // console.error(e); // Probably not audio track
+        console.error(e); // Probably not audio track
         callback(e);
     }
 }
@@ -2419,7 +2675,34 @@ SoundMeter.prototype.stop = function () {
 
     this.mic = null;
     this.script = null;
+    try{
+        this.context.close();
+    } catch(e){}
     this.context = null;
+}
+function MeterSettingsOutput(audioStream, objectId, direction, interval){
+    var soundMeter = new SoundMeter(null, null);
+    soundMeter.startTime = Date.now();
+    soundMeter.connectToSource(audioStream, function (e) {
+        if (e != null) return;
+
+        console.log("SoundMeter Connected, displaying levels to:"+ objectId);
+        soundMeter.levelsInterval = window.setInterval(function () {
+            // soundMeter.slow
+            // soundMeter.clip;
+
+            // Calculate Levels
+            // ================
+            //value="0" max="1" high="0.25" (this seems low... )
+            var level = soundMeter.instant * 4.0;
+            if (level > 1) level = 1;
+            var instPercent = level * 100;
+
+            $("#"+objectId).css(direction, instPercent.toFixed(2) +"%"); // Settings_MicrophoneOutput "width" 50
+        }, interval);
+    });
+
+    return soundMeter;
 }
 
 // Presence / Subscribe
@@ -2515,8 +2798,8 @@ function RecieveBlf(notification) {
         if(buddyObj != null)
         {
             console.log("Setting Presence for "+ buddyObj.identity +" to "+ friendlyState);
-            $("#contact-" + buddyObj.identity + "-devstate").attr("class", dotClass);
-            $("#contact-" + buddyObj.identity + "-devstate-main").attr("class", dotClass);
+            $("#contact-" + buddyObj.identity + "-devstate").prop("class", dotClass);
+            $("#contact-" + buddyObj.identity + "-devstate-main").prop("class", dotClass);
             $("#contact-" + buddyObj.identity + "-presence").html(friendlyState);
             $("#contact-" + buddyObj.identity + "-presence-main").html(friendlyState);
 
@@ -2572,8 +2855,8 @@ function RecieveBlf(notification) {
         if(buddyObj != null)
         {
             console.log("Setting Presence for "+ buddyObj.identity +" to "+ friendlyState);
-            $("#contact-" + buddyObj.identity + "-devstate").attr("class", dotClass);
-            $("#contact-" + buddyObj.identity + "-devstate-main").attr("class", dotClass);
+            $("#contact-" + buddyObj.identity + "-devstate").prop("class", dotClass);
+            $("#contact-" + buddyObj.identity + "-devstate-main").prop("class", dotClass);
             $("#contact-" + buddyObj.identity + "-presence").html(friendlyState);
             $("#contact-" + buddyObj.identity + "-presence-main").html(friendlyState);
 
@@ -2595,8 +2878,8 @@ function UnSubscribe() {
         var buddyObj = Buddies[b];
         if(buddyObj.type == "extension")
         {
-            $("#contact-" + buddyObj.identity + "-devstate").attr("class", "dotOffline");
-            $("#contact-" + buddyObj.identity + "-devstate-main").attr("class", "dotOffline");
+            $("#contact-" + buddyObj.identity + "-devstate").prop("class", "dotOffline");
+            $("#contact-" + buddyObj.identity + "-devstate-main").prop("class", "dotOffline");
             $("#contact-" + buddyObj.identity + "-presence").html("Unknown");
             $("#contact-" + buddyObj.identity + "-presence-main").html("Unknown");
         }
@@ -2880,7 +3163,7 @@ function updateScroll(buddy) {
     element.scrollTop = element.scrollHeight;
 }
 function PreviewImage(obj){
-    OpenWindow(obj.src, "Preview Image", 600, 800, false, false); //no close, no resize
+    OpenWindow(obj.src, "Preview Image", 600, 800, false, true); //no close, no resize
 }
 
 // Missed Item Notification
@@ -2922,18 +3205,6 @@ function ClearMissedBadge(buddy) {
     $("#contact-" + buddy + "-missed").hide(400);
 }
 
-var getAudioSrcID = function(){
-    var id = localDB.getItem("AudioSrcId");
-    return (id != null)? id : "default";
-}
-var getAudioOutputID = function(){
-    var id = localDB.getItem("AudioOutputId");
-    return (id != null)? id : "default";    
-}
-var getVideoSrcID = function(){
-    var id = localDB.getItem("VideoSrcId");
-    return (id != null)? id : "default";    
-}
 
 // Buddy: Outbound Call
 // ====================
@@ -2945,87 +3216,98 @@ function VideoCall(buddy) {
         sessionDescriptionHandlerOptions: {
             constraints: {
                 audio: {
-                    deviceId: { exact: getAudioSrcID() }
+                    deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
                 },
                 video: {
-                    height: { exact: videoHeight }, frameRate: { max: maxFrameRate }, aspectRatio: videoAspectRatio, deviceId: getVideoSrcID()
+                    deviceId: (getVideoSrcID() != "default")?  { exact: getVideoSrcID() } : "default"
                 }
             }
         }
     }
+    // Add additional Constraints
+    if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+    if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+    if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+    if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+
     navigator.mediaDevices.enumerateDevices().then(function(deviceInfos){
-        var currentDevice = getVideoSrcID();
+        var currentVideoDevice = getVideoSrcID();
+        var currentAudioDevice = getAudioSrcID();
 
         var hasVideoDevice = false;
         var confirmedVideoDevice = false;
 
         var hasAudioDevice = false;
+        var confirmedAudioDevice = false;
 
         for (var i = 0; i < deviceInfos.length; ++i) {
-
-            var deviceInfo = deviceInfos[i];
-            var devideId = deviceInfo.deviceId;
-
-            if (deviceInfo.kind === "audioinput") {
-
-            }
-            else if (deviceInfo.kind === "audiooutput") {
-
-            }
-            else if (deviceInfo.kind === "videoinput") {
-                hasVideoDevice = true;
-                if(currentDevice != "default")
+            if (deviceInfos[i].kind === "audioinput") {
+                hasAudioDevice = true;
+                if(currentAudioDevice != "default" && currentAudioDevice == deviceInfos[i].deviceId)
                 {
-                    if(currentDevice == devideId)
-                    {
-                        console.log("Confirmed video device:"+ devideId);
-                        confirmedVideoDevice = true;
-                    }
+                    confirmedAudioDevice = true;
+                }                
+            }
+            else if (deviceInfos[i].kind === "audiooutput") {
+                // Speakers... not always available
+            }
+            else if (deviceInfos[i].kind === "videoinput") {
+                hasVideoDevice = true;
+                if(currentVideoDevice != "default" && currentVideoDevice == deviceInfos[i].deviceId)
+                {
+                    confirmedVideoDevice = true;
                 }
             }
         }
-        if(currentDevice != "default" && !confirmedVideoDevice) {
-            console.warn("The device you used before is no longer availabe, default settings applied.");
-            localDB.setItem("VideoSrcId","default");
+
+        // Check devices
+        if(hasAudioDevice == false){
+            Alert("Sorry, you don't have any Microphone connected to this computer. You cannot make calls.");
+            return;
+        }
+        if(hasVideoDevice == false) {
+            Alert("Sorry, you don't have any WebCam/Video Source connected to this computer. You cannot use the video option.");
+            return;
+        }
+        if(currentAudioDevice != "default" && !confirmedAudioDevice) {
+            console.warn("The audio device you used before is no longer availabe, default settings applied.");
+            spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
+        }
+        if(currentVideoDevice != "default" && !confirmedVideoDevice) {
+            console.warn("The video device you used before is no longer availabe, default settings applied.");
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = "default";
         }
 
         $("#contact-" + buddyObj.identity + "-msg").html("Starting Video Call...");
 
-        if(hasVideoDevice)
-        {
-            console.log("INVITE (video): " + buddyObj.ExtNo + "@" + wssServer);
-            console.log("Using Video/WebCam : " + getVideoSrcID());
-            console.log("Using Microphone : " + getAudioSrcID());
-            console.log("Using Speaker : " + getAudioOutputID());
+        // Invite
+        // ======
+        console.log("INVITE (video): " + buddyObj.ExtNo + "@" + wssServer);
+        var session = userAgent.invite("sip:" + buddyObj.ExtNo + "@" + wssServer, spdOptions);
 
-            // Invite
-            // ======
-            var session = userAgent.invite("sip:" + buddyObj.ExtNo + "@" + wssServer, spdOptions);
+        session.data.VideoSourceDevice = getVideoSrcID();
+        session.data.AudioSourceDevice = getAudioSrcID();
+        session.data.AudioOutputDevice = getAudioOutputID();
 
-            session.data.VideoSourceDevice = getVideoSrcID();
-            session.data.AudioSourceDevice = getAudioSrcID();
-            session.data.AudioOutputDevice = getAudioOutputID();
+        // Add Call to CallSessions
+        // ========================
+        addActiveSession(session, true, buddyObj.identity);
 
-            // Add Call to CallSessions
-            // ========================
-            addActiveSession(session, true, buddyObj.identity);
+        // Do Nessesary UI Wireup
+        // ======================
+        wireupVideoSession(session, buddyObj.type, buddyObj.identity);
 
-            // Do Nessesary UI Wireup
-            // ======================
-            wireupVideoSession(session, buddyObj.type, buddyObj.identity);
-
-            // List Update
-            // ===========
-            UpdateBuddyActivity(buddyObj.identity);
-        }
-        else
-        {
-            Alert("Sorry, you don't have any WebCam/Video Source connected to this computer. You cannot use the video option.");
-        }
+        // List Update
+        // ===========
+        UpdateBuddyActivity(buddyObj.identity);
 
     }).catch(function(e){
         console.error(e);
-    })
+    });
 }
 function AudioCallMenu(buddy, obj){
     var x = window.dhx4.absLeft(obj);
@@ -3090,30 +3372,69 @@ function AudioCall(buddy, dialledNumber) {
         sessionDescriptionHandlerOptions: {
             constraints: {
                 audio: {
-                    deviceId: {
-                        exact: getAudioSrcID()
-                    }
+                    deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
                 },
                 video: false
             }
         }
     }
+    // Add additional Constraints
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+    if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
 
-    $("#contact-" + buddyObj.identity + "-msg").html("Starting Audio Call...");
+    navigator.mediaDevices.enumerateDevices().then(function(deviceInfos){
+        var currentAudioDevice = getAudioSrcID();
 
-    // Invite
-    console.log("INVITE (audio): " + dialledNumber + "@" + wssServer);
-    var session = userAgent.invite("sip:" + dialledNumber + "@" + wssServer, spdOptions);
+        var hasAudioDevice = false;
+        var confirmedAudioDevice = false;
 
-    // Add Call to CallSessions
-    // ========================
-    addActiveSession(session, true, buddyObj.identity);
+        for (var i = 0; i < deviceInfos.length; ++i) {
+            if (deviceInfos[i].kind === "audioinput") {
+                hasAudioDevice = true;
+                if(currentAudioDevice != "default" && currentAudioDevice == deviceInfos[i].deviceId)
+                {
+                    confirmedAudioDevice = true;
+                }                
+            }
+            else if (deviceInfos[i].kind === "audiooutput") {
+                // Speakers... not always available
+            }
+            else if (deviceInfos[i].kind === "videoinput") {
+                // Ignore
+            }
+        }
 
-    wireupAudioSession(session, buddyObj.type, buddyObj.identity);
+        // Check devices
+        if(hasAudioDevice == false){
+            Alert("Sorry, you don't have any Microphone connected to this computer. You cannot make calls.");
+            return;
+        }
+        if(confirmedAudioDevice != "default" && !confirmedAudioDevice) {
+            console.warn("The audio device you used before is no longer availabe, default settings applied.");
+            spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
+        }
 
-    // List Update
-    // ===========
-    UpdateBuddyActivity(buddy);
+        $("#contact-" + buddyObj.identity + "-msg").html("Starting Audio Call...");
+
+        // Invite
+        console.log("INVITE (audio): " + dialledNumber + "@" + wssServer);
+        var session = userAgent.invite("sip:" + dialledNumber + "@" + wssServer, spdOptions);
+
+        // Add Call to CallSessions
+        // ========================
+        addActiveSession(session, true, buddyObj.identity);
+
+        wireupAudioSession(session, buddyObj.type, buddyObj.identity);
+
+        // List Update
+        // ===========
+        UpdateBuddyActivity(buddy);
+
+    }).catch(function(e){
+        console.error(e);
+    });
 }
 
 // Sessions & During Call Activity
@@ -3277,9 +3598,14 @@ function switchVideoSource(buddy, srcId)
         var constraints = { 
             audio: false,
             video: {
-                height: { exact: videoHeight }, aspectRatio: videoAspectRatio, deviceId: srcId
+                deviceId: (srcId != "default")? { exact: srcId } : "default",
             }
         }
+
+        // Add additional Constraints
+        if(maxFrameRate != "") constraints.video.frameRate = maxFrameRate;
+        if(videoHeight != "") constraints.video.height = videoHeight;
+        if(videoAspectRatio != "") constraints.video.aspectRatio = videoAspectRatio;
 
         session.data.VideoSourceDevice = srcId;
 
@@ -3333,14 +3659,14 @@ function SendCanvas(buddy){
         }
 
         var newCanvas = $('<canvas/>');
-        newCanvas.attr("id", "contact-" + buddy + "-scratchpad");
+        newCanvas.prop("id", "contact-" + buddy + "-scratchpad");
         newCanvas.css("border", "1px solid #CCCCCC");
         $("#contact-" + buddy + "-scratchpad-container").append(newCanvas);
         $("#contact-" + buddy + "-scratchpad-container").show();
 
         console.log("Canvas for Scratchpad created...");
-        $("#contact-" + buddy + "-scratchpad").attr("width", 640); // SD
-        $("#contact-" + buddy + "-scratchpad").attr("height", 360); // SD
+        $("#contact-" + buddy + "-scratchpad").prop("width", 640); // SD
+        $("#contact-" + buddy + "-scratchpad").prop("height", 360); // SD
 
 
         scratchpad = new fabric.Canvas("contact-" + buddy + "-scratchpad");
@@ -3402,13 +3728,13 @@ function SendVideo(buddy, src){
         // Create Video Object
         // ===================
         var newVideo = $('<video/>');
-        newVideo.attr("id", "contact-" + buddy + "-sharevideo");
-        newVideo.attr("controls",true);
-        newVideo.attr("crossorigin", "anonymous");
-        newVideo.attr("src", src);
+        newVideo.prop("id", "contact-" + buddy + "-sharevideo");
+        newVideo.prop("controls",true);
+        newVideo.prop("crossorigin", "anonymous");
+        newVideo.prop("src", src);
         newVideo.css("max-width", "640px");
         newVideo.css("max-height", "360x");
-        // newVideo.attr("muted",true);
+        // newVideo.prop("muted",true);
         newVideo.on("canplay", function () {
             console.log("Video can play now... ");
 
@@ -3470,7 +3796,7 @@ function ShareScreen(buddy){
                 console.log("navigator.getDisplayMedia")
                 var newMediaTrack = newStream.getVideoTracks()[0];
                 pc.getSenders().forEach(function (RTCRtpSender) {
-                    if(RTCRtpSender.track.kind == "video") {
+                    if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
                         console.log("Switching Video Track : "+ RTCRtpSender.track.label + " to Screen");
                         RTCRtpSender.track.stop();
                         RTCRtpSender.replaceTrack(newMediaTrack);
@@ -3497,7 +3823,7 @@ function ShareScreen(buddy){
                 console.log("navigator.mediaDevices.getDisplayMedia")
                 var newMediaTrack = newStream.getVideoTracks()[0];
                 pc.getSenders().forEach(function (RTCRtpSender) {
-                    if(RTCRtpSender.track.kind == "video") {
+                    if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
                         console.log("Switching Video Track : "+ RTCRtpSender.track.label + " to Screen");
                         RTCRtpSender.track.stop();
                         RTCRtpSender.replaceTrack(newMediaTrack);
@@ -3519,12 +3845,12 @@ function ShareScreen(buddy){
         } 
         else {
             // Firefox, apparently
-            var screenShareConstraints = { video: {mediaSource: 'screen'}, audio: false }
+            var screenShareConstraints = { video: { mediaSource: 'screen' }, audio: false }
             navigator.mediaDevices.getUserMedia(screenShareConstraints).then(function(newStream) {
                 console.log("navigator.mediaDevices.getUserMedia")
                 var newMediaTrack = newStream.getVideoTracks()[0];
                 pc.getSenders().forEach(function (RTCRtpSender) {
-                    if(RTCRtpSender.track.kind == "video") {
+                    if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
                         console.log("Switching Video Track : "+ RTCRtpSender.track.label + " to Screen");
                         RTCRtpSender.track.stop();
                         RTCRtpSender.replaceTrack(newMediaTrack);
@@ -3568,7 +3894,7 @@ var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactN
     this.missed = 0;
     this.IsSelected = false;
 }
-function InitUserBuddies(json){
+function InitUserBuddies(){
     var template = { TotalRows:0, DataCollection:[] }
     localDB.setItem("UserBuddiesJson", JSON.stringify(template));
     return JSON.parse(localDB.getItem("UserBuddiesJson"));
@@ -3744,17 +4070,6 @@ function AddBuddyMessageStream(buddyObj) {
     // Action Buttons
     // ==============
     html += "<div style=\"float:right; line-height: 46px;\">";
-
-    html += "<span style=\"vertical-align: middle\"><i class=\"fa fa-microphone\"></i></span> ";
-    html += "<span class=meterContainer title=\"Microphone Levels\">";
-    html += "<span id=\"contact-"+ buddyObj.identity +"-Mic\" class=meterLevel style=\"height:0%\"></span>";
-    html += "</span> ";
-    html += "<span style=\"vertical-align: middle\"><i class=\"fa fa-volume-up\"></i></span> ";
-    html += "<span class=meterContainer title=\"Speaker Levels\">";
-    html += "<span id=\"contact-"+ buddyObj.identity +"-Speaker\" class=meterLevel style=\"height:0%\"></span>";
-    html += "</span> ";
-
-    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-settings\" onclick=\"ChangeSettings('"+ buddyObj.identity +"', this)\" class=roundButtons title=\"Adjust Device Settings\"><i class=\"fa fa-cogs\"></i></button> ";
     if(buddyObj.type == "extension" || buddyObj.type == "group") {
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-shareFiles\" onclick=\"ShareFiles('"+ buddyObj.identity +"')\" class=roundButtons title=\"Share Files\"><i class=\"fa fa-share-alt\"></i></button> ";
     }
@@ -3818,6 +4133,14 @@ function AddBuddyMessageStream(buddyObj) {
         // poster=\"/img/extension/"+ buddyObj.identity +".png\"
         html += "<video id=\"contact-"+ buddyObj.identity +"-remoteVideo\" muted class=remoteVideo style=\"width:100%; height:360px\"></video>";
         html += "<video id=\"contact-"+ buddyObj.identity +"-localVideo\" muted class=localVideo></video>";
+
+        html += "<div>";
+        html += "<button><i class=\"fa fa-video-camera\"></i> Camera</button>";
+        html += "<button><i class=\"fa fa-pencil-square\"></i> Scratchpad</button>";
+        html += "<button><i class=\"fa fa-desktop\"></i> Screen</button>";
+        html += "<button><i class=\"fa fa-file-video-o\"></i> Video</button>";
+        html += "</div>";
+
         html += "</div>";
     }
     // Audio Call
@@ -3845,6 +4168,17 @@ function AddBuddyMessageStream(buddyObj) {
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Transfer\" onclick=\"StartTransferSession('"+ buddyObj.identity +"')\" ><i class=\"fa fa-reply\"></i> Transfer</button>";
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Hold\" onclick=\"holdSession('"+ buddyObj.identity +"')\" ><i class=\"fa fa-pause-circle\"></i> Hold</button><button id=\"contact-"+ buddyObj.identity +"-btn-Unhold\" onclick=\"unholdSession('"+ buddyObj.identity +"')\" style=\"display:none\"><i class=\"fa fa-play-circle\"></i> UnHold</button>";
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-End\" onclick=\"endSession('"+ buddyObj.identity +"')\" class=hangupButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> End Call</button>";
+    html += "</div>";
+    html += "<div style=\"margin-top:10px\">";
+    html += "<span style=\"vertical-align: middle\"><i class=\"fa fa-microphone\"></i></span> ";
+    html += "<span class=meterContainer title=\"Microphone Levels\">";
+    html += "<span id=\"contact-"+ buddyObj.identity +"-Mic\" class=meterLevel style=\"height:0%\"></span>";
+    html += "</span> ";
+    html += "<span style=\"vertical-align: middle\"><i class=\"fa fa-volume-up\"></i></span> ";
+    html += "<span class=meterContainer title=\"Speaker Levels\">";
+    html += "<span id=\"contact-"+ buddyObj.identity +"-Speaker\" class=meterLevel style=\"height:0%\"></span>";
+    html += "</span> ";
+    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-settings\" onclick=\"ChangeSettings('"+ buddyObj.identity +"', this)\"><i class=\"fa fa-cogs\"></i> Adjust Device Settings</button>";
     html += "</div>";
 
     html += "<fieldset class=audioGraphSection style=\"height: 25px\">";
@@ -3921,14 +4255,14 @@ function SelectBuddy(buddy, typeStr) {
 
     var previouslySelectedBuddy = "";
     $(".buddySelected").each(function () {
-        $(this).attr('class', 'buddy');
+        $(this).prop('class', 'buddy');
     });
-    $("#contact-" + buddy).attr('class', 'buddySelected');
+    $("#contact-" + buddy).prop('class', 'buddySelected');
 
     $(".streamSelected").each(function () {
-        $(this).attr('class', 'stream');
+        $(this).prop('class', 'stream');
     });
-    $("#stream-" + buddy).attr('class', 'streamSelected');
+    $("#stream-" + buddy).prop('class', 'streamSelected');
 
     console.log("Switching to: "+ buddy);
 
@@ -3950,14 +4284,17 @@ function SelectBuddy(buddy, typeStr) {
     // Refresh Stream
     console.log("Refreshing Stream for you(" + profileUserID + ") and : " + buddyObj.identity);
     RefreshStream(buddyObj);
+
+    // Save Selected
+    localDB.setItem("SelectedBuddy", buddy);
 }
 function CloseBuddy(buddy){
 
     $(".buddySelected").each(function () {
-        $(this).attr('class', 'buddy');
+        $(this).prop('class', 'buddy');
     });
     $(".streamSelected").each(function () {
-        $(this).attr('class', 'stream');
+        $(this).prop('class', 'stream');
     });
 
     console.log("Closing: "+ buddy);
@@ -3970,6 +4307,9 @@ function CloseBuddy(buddy){
 
     // Change to Stream if in Narrow view
     UpdateUI();
+
+    // Save Selected
+    localDB.setItem("SelectedBuddy", null);
 }
 function RemoveBuddy(buddy){
     // Check if you are on the phone etc
@@ -4384,19 +4724,19 @@ function ChangeSettings(buddy, obj){
     dhtmlxPopup = new dhtmlXPopup();
 
     var audioSelect = $('<select/>');
-    audioSelect.attr("id", "audioSrcSelect");
+    audioSelect.prop("id", "audioSrcSelect");
     audioSelect.css("width", "100%");
 
     var videoSelect = $('<select/>');
-    videoSelect.attr("id", "videoSrcSelect");
+    videoSelect.prop("id", "videoSrcSelect");
     videoSelect.css("width", "100%");
 
     var speakerSelect = $('<select/>');
-    speakerSelect.attr("id", "audioOutputSelect");
+    speakerSelect.prop("id", "audioOutputSelect");
     speakerSelect.css("width", "100%");
 
     var ringerSelect = $('<select/>');
-    ringerSelect.attr("id", "ringerSelect");
+    ringerSelect.prop("id", "ringerSelect");
     ringerSelect.css("width", "100%");
 
     var session = getSession(buddy);
@@ -4415,30 +4755,30 @@ function ChangeSettings(buddy, obj){
     
                 // Create Option
                 var option = $('<option/>');
-                option.attr("value", devideId);
+                option.prop("value", devideId);
                 
                 // Handle Type
                 if (deviceInfo.kind === "audioinput") {
                     if(session != null){ // We are on a call
-                        if(session.data.AudioSourceDevice == devideId) option.attr("selected", true);
+                        if(session.data.AudioSourceDevice == devideId) option.prop("selected", true);
                     } else {
-                        if(getAudioSrcID() == devideId) option.attr("selected", true);
+                        if(getAudioSrcID() == devideId) option.prop("selected", true);
                     }                    
                     option.text((DisplayName != "")? DisplayName : "Microphone ("+ devideId +")");
                     audioSelect.append(option);
                 } else if (deviceInfo.kind === "audiooutput") {
                     if(session != null){ // We are on a call
-                        if(session.data.AudioOutputDevice == devideId) option.attr("selected", true);
+                        if(session.data.AudioOutputDevice == devideId) option.prop("selected", true);
                     } else {
-                        if(getAudioOutputID() == devideId) option.attr("selected", true);
+                        if(getAudioOutputID() == devideId) option.prop("selected", true);
                     }
                     option.text((DisplayName != "")? DisplayName : "Speaker ("+ devideId +")"); 
                     speakerSelect.append(option);
                 } else if (deviceInfo.kind === "videoinput") {
                     if(session != null){ // We are on a call
-                        if(session.data.VideoSourceDevice == devideId) option.attr("selected", true);
+                        if(session.data.VideoSourceDevice == devideId) option.prop("selected", true);
                     } else {
-                        if(getVideoSrcID() == devideId) option.attr("selected", true);
+                        if(getVideoSrcID() == devideId) option.prop("selected", true);
                     }
                     option.text((DisplayName != "")? DisplayName : "Webcam ("+ devideId +")");
                     videoSelect.append(option);
@@ -4448,19 +4788,19 @@ function ChangeSettings(buddy, obj){
             // Add default Option
             // ==================
             var defaultVideoOption = $('<option/>');
-            defaultVideoOption.attr("value", "default");
+            defaultVideoOption.prop("value", "default");
             defaultVideoOption.text("(Default)");
             if(session != null)
             {
                 // We are on a call
                 if(session.data.VideoSourceDevice == "default")
                 {
-                    defaultVideoOption.attr("selected", true);
+                    defaultVideoOption.prop("selected", true);
                 }
             } else {
                 // Not on a call
                 if(getVideoSrcID() == "default"){
-                    defaultVideoOption.attr("selected", true);
+                    defaultVideoOption.prop("selected", true);
                 }
             }
             videoSelect.append(defaultVideoOption);
@@ -4468,14 +4808,14 @@ function ChangeSettings(buddy, obj){
             // Add Scratchpad Option
             // =====================
             var scratchpadOption = $('<option/>');
-            scratchpadOption.attr("value", "scratchpad");
+            scratchpadOption.prop("value", "scratchpad");
             scratchpadOption.text("Scratchpad");
             if(session != null)
             {
                 // We are on a call
                 if(session.data.VideoSourceDevice == "scratchpad")
                 {
-                    scratchpadOption.attr("selected", true);
+                    scratchpadOption.prop("selected", true);
                 }
             }
             videoSelect.append(scratchpadOption);
@@ -4483,14 +4823,14 @@ function ChangeSettings(buddy, obj){
             // Add Screen Option
             // =================
             var screenOption = $('<option/>');
-            screenOption.attr("value", "screen");
+            screenOption.prop("value", "screen");
             screenOption.text("My Screen");
             if(session != null)
             {
                 // We are on a call
                 if(session.data.VideoSourceDevice == "screen")
                 {
-                    screenOption.attr("selected", true);
+                    screenOption.prop("selected", true);
                 }
             }
             videoSelect.append(screenOption);
@@ -4498,14 +4838,14 @@ function ChangeSettings(buddy, obj){
             // Add Video Option
             // ================
             var videoOption = $('<option/>');
-            videoOption.attr("value", "video");
+            videoOption.prop("value", "video");
             videoOption.text("Choose Video...");
             if(session != null)
             {
                 // We are on a call
                 if(session.data.VideoSourceDevice == "video")
                 {
-                    videoOption.attr("selected", true);
+                    videoOption.prop("selected", true);
                 }
             }
             videoSelect.append(videoOption);
@@ -4522,7 +4862,7 @@ function ChangeSettings(buddy, obj){
                 if(session != null){
                     var constraints = {
                         audio: {
-                            deviceId: { exact: getAudioSrcID() }
+                            deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
                         },
                         video: false
                     }
@@ -4562,21 +4902,15 @@ function ChangeSettings(buddy, obj){
                     // Remote Audio
                     var element = $("#contact-"+ buddy +"-remoteAudio").get(0);
                     if(element) {
-                        element.setSinkId(sinkId).then(function(){
-                            // setSinkId Applied 
-                        }).catch(function(e){
-                            console.error("Error using setSinkId: ", e);
-                        });
-                    }
-
-                    // Remote Video
-                    var element = $("#contact-"+ buddy +"-remoteVideo").get(0);
-                    if(element) {
-                        element.setSinkId(sinkId).then(function(){
-                            // setSinkId Applied 
-                        }).catch(function(e){
-                            console.error("Error using setSinkId: ", e);
-                        });
+                        if (typeof element.sinkId !== 'undefined') {
+                            element.setSinkId(sinkId).then(function(){
+                                console.log("sinkId applied: "+ sinkId);
+                            }).catch(function(e){
+                                console.error("Error using setSinkId: ", e);
+                            });
+                        } else {
+                            console.warn("setSinkId() is not possible using this browser.")
+                        }
                     }
                 }
     
@@ -4599,7 +4933,7 @@ function ChangeSettings(buddy, obj){
                         // You will need to uplad to a cloud storage service
                         // and have the file file download and play.
 
-                        OpenWindow('<input type=text id=SelectVideoToSend>', 'Select Video', 480, 640, false, false, "Play", function(){
+                        OpenWindow('<input type=text id=SelectVideoToSend>', 'Select Video', 480, 640, false, true, "Play", function(){
                             //Play
                             var fileTosend = $("#SelectVideoToSend").val();
                             console.log("About to send video feed..."+ fileTosend);
@@ -4676,13 +5010,6 @@ function ChangeSettings(buddy, obj){
             // Mic Serttings
             $("#DeviceSelector").append("<div style=\"margin-top:20px\">Microphone: </div>");
             $("#DeviceSelector").append(audioSelect);
-            $("#DeviceSelector").append("<div style=\"margin-top:0px\"><input type=checkbox id=AutoGainControl><label for=AutoGainControl> Auto Gain Control<label></div>");
-            $("#DeviceSelector").append("<div style=\"margin-top:0px\"><input type=checkbox id=EchoCancellation><label for=EchoCancellation> Echo Cancellation<label></div>");
-            $("#DeviceSelector").append("<div style=\"margin-top:0px\"><input type=checkbox id=NoiseSuppression><label for=NoiseSuppression> Noise Suppression<label></div>");
-            
-            $("#AutoGainControl").attr('checked', AutoGainControl);
-            $("#EchoCancellation").attr('checked', EchoCancellation);
-            $("#NoiseSuppression").attr('checked', NoiseSuppression);
             
             // Speaker
             $("#DeviceSelector").append("<div style=\"margin-top:20px\">Speaker: </div>");
@@ -4691,78 +5018,6 @@ function ChangeSettings(buddy, obj){
             // Camera
             $("#DeviceSelector").append("<div style=\"margin-top:20px\">Camera: </div>");
             $("#DeviceSelector").append(videoSelect);
-
-            $("#AutoGainControl").change(function(){
-                if(navigator.mediaDevices.getSupportedConstraints().autoGainControl == false)
-                {
-                    console.warn("AutoGainControl feature not supported.")
-                    return;
-                }
-
-                AutoGainControl = this.checked;
-                localDB.setItem("AutoGainControl", (AutoGainControl)? "1" : "0" );
-
-                var constraints = { autoGainControl : AutoGainControl }
-                var session = getSession(buddy);
-                if(session != null){
-                    var pc = session.sessionDescriptionHandler.peerConnection;
-                    pc.getSenders().forEach(function (RTCRtpSender) {
-                        if(RTCRtpSender.track.kind == "audio") {
-
-                            console.log("Setting AutoGainControl "+ ((AutoGainControl)? "ON" : "OFF") +" for track: "+ RTCRtpSender.track.label);
-                            RTCRtpSender.track.applyConstraints(constraints);
-                        }
-                    });
-                }
-            });
-
-            $("#EchoCancellation").change(function(){
-                if(navigator.mediaDevices.getSupportedConstraints().echoCancellation == false)
-                {
-                    console.warn("EchoCancellation feature not supported.")
-                    return;
-                }
-
-                EchoCancellation = this.checked;
-                localDB.setItem("EchoCancellation", (EchoCancellation)? "1" : "0" );
-
-                var constraints = { echoCancellation : EchoCancellation }
-                var session = getSession(buddy);
-                if(session != null){
-                    var pc = session.sessionDescriptionHandler.peerConnection;
-                    pc.getSenders().forEach(function (RTCRtpSender) {
-                        if(RTCRtpSender.track.kind == "audio") {
-
-                            console.log("Setting EchoCancellation "+ ((EchoCancellation)? "ON" : "OFF") +" for track: "+ RTCRtpSender.track.label);
-                            RTCRtpSender.track.applyConstraints(constraints);
-                        }
-                    });
-                }
-            });
-
-            $("#NoiseSuppression").change(function(){
-                if(navigator.mediaDevices.getSupportedConstraints().noiseSuppression == false)
-                {
-                    console.warn("NoiseSuppression feature not supported.")
-                    return;
-                }
-
-                NoiseSuppression = this.checked;
-                localDB.setItem("NoiseSuppression", (NoiseSuppression)? "1" : "0" );
-
-                var constraints = { noiseSuppression : NoiseSuppression }
-                var session = getSession(buddy);
-                if(session != null){
-                    var pc = session.sessionDescriptionHandler.peerConnection;
-                    pc.getSenders().forEach(function (RTCRtpSender) {
-                        if(RTCRtpSender.track.kind == "audio") {
-
-                            console.log("Setting NoiseSuppression "+ ((NoiseSuppression)? "ON" : "OFF") +" for track: "+ RTCRtpSender.track.label);
-                            RTCRtpSender.track.applyConstraints(constraints);
-                        }
-                    });
-                }
-            });
 
             dhtmlxPopup.show(x, y, w, h);
     
@@ -4777,12 +5032,12 @@ function ToggleThisHeight(obj,smallHeight,bigHeight)
 {
     var $Obj = $(obj);
     if($Obj.height() == smallHeight){
-        $Obj.find("i").attr("class", "fa fa-caret-down");
+        $Obj.find("i").prop("class", "fa fa-caret-down");
         $Obj.css("height", bigHeight + "px");
     }
     else if($Obj.height() == bigHeight)
     {
-        $Obj.find("i").attr("class", "fa fa-caret-right");
+        $Obj.find("i").prop("class", "fa fa-caret-right");
         $Obj.css("height", smallHeight + "px");
     }
 
@@ -4947,7 +5202,7 @@ function CreateImageEditor(buddy, placeholderImage){
     // Create the canvas
     // =================
     var newCanvas = $('<canvas/>');
-    newCanvas.attr("id", "contact-" + buddy + "-imageCanvas");
+    newCanvas.prop("id", "contact-" + buddy + "-imageCanvas");
     newCanvas.css("border", "1px solid #CCCCCC");
     $("#contact-" + buddy + "-imagePastePreview").append(newCanvas);
     console.log("Canvas for ImageEditor created...");
@@ -4956,8 +5211,8 @@ function CreateImageEditor(buddy, placeholderImage){
     var imgHeight = placeholderImage.height;
     var maxWidth = $("#contact-" + buddy + "-imagePastePreview").width()-2; // for the border
     var maxHeight = 480;
-    $("#contact-" + buddy + "-imageCanvas").attr("width", maxWidth);
-    $("#contact-" + buddy + "-imageCanvas").attr("height", maxHeight);
+    $("#contact-" + buddy + "-imageCanvas").prop("width", maxWidth);
+    $("#contact-" + buddy + "-imageCanvas").prop("height", maxHeight);
 
     // Handle Initial Zoom
     var zoomToFitImage = 1;
@@ -4981,13 +5236,13 @@ function CreateImageEditor(buddy, placeholderImage){
         imgWidth = imgWidth * zoomToFitImage;
         imgHeight = imgHeight * zoomToFitImage;
         console.log("resizing canvas to fit new image size...");
-        $("#contact-" + buddy + "-imageCanvas").attr("width", imgWidth);
-        $("#contact-" + buddy + "-imageCanvas").attr("height", imgHeight);
+        $("#contact-" + buddy + "-imageCanvas").prop("width", imgWidth);
+        $("#contact-" + buddy + "-imageCanvas").prop("height", imgHeight);
     }
     else {
         console.log("Image is able to fit, resizing canvas...");
-        $("#contact-" + buddy + "-imageCanvas").attr("width", imgWidth);
-        $("#contact-" + buddy + "-imageCanvas").attr("height", imgHeight);
+        $("#contact-" + buddy + "-imageCanvas").prop("width", imgWidth);
+        $("#contact-" + buddy + "-imageCanvas").prop("height", imgHeight);
     }
 
     // $("#contact-" + buddy + "-imageCanvas").css("cursor", "zoom-in");
@@ -5432,8 +5687,7 @@ function OpenWindow(html, title, height, width, hideCloseButton, allowResize, bu
     windowObj.setText(title);
     if (allowResize) {
         windowObj.allowResize();
-    }
-    else {
+    } else {
         windowObj.denyResize();
     }
     windowObj.setModal(true);
@@ -5442,8 +5696,7 @@ function OpenWindow(html, title, height, width, hideCloseButton, allowResize, bu
 
     if (allowResize) {
         windowObj.button("minmax").show();
-    }
-    else {
+    } else {
         windowObj.button("minmax").hide();
     }
 
@@ -5689,12 +5942,6 @@ function Prompt(messageStr, TitleStr, FieldText, defaultValue, dataType, placeho
 
     $("#PromptOkButton").focus();
 }
-
-
-// Notification Handling
-// =====================
-Notification.requestPermission();
-
 
 // =================================================================================
 
