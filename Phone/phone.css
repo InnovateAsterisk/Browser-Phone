@@ -168,7 +168,31 @@
     border-radius: 200px;
 }
 
+.FullScreenVideo{
+    position: fixed !important;
+    top: 0px !important;
+    left: 0px !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: #000000 !important;
+    margin: 0px !important;
+    padding: 0px !important;
+}
 
+.dtmfButtons{
+    font-size: 20px;
+    color: #222222;
+    width: 40px;
+    height: 40px;
+}
+.dtmfButtons:hover{
+    color: #FFFFFF;
+    background-color: #222222;
+}
+.dtmfButtons:active{
+    color: #cccccc;
+    background-color: #000000;
+}
 
 /* CSS_TabPageTemplate */
 
@@ -260,41 +284,6 @@ body {
     border-color: #293442;
     font-size: 13px;
     color: #515e6f;
-}
-
-.PillMenu {
-    margin: 0px !important;
-    padding-bottom: 10px;
-}
-
-.PillMenu button {
-    margin: 0px !important;
-    padding: 6px 9px 6px 9px !important;
-}
-
-.PillMenu .first {
-    border-right: none;
-    border-top-right-radius: 0px !important;
-    border-bottom-right-radius: 0px !important;
-}
-
-.PillMenu .mid {
-    border-right: none;
-    border-left: none;
-    border-radius: 0px !important;
-}
-
-.PillMenu .last {
-    border-left: none;
-    border-top-left-radius: 0px !important;
-    border-bottom-left-radius: 0px !important;
-}
-
-.PillMenu .active {
-    background-color: #697ca2;
-    background-image: linear-gradient(#516896, #34425d);
-    border: 1px solid #34425d;
-    color: #FFFFFF;
 }
 
 .FormTextRight {
@@ -684,6 +673,7 @@ input[type=range]{
     font-size: 0;
     vertical-align: middle;
     white-space: nowrap;
+    line-height: initial;
 }
 .pill-nav input[type=radio]{
     display:none;
@@ -721,6 +711,18 @@ input[type=range]{
     font-size: initial !important;
     vertical-align:  initial !important;
 }
+
+.pill-nav button:disabled {
+    cursor: default;
+    color: #666666;
+    background-color: #333333;
+}
+.pill-nav button {
+    border: none;
+    margin: 0px;
+    border-radius: 2px;
+}
+
 
 /* CSS_dhtmlxTemplateImportant */
 /* ====================================================================================== */
@@ -877,7 +879,7 @@ div.dhx_popup_material div.dhx_popup_area {
     color: #333333;
     border-left: 3px solid transparent;
     position: relative;
-    border-top: 1px solid #333333;
+    border-bottom: 1px solid #333333;
 }
 
 .buddy:hover {
@@ -890,11 +892,30 @@ div.dhx_popup_material div.dhx_popup_area {
     cursor: pointer;
     color: #333333;
     background-color: #404040;
-    border-left: 3px solid #3c5f82;
     position: relative;
-    border-top: 1px solid #333333;
+    border-bottom: 1px solid #333333;
+    border-left: 3px solid #3c5f82;
 }
-
+.buddyActiveCall {
+    padding: 5px;
+    height: 38px;
+    cursor: pointer;
+    color: #333333;
+    background-color: #404040;
+    position: relative;
+    border-bottom: 1px solid #333333;
+    border-left: 3px solid #40bd3f;
+}
+.buddyActiveCallHollding {
+    padding: 5px;
+    height: 38px;
+    cursor: pointer;
+    color: #333333;
+    background-color: #404040;
+    position: relative;
+    border-bottom: 1px solid #333333;
+    border-left: 3px solid #d2a70a;
+}
 .buddyIcon {
     border-radius: 50px;
     width: 36px;
@@ -1008,7 +1029,7 @@ div.dhx_popup_material div.dhx_popup_area {
     overflow-x: hidden;
     padding-left: 1%;
     padding-right: 1%;
-    user-select: text;
+    user-select: none;
 }
 
 .roundButtons {
@@ -1225,17 +1246,12 @@ div.dhx_popup_material div.dhx_popup_area {
 
 .remoteVideo {
     border-radius: 5px;
-    background-color: #333333;
-    /*
-background-repeat: no-repeat;
-background-size: cover;
-background-position: center center;
-*/
+    background-color: #000000;
 }
 
 .localVideo {
-    width: 160px;
-    background-color: #666666;
+    max-height: 100px;
+    background-color: #000000;
     border: 1px solid #222222;
     box-shadow: 1px 1px 5px rgba(0, 0, 0, .25);
     border-radius: 5px;
@@ -1548,4 +1564,107 @@ background-position: center center;
     box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
     float: left;
     margin-right: 10px;
+}
+
+.FlagCall {
+    color: orange;
+    font-size: 18px;
+    vertical-align: text-top;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.SendingMessage {
+    color: #cccccc;
+    font-size: 13px;
+    vertical-align: text-top;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+.SentMessage {
+    color: #01c4ff;
+    font-size: 13px;
+    vertical-align: text-top;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+.FailedMessage {
+    color: red;
+    font-size: 13px;
+    vertical-align: text-top;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+.DeliveredMessage {
+    color: #01c4ff;
+    font-size: 13px;
+    vertical-align: text-top;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Tags */
+.tags {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.tags li {
+    user-select: none;
+    float: left;
+    margin-bottom: 1px;
+    margin-top: 1px;
+    margin-left: 2px;
+    margin-right: 4px;
+    color: #333333;
+    border: 1px solid #888888;
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    padding: 0px;
+    padding-left: 5px;
+    padding-right: 5px;
+    line-height: 18px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.tags li:hover::before {
+    content: "\f1f8";
+}
+.tags li::before {
+    content: "\f02b";
+    font-family: FontAwesome;
+    width: 16px;
+    display: inline-block;
+    line-height: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+.tags input[type=text]{
+    font-size: 12px;
+    padding: 0px;
+    margin: 0px;
+    line-height: initial;
+    color: #333333;
+    border: none;
+    width: 60px;
+}
+.tags .tagText:hover::before{
+    content: "\f067";
+}
+.tags .tagText::before{
+    content: "\f067";
+}
+
+.cdrComment{
+    font-size: 12px !important;
+    color: #444444 !important;
+    line-height: initial !important;
+}
+.cdrComment input[type=text]{
+    font-size: 12px !important;
+    color: #444444 !important;
+    background-color: #FFFFFF;
+    border: none !important;
+    line-height: initial !important;
+    width:98%;
+    border-radius: 3px;
+    padding: 3px;
 }
