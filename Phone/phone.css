@@ -204,10 +204,6 @@ html {
 
 body {
     height: 100%;
-    min-width: 320px;
-    max-width: 1240px;
-    margin-left: auto;
-    margin-right: auto;
     margin-top: 0px;
     margin-bottom: 0px;
     padding: 0px;
@@ -219,6 +215,17 @@ body {
     background-color: #222222;;
     overflow: hidden;
     user-select: none !important;
+}
+
+.pageContainer{
+    min-width: 320px;
+    max-width: 1240px;
+    margin-left: auto;
+    margin-right: auto;
+    height: 100%;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding: 0px;
 }
 
 .smallFlag {
@@ -447,11 +454,6 @@ body {
 fieldset {
     border: 1px solid #333333;
     border-radius: 5px;
-    margin: 0px;
-    padding-left: 8px;
-    padding-right: 8px;
-    padding-bottom: 8px;
-    padding-top: 0px;
     text-align: left;
 }
 
@@ -985,7 +987,7 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .answerCall {
-    border-top: 1px solid #CCCCCC;
+    border-top: 1px solid #404040;
     text-align: center;
     padding: 25px;
     margin-top: 10px;
@@ -1021,14 +1023,21 @@ div.dhx_popup_material div.dhx_popup_area {
     vertical-align: top;
 }
 
+.streamSectionBackground {
+    background-size: 250px; /* normalise retinal scaling */
+    background-position-x: center;
+    background-position-y: bottom;
+    box-shadow: inset 0px 3px 5px 0px rgba(0, 0, 0, 0.25);
+}
+
 .chatHistory {
     min-height: 100px;
     /* Scroll screen if this condition is met */
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-left: 1%;
-    padding-right: 1%;
+    /* padding-left: 1%; */
+    /* padding-right: 1%; */
     user-select: none;
 }
 
@@ -1108,47 +1117,45 @@ div.dhx_popup_material div.dhx_popup_area {
 .sendImagePreview {
     padding-top: 2px;
     padding-bottom: 8px;
-    border-bottom: 1px solid #cccccc;
+    border-bottom: 1px solid #404040;
     font-family: Roboto, Arial, Helvetica;
     font-size: 14px;
     color: #272f39;
     outline: none;
 }
 
-.sendMessageContainer {
-    position: relative;
-    margin-right: 22px;
-    height: 80px
-}
 
 .sendMessagePreview {
     padding-top: 2px;
     padding-bottom: 2px;
-    border-bottom: 1px solid #cccccc;
+    border-bottom: 1px solid #404040;
     font-family: Roboto, Arial, Helvetica;
     font-size: 14px;
     color: #272f39;
+    margin-bottom: 5px;
 }
 
 .sendMessagePreviewLeft {
     margin-right: 30px;
 }
 
-.sendMessagePreviewSend {
-    float: right;
-}
-
 .sendMessagePreviewHtml {
-    background-color: #d7e8f7;
+    background-color: rgba(215, 232, 247, 0.8);
     padding: 5px;
+    box-sizing: border-box;
     border-radius: 5px;
     display: inline-block;
+    text-align: left;
+
+    max-height: 300px;
+    max-width: 85%;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .previewImage {
     cursor: pointer;
-    max-width: 160px;
-    max-height: 120px;
+    max-width: 320px;
     border-radius: 5px;
     border: 1px solid #929292;
     box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.25);
@@ -1157,10 +1164,26 @@ div.dhx_popup_material div.dhx_popup_area {
 .previewHyperlink {
     color: blue;
 }
-
-.chatMessage {
+.sendMessagePreviewContainer{
+    width: 100%;
+}
+.sendMessagePreviewContainer TD {
+    vertical-align: middle;
+    text-align: center;
+}
+.sendMessageContainer {
     width: 100%;
     height: 80px;
+}
+.sendMessageContainer TD {
+    vertical-align: top;
+    text-align: center;
+}
+.chatMessage {
+    box-sizing: border-box;
+    padding: 2px;
+    width: 100%;
+    height: 100%;
     border: none;
     outline: none;
     resize: none;
@@ -1182,8 +1205,9 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .theirChatMessage {
-    margin-top: 10px;
+    margin-top: 5px;
     margin-right: auto;
+    max-width: 85%;
 }
 
 .theirChatMessage TD {
@@ -1198,16 +1222,18 @@ div.dhx_popup_material div.dhx_popup_area {
     border-radius: 5px;
     font-size: 14px;
     color: #272f39;
+    cursor: pointer;
 }
 
 .ourChatMessage {
-    margin-top: 10px;
+    margin-top: 5px;
     margin-left: auto;
+    max-width: 85%;
 }
 
 .ourChatMessage TD {
     vertical-align: top;
-    text-align: right;
+    text-align: left;
 }
 
 .ourChatMessageText {
@@ -1217,21 +1243,16 @@ div.dhx_popup_material div.dhx_popup_area {
     border-radius: 5px;
     font-size: 14px;
     color: #272f39;
-    text-align: left;
+    cursor: pointer;
 }
 
 .messageDate {
     font-size: 11px;
-    color: #999999;
-    text-align: center;
-    margin-top: 5px;
+    color: #666666;
 }
 
 .addEmoji {
-    font-size: 14px;
-    position: absolute;
-    right: -24px;
-    top: 5px;
+
 }
 
 .previewVideo{
@@ -1479,16 +1500,29 @@ div.dhx_popup_material div.dhx_popup_area {
     box-shadow: inset 3px 3px 5px rgba(255, 255, 255, 0.5);
 }
 
-.audioGraphSection {
-    overflow: hidden;
-    padding: 0px;
+.audioStats {
+    padding:10px;
+    overflow: auto;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    box-sizing: border-box;
+    height: 100%;
+    background-color: #222222;
 }
-
+.audioStatsSet{
+    max-width: 1240px;
+    margin-left: auto;
+    margin-right: auto;
+}
 .audioGraph {
     background-color: #FFFFFF;
     border-radius: 5px;
-    box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.25);
     margin-top: 10px;
+
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .buddyProfilePic {
@@ -1574,28 +1608,19 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .SendingMessage {
-    color: #cccccc;
     font-size: 13px;
-    vertical-align: text-top;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
 }
 .SentMessage {
-    color: #01c4ff;
+    color: #0099c7;
     font-size: 13px;
-    vertical-align: text-top;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
 }
 .FailedMessage {
     color: red;
     font-size: 13px;
-    vertical-align: text-top;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
 }
 .DeliveredMessage {
-    color: #01c4ff;
+    color: #0099c7;
     font-size: 13px;
-    vertical-align: text-top;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 /* Tags */
@@ -1612,14 +1637,14 @@ div.dhx_popup_material div.dhx_popup_area {
     float: left;
     margin-bottom: 1px;
     margin-top: 1px;
-    margin-left: 2px;
-    margin-right: 4px;
+    margin-left: 0px;
+    margin-right: 2px;
     color: #333333;
     border: 1px solid #888888;
     background-color: rgba(255, 255, 255, 0.25);
     border-radius: 6px;
     padding: 0px;
-    padding-left: 5px;
+    padding-left: 2px;
     padding-right: 5px;
     line-height: 18px;
     font-size: 12px;
@@ -1636,6 +1661,7 @@ div.dhx_popup_material div.dhx_popup_area {
     line-height: 16px;
     height: 16px;
     vertical-align: middle;
+    text-align: center;
 }
 .tags input[type=text]{
     font-size: 12px;
@@ -1653,10 +1679,20 @@ div.dhx_popup_material div.dhx_popup_area {
     content: "\f067";
 }
 
+.messageReadMore{
+    text-align: left;
+    font-size: 12px;
+}
+.messageReadMore span{
+    text-decoration: underline;
+    color: #0061c7;
+}
+
 .cdrComment{
     font-size: 12px !important;
     color: #444444 !important;
     line-height: initial !important;
+    text-align: left;
 }
 .cdrComment input[type=text]{
     font-size: 12px !important;
@@ -1664,7 +1700,8 @@ div.dhx_popup_material div.dhx_popup_area {
     background-color: #FFFFFF;
     border: none !important;
     line-height: initial !important;
-    width:98%;
+    box-sizing: border-box;
+    width:100%;
     border-radius: 3px;
     padding: 3px;
 }

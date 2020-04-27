@@ -31,16 +31,18 @@ Features to do:
 ===============
     ✅ Transfer Call
     ✅ Call Recording
-    ✅ Volume Adjust (track.enabled mute/unmute)
-    ✅ Send: File, Image, Video, YouTube, Audio
-    ✅ Send Text, Image, Recordong, Video, SMS, Email
+    ✅ QOS Storage
+    ✅ Delete Buddy (Partial/Complete)
     ✅ Group Handling / Conference / Monitoring
+    ✅ Extended Servces: File, Image, Video, YouTube, Audio
+    ✅ Send Text, Image, Recording, Video, SMS, Email
 
 ========================================================
 */
 
 var userAgentStr = "Raspberry Phone (SipJS - 0.11.6)";
 var hostingPrefex = "";
+var enabledExtendedServices = false;
 
 // =====================================================
 
@@ -129,16 +131,31 @@ function formatDuration(seconds){
     if(sec < 0){
         return sec;
     } else if(sec >= 0 && sec < 60){
-        return sec + " seconds";
+        return sec + " second" + ((sec > 1) ? "s" : "");
     } else if(sec >= 60 && sec < 60 * 60){ // greater then a minute and less then an hour
         var duration = moment.duration(sec, 'seconds');
-        return duration.minutes() + " minute " + duration.seconds() +" seconds";
+        return duration.minutes() + " minute"+ ((duration.minutes() > 1) ? "s" : "") +" " + duration.seconds() +" second"+ ((duration.seconds() > 1) ? "s" : "");
     } else if(sec >= 60 * 60 && sec < 24 * 60 * 60){ // greater than an hour and less then a day
         var duration = moment.duration(sec, 'seconds');
-        return duration.toISOString();
+        return duration.hours() + " hour"+ ((duration.hours() > 1) ? "s" : "") +" " + duration.minutes() + " minute"+ ((duration.minutes() > 1) ? "s" : "") +" " + duration.seconds() +" second"+ ((duration.seconds() > 1) ? "s" : "");
     } 
+    //  Otherwise.. this is just too long
 }
-
+function formatShortDuration(seconds){
+    var sec = Math.floor(parseFloat(seconds));
+    if(sec < 0){
+        return sec;
+    } else if(sec >= 0 && sec < 60){
+        return "00:"+ ((sec > 9)? sec : "0"+sec );
+    } else if(sec >= 60 && sec < 60 * 60){ // greater then a minute and less then an hour
+        var duration = moment.duration(sec, 'seconds');
+        return ((duration.minutes() > 9)? duration.minutes() : "0"+duration.minutes()) + ":" + ((duration.seconds() > 9)? duration.seconds() : "0"+duration.seconds());
+    } else if(sec >= 60 * 60 && sec < 24 * 60 * 60){ // greater than an hour and less then a day
+        var duration = moment.duration(sec, 'seconds');
+        return ((duration.hours() > 9)? duration.hours() : "0"+duration.hours())  + ":" + ((duration.minutes() > 9)? duration.minutes() : "0"+duration.minutes())  + ":" + ((duration.seconds() > 9)? duration.seconds() : "0"+duration.seconds());
+    } 
+    //  Otherwise.. this is just too long
+}
 // Window and Document Events
 // ==========================
 window.onbeforeunload = function () {
@@ -889,7 +906,7 @@ function ConfigureExtensionWindow(){
             var VideoFound = false;
 
             for (var i = 0; i < deviceInfos.length; ++i) {
-                console.log("Found Device ("+ deviceInfos[i].kind +"): ", deviceInfos[i].label, );
+                console.log("Found Device ("+ deviceInfos[i].kind +"): ", deviceInfos[i].label);
 
                 // Check Devices
                 if (deviceInfos[i].kind === "audioinput") {
@@ -1469,16 +1486,25 @@ function Unregister() {
 function ReceiveCall(session) {
     console.log("New Incoming Call!");
 
+    var callerID = session.remoteIdentity.displayName;
+    var extensionNo = session.remoteIdentity.uri.user;
+    var buddyObj = FindBuddyByExtNo(extensionNo);
+    var CurrentCalls = CallSessions.length;
+    var buddy = buddyObj.identity;
+
     // Time Stamp
-    session.data.callstart = moment.utc().format("YYYY-MM-DD HH:mm:ss");
+    window.clearInterval(session.data.callTimer);
+    var startTime = moment.utc();
+    session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss");
+    $("#contact-" + buddy + "-timer").show();
+    session.data.callTimer = window.setInterval(function(){
+        var now = moment.utc();
+        var duration = moment.duration(now.diff(startTime)); 
+        $("#contact-" + buddy + "-timer").html(formatShortDuration(duration.asSeconds()));
+    }, 1000);
     session.data.calldirection = "inbound";
     session.data.terminateby = "them";
     session.data.withvideo = false;
-
-    var callerID = session.remoteIdentity.displayName;
-    var buddy = session.remoteIdentity.uri.user;
-    var buddyObj = FindBuddyByExtNo(buddy);
-    var CurrentCalls = CallSessions.length;
 
     // Make content one of its not there
     // =================================
@@ -1542,20 +1568,41 @@ function ReceiveCall(session) {
     
     // Show the Answer Thingy
     // ======================
-    $("#contact-" + buddyObj.identity + "-incomingCallerID").html(callerID); // This may not be nessesary
+    $("#contact-" + buddyObj.identity + "-msg").html("Incoming call from: " + callerID);
+    $("#contact-" + buddyObj.identity + "-msg").show();
+    // $("#contact-" + buddyObj.identity + "-incomingCallerID").html(callerID); // This may not be nessesary
     $("#contact-" + buddyObj.identity + "-AnswerCall").show();
     updateScroll(buddyObj.identity);
 
     // Play Ring Tone if not on the phone
     // ==================================
     if(CurrentCalls >= 1){
-        // Maybe make a beep in your ear or something??
+        // Play Alert
+        var rinnger = new Audio();
+        rinnger.loop = false;
+        rinnger.oncanplaythrough = function(e) {
+            if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
+                rinnger.setSinkId(getRingerOutputID()).then(function() {
+                    console.log("Set sinkId to:", getRingerOutputID());
+                }).catch(function(e){
+                    console.warn("Failed not apply setSinkId.", e);
+                });
+            }
+            // If there has been no interaction with the page at all... this page will not work
+            rinnger.play().then(function(){
+                // Audio Is Playing
+            }).catch(function(e){
+                console.warn("Unable to play audio file.", e);
+            }); 
+        }
+        rinnger.src = hostingPrefex + "/Alert.mp3";
+        session.data.rinngerObj = rinnger;
     } else {
-        // Ring the bell
+        // Play Ring Tone
         var rinnger = new Audio();
         rinnger.loop = true;
         rinnger.oncanplaythrough = function(e) {
-            if (typeof rinnger.sinkId !== 'undefined') {
+            if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
                 rinnger.setSinkId(getRingerOutputID()).then(function() {
                     console.log("Set sinkId to:", getRingerOutputID());
                 }).catch(function(e){
@@ -1778,14 +1825,20 @@ function wireupAudioSession(session, typeStr, buddy) {
     session.on('accepted', function (data) {
         $(MessageObjId).html("Audo Call in Progress!");
 
+        window.clearInterval(session.data.callTimer);
+        var startTime = moment.utc();
+        session.data.callTimer = window.setInterval(function(){
+            var now = moment.utc();
+            var duration = moment.duration(now.diff(startTime)); 
+            $("#contact-" + buddy + "-timer").html(formatShortDuration(duration.asSeconds()));
+        }, 1000);
+
         $("#contact-" + buddy + "-progress").hide();
         $("#contact-" + buddy + "-VideoCall").hide();
         $("#contact-" + buddy + "-ActiveCall").show();
 
-        // Start Local Audio Monitoring
+        // Audo Monitoring
         StartLocalAudioMediaMonitoring(buddy, session);
-
-        // Start Remote Audio Monitoring
         StartRemoteAudioMediaMonitoring(buddy, session);
     });
     session.on('rejected', function (response, cause) {
@@ -1830,7 +1883,6 @@ function wireupAudioSession(session, typeStr, buddy) {
     });
 
     $("#contact-" + buddy + "-btn-settings").removeAttr('disabled');
-    $("#contact-" + buddy + "-btn-shareFiles").removeAttr('disabled');
     $("#contact-" + buddy + "-btn-audioCall").prop('disabled', 'disabled');
     $("#contact-" + buddy + "-btn-videoCall").prop('disabled', 'disabled');
     $("#contact-" + buddy + "-btn-search").removeAttr('disabled');
@@ -1942,12 +1994,22 @@ function wireupVideoSession(session, typeStr, buddy) {
         */
     });
     session.on('accepted', function (data) {
-        $(MessageObjId).html("Call in Progress!");
+        $(MessageObjId).html("Video Call in Progress!");
+
+        window.clearInterval(session.data.callTimer);
+        $("#contact-" + buddy + "-timer").show();
+        var startTime = moment.utc();
+        session.data.callTimer = window.setInterval(function(){
+            var now = moment.utc();
+            var duration = moment.duration(now.diff(startTime)); 
+            $("#contact-" + buddy + "-timer").html(formatShortDuration(duration.asSeconds()));
+        }, 1000);
 
         $("#contact-" + buddy + "-progress").hide();
         $("#contact-" + buddy + "-VideoCall").show();
         $("#contact-" + buddy + "-ActiveCall").show();
 
+        // Start Audio Monitoring
         StartLocalAudioMediaMonitoring(buddy, session);
         StartRemoteAudioMediaMonitoring(buddy, session);
     });
@@ -1993,7 +2055,6 @@ function wireupVideoSession(session, typeStr, buddy) {
     });
 
     $("#contact-" + buddy + "-btn-settings").removeAttr('disabled');
-    $("#contact-" + buddy + "-btn-shareFiles").removeAttr('disabled');
     $("#contact-" + buddy + "-btn-audioCall").prop('disabled','disabled');
     $("#contact-" + buddy + "-btn-videoCall").prop('disabled','disabled');
     $("#contact-" + buddy + "-btn-search").removeAttr('disabled');
@@ -2075,6 +2136,11 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
     }
     $("#contact-" + buddy + "-Mic").css("height", "0%");
 
+    // End timers
+    // ==========
+    window.clearInterval(session.data.callTimer);
+    $("#contact-" + buddy + "-timer").hide();
+
     // Add to stream
     // =============
     AddCallMessage(buddy, session, reasonCode, reasonText);
@@ -2101,7 +2167,6 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
     // ===============
     window.setTimeout(function () {
         $("#contact-" + buddy + "-btn-settings").removeAttr('disabled');
-        $("#contact-" + buddy + "-btn-shareFiles").removeAttr('disabled');
         $("#contact-" + buddy + "-btn-audioCall").removeAttr('disabled');
         $("#contact-" + buddy + "-btn-videoCall").removeAttr('disabled');
         $("#contact-" + buddy + "-btn-search").removeAttr('disabled');
@@ -2557,6 +2622,7 @@ function StartLocalAudioMediaMonitoring(buddy, session) {
         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio"){
             if(audioSender == null){
                 try{
+                    console.log("Adding Track to Monitor: ", RTCRtpSender.track.label);
                     localAudioStream.addTrack(RTCRtpSender.track);
                 }catch(e){
                     console.log("Error adding Track: "+ RTCRtpSender.track.label);
@@ -2630,9 +2696,6 @@ function StartLocalAudioMediaMonitoring(buddy, session) {
 
         console.log("SoundMeter for LocalAudio Connected, displaying levels for: " + buddy);
         soundMeter.levelsInterval = window.setInterval(function () {
-            // soundMeter.slow
-            // soundMeter.clip;
-
             // Calculate Levels
             // ================
             //value="0" max="1" high="0.25" (this seems low... )
@@ -3181,7 +3244,28 @@ function ReceiveMessage(message) {
                 }
             }
         }
-
+        // Play Alert
+        var rinnger = new Audio();
+        rinnger.loop = false;
+        rinnger.oncanplaythrough = function(e) {
+            if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
+                rinnger.setSinkId(getRingerOutputID()).then(function() {
+                    console.log("Set sinkId to:", getRingerOutputID());
+                }).catch(function(e){
+                    console.warn("Failed not apply setSinkId.", e);
+                });
+            }
+            // If there has been no interaction with the page at all... this page will not work
+            rinnger.play().then(function(){
+                // Audio Is Playing
+            }).catch(function(e){
+                console.warn("Unable to play audio file.", e);
+            }); 
+        }
+        rinnger.src = hostingPrefex + "/Alert.mp3";
+        message.data.rinngerObj = rinnger; // Will be attached to this object until its disposed.
+    } else {
+        // Message window is active.
     }
 }
 function AddCallMessage(buddy, session, reasonCode, reasonText) { //(buddy, session, reasonCode, reasonText, "...")
@@ -3559,14 +3643,21 @@ function VideoCall(buddy) {
         }
 
         $("#contact-" + buddyObj.identity + "-msg").html("Starting Video Call...");
+        $("#contact-" + buddyObj.identity + "-timer").show();
 
         // Invite
         // ======
         console.log("INVITE (video): " + buddyObj.ExtNo + "@" + wssServer);
         var session = userAgent.invite("sip:" + buddyObj.ExtNo + "@" + wssServer, spdOptions);
 
+        var startTime = moment.utc();
         session.data.calldirection = "outbound";
-        session.data.callstart = moment.utc().format("YYYY-MM-DD HH:mm:ss");
+        session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss");
+        session.data.callTimer = window.setInterval(function(){
+            var now = moment.utc();
+            var duration = moment.duration(now.diff(startTime)); 
+            $("#contact-" + buddyObj.identity + "-timer").html(formatShortDuration(duration.asSeconds()));
+        }, 1000);
         session.data.VideoSourceDevice = getVideoSrcID();
         session.data.AudioSourceDevice = getAudioSrcID();
         session.data.AudioOutputDevice = getAudioOutputID();
@@ -3691,18 +3782,29 @@ function AudioCall(buddy, dialledNumber) {
             Alert("Sorry, you don't have any Microphone connected to this computer. You cannot make calls.");
             return;
         }
-        if(confirmedAudioDevice != "default" && !confirmedAudioDevice) {
+        if(currentAudioDevice != "default" && !confirmedAudioDevice) {
             console.warn("The audio device you used before is no longer availabe, default settings applied.");
             spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
         }
 
         $("#contact-" + buddyObj.identity + "-msg").html("Starting Audio Call...");
+        $("#contact-" + buddyObj.identity + "-timer").show();
 
         // Invite
         console.log("INVITE (audio): " + dialledNumber + "@" + wssServer);
         var session = userAgent.invite("sip:" + dialledNumber + "@" + wssServer, spdOptions);
+
+        var startTime = moment.utc();
         session.data.calldirection = "outbound";
-        session.data.callstart = moment.utc().format("YYYY-MM-DD HH:mm:ss");
+        session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss");
+        session.data.callTimer = window.setInterval(function(){
+            var now = moment.utc();
+            var duration = moment.duration(now.diff(startTime)); 
+            $("#contact-" + buddyObj.identity + "-timer").html(formatShortDuration(duration.asSeconds()));
+        }, 1000);
+        session.data.VideoSourceDevice = null;
+        session.data.AudioSourceDevice = getAudioSrcID();
+        session.data.AudioOutputDevice = getAudioOutputID();
         session.data.terminateby = "them";
         session.data.withvideo = false;
 
@@ -4274,7 +4376,7 @@ function UpdateBuddyList(filter){
         var displayDateTime = "";
         if(lastActivity.isSame(today, 'day'))
         {
-            displayDateTime = lastActivity.local().format("HH:mm:ss"); // TODO, enter UTC offset here
+            displayDateTime = lastActivity.local().format("h:mm A");
         } 
         else {
             displayDateTime = lastActivity.local().format("YYYY-MM-DD");
@@ -4376,9 +4478,6 @@ function AddBuddyMessageStream(buddyObj) {
     // Action Buttons
     // ==============
     html += "<div style=\"float:right; line-height: 46px;\">";
-    if(buddyObj.type == "extension" || buddyObj.type == "group") {
-        html += "<button id=\"contact-"+ buddyObj.identity +"-btn-shareFiles\" onclick=\"ShareFiles('"+ buddyObj.identity +"')\" class=roundButtons title=\"Share Files\"><i class=\"fa fa-share-alt\"></i></button> ";
-    }
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-audioCall\" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\" class=roundButtons title=\"Audio Call\"><i class=\"fa fa-phone\"></i></button> ";
     if(buddyObj.type == "extension") {
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-videoCall\" onclick=\"VideoCall('"+ buddyObj.identity +"')\" class=roundButtons title=\"Video Call\"><i class=\"fa fa-video-camera\"></i></button> ";
@@ -4406,13 +4505,13 @@ function AddBuddyMessageStream(buddyObj) {
     html += "<div id=\"contact-"+ buddyObj.identity +"-calling\">";
 
     // Gneral Messages
+    html += "<div id=\"contact-"+ buddyObj.identity +"-timer\" style=\"float: right; margin-top: 5px; margin-right: 10px;\"></div>";
     html += "<div id=\"contact-"+ buddyObj.identity +"-msg\" class=callStatus style=\"display:none\">...</div>";
     html += "<input id=\"contact-"+ buddyObj.identity +"-sipCallId\" type=hidden>";
 
     // Call Answer UI
     html += "<div id=\"contact-"+ buddyObj.identity +"-AnswerCall\" class=answerCall style=\"display:none\">";
-    html += "<div>Incoming Call from : </div>";
-    html += "<div><span id=\"contact-"+ buddyObj.identity +"-incomingCallerID\"><b>"+ buddyObj.CallerIDNum +" - "+ buddyObj.CallerIDName +"</b></div>";
+    // html += "<div><span id=\"contact-"+ buddyObj.identity +"-incomingCallerID\"><b>"+ buddyObj.CallerIDNum +" - "+ buddyObj.CallerIDName +"</b></div>";
     html += "<div>";
     html += "<button onclick=\"AnswerAudioCall('"+ buddyObj.identity +"')\"><i class=\"fa fa-phone\"></i> Answer Call</button> ";
     if(buddyObj.type == "extension") {
@@ -4480,20 +4579,22 @@ function AddBuddyMessageStream(buddyObj) {
     html += "<button id=\"contact-"+ buddyObj.identity +"-call-stats\" onclick=\"ShowCallStats('"+ buddyObj.identity +"', this)\"><i class=\"fa fa-area-chart\"></i> Call Stats</button>";
     html += "</div>";
 
-    html += "<fieldset class=audioGraphSection style=\"height: 25px; display:none\">";
-    html += "<legend onclick=\"ToggleThisHeight(this.parentElement,25,400)\" style=\"cursor:pointer\"><i class=\"fa fa-caret-right\"></i> Network Statistics</legend>";
-    html += "<div class=\"cleanScroller\" style=\"height: 375px; overflow:auto\">";
-    html += "<div style=\"width:0px;\">";
+    html += "<div id=\"contact-"+ buddyObj.identity +"-AdioStats\" class=\"audioStats cleanScroller\" style=\"display:none\">";
+    html += "<div style=\"text-align:right\"><button onclick=\"HideCallStats('"+ buddyObj.identity +"', this)\"><i class=\"fa fa-times\"></i></button></div>";
+    html += "<fieldset class=audioStatsSet>";
+    html += "<legend>Send Statistics</legend>";
     html += "<canvas id=\"contact-"+ buddyObj.identity +"-AudioSendBitRate\" class=audioGraph width=600 height=160 style=\"width:600px; height:160px\"></canvas>";
     html += "<canvas id=\"contact-"+ buddyObj.identity +"-AudioSendPacketRate\" class=audioGraph width=600 height=160 style=\"width:600px; height:160px\"></canvas>";
+    html += "</fieldset>";
+    html += "<fieldset class=audioStatsSet>";
+    html += "<legend>Receive Statistics</legend>";
     html += "<canvas id=\"contact-"+ buddyObj.identity +"-AudioReceiveBitRate\" class=audioGraph width=600 height=160 style=\"width:600px; height:160px\"></canvas>";
     html += "<canvas id=\"contact-"+ buddyObj.identity +"-AudioReceivePacketRate\" class=audioGraph width=600 height=160 style=\"width:600px; height:160px\"></canvas>";
     html += "<canvas id=\"contact-"+ buddyObj.identity +"-AudioReceivePacketLoss\" class=audioGraph width=600 height=160 style=\"width:600px; height:160px\"></canvas>";
     html += "<canvas id=\"contact-"+ buddyObj.identity +"-AudioReceiveJitter\" class=audioGraph width=600 height=160 style=\"width:600px; height:160px\"></canvas>";
     html += "<canvas id=\"contact-"+ buddyObj.identity +"-AudioReceiveLevels\" class=audioGraph width=600 height=160 style=\"width:600px; height:160px\"></canvas>";
-    html += "</div>";
-    html += "</div>";
     html += "</fieldset>";
+    html += "</div>";
 
     html += "</div>";
     html += "</div>";
@@ -4512,7 +4613,7 @@ function AddBuddyMessageStream(buddyObj) {
 
     html += "</td></tr>";
     // Message Stream
-    html += "<tr><td class=streamSection style=\"box-shadow: inset 0px 3px 5px 0px rgba(0, 0, 0, 0.25);\">";
+    html += "<tr><td class=\"streamSection streamSectionBackground\" style=\"background-image:url('"+ hostingPrefex +"/wp_1.png')\">";
 
     html += "<div id=\"contact-"+ buddyObj.identity +"-ChatHistory\" class=\"chatHistory cleanScroller\" ondragenter=\"setupDragDrop(event, '"+ buddyObj.identity +"')\" ondragover=\"setupDragDrop(event, '"+ buddyObj.identity +"')\" ondragleave=\"cancelDragDrop(event, '"+ buddyObj.identity +"')\" ondrop=\"onFileDragDrop(event, '"+ buddyObj.identity +"')\">";
     // Previous Chat messages
@@ -4520,23 +4621,34 @@ function AddBuddyMessageStream(buddyObj) {
 
     html += "</td></tr>";
     if(buddyObj.type == "extension" || buddyObj.type == "group") {
-        // Text Send
         html += "<tr><td  class=streamSection style=\"height:80px\">";
 
+        // Send Paste Image
         html += "<div id=\"contact-"+ buddyObj.identity +"-imagePastePreview\" class=sendImagePreview style=\"display:none\" tabindex=0></div>";
 
-        html += "<div id=\"contact-"+ buddyObj.identity +"-msgPreview\" class=sendMessagePreview style=\"display:none\">";
-        html += "<button onclick=\"SendChatMessage('"+ buddyObj.identity +"')\" class=\"roundButtons sendMessagePreviewSend\" title=\"Send\"><i class=\"fa fa-paper-plane\"></i></button>";
-        html += "<div class=sendMessagePreviewLeft>";
-        html += "<span id=\"contact-"+ buddyObj.identity +"-msgPreviewhtml\" class=sendMessagePreviewHtml></span>";
-        html += "</div>";
+        // Send File
+
+        // Send Audio Recordong
+
+        // Send Video Recording
+
+        // Send Text
+        html += "<div id=\"contact-"+ buddyObj.identity +"-msgPreview\" class=sendMessagePreview style=\"display:none\">"
+        html += "<table class=sendMessagePreviewContainer cellpadding=0 cellspacing=0><tr>";
+        html += "<td style=\"text-align:right\"><div id=\"contact-"+ buddyObj.identity +"-msgPreviewhtml\" class=\"sendMessagePreviewHtml cleanScroller\"></div></td>"
+        html += "<td style=\"width:40px\"><button onclick=\"SendChatMessage('"+ buddyObj.identity +"')\" class=\"roundButtons\" title=\"Send\"><i class=\"fa fa-paper-plane\"></i></button></td>"
+        html += "</tr></table>";
         html += "</div>";
 
-        html += "<div class=sendMessageContainer>";
-        html += "<button onclick=\"AddEmojy('"+ buddyObj.identity +"')\" class=\"roundButtons addEmoji\" title=\"Add Emoji\"><i class=\"fa fa-smile-o\"></i></button>";
-        html += "<textarea id=\"contact-"+ buddyObj.identity +"-ChatMessage\" class=\"chatMessage cleanScroller\" placeholder=\"Type your message here...\" onkeydown=\"chatOnkeydown(event, this,'"+ buddyObj.identity +"')\" onkeyup=\"chatOnkeyup(event, this,'"+ buddyObj.identity +"')\" onpaste=\"chatOnbeforepaste(event, this,'"+ buddyObj.identity +"')\"></textarea>";
-        html += "</div>";
-
+        // =====================================
+        // Type Area
+        html += "<table class=sendMessageContainer cellpadding=0 cellspacing=0><tr>";
+        html += "<td><textarea id=\"contact-"+ buddyObj.identity +"-ChatMessage\" class=\"chatMessage cleanScroller\" placeholder=\"Type your message here...\" onkeydown=\"chatOnkeydown(event, this,'"+ buddyObj.identity +"')\" onkeyup=\"chatOnkeyup(event, this,'"+ buddyObj.identity +"')\" oninput=\"chatOnkeyup(event, this,'"+ buddyObj.identity +"')\" onpaste=\"chatOnbeforepaste(event, this,'"+ buddyObj.identity +"')\"></textarea></td>";
+        if(enabledExtendedServices){
+            html += "<td style=\"width:40px\"><button onclick=\"AddMenu(this, '"+ buddyObj.identity +"')\" title=\"Add...\"><i class=\"fa fa-ellipsis-h\"></i></button></td>";
+        }
+        html += "</tr></table>";
+        
         html += "</td></tr>";
     }
     html += "</table>";
@@ -4676,9 +4788,9 @@ function RefreshStream(buddyObj) {
 
     $.each(json.DataCollection, function (i, item) {
 
+        var IsToday = moment.utc(item.ItemDate.replace(" UTC", "")).isSame(moment.utc(), "day");
         var DateTime = moment.utc(item.ItemDate.replace(" UTC", "")).local().calendar(null, { sameElse: 'YYYY-MM-DD' });
-        // var DateTime = new Date(item.ItemDate).toLocaleTimeString();
-        // var DateTime = moment.utc(item.ItemDate).local().format("YYYY-MM-DD HH:mm:ss") +" UTC";
+        if(IsToday) DateTime = moment.utc(item.ItemDate.replace(" UTC", "")).local().format("h:mm a");
 
         if (item.ItemType == "MSG") {
             // Add Chat Message
@@ -4700,28 +4812,37 @@ function RefreshStream(buddyObj) {
             if(item.Delivered) deliveryStatus += "<i class=\"fa fa-check DeliveredMessage\"></i>";
 
             var formattedMessage = ReformatMessage(item.MessageData);
+            var longMessage = (formattedMessage.length > 1000);
+
             if (item.SrcUserId == profileUserID) {
                 // You are the source (sending)
-                var messageString = "<table class=ourChatMessage cellspacing=0 cellpadding=0><tr><td style=\"padding-left:4px; padding-right:4px; white-space: nowrap\">";
+                var messageString = "<table class=ourChatMessage cellspacing=0 cellpadding=0><tr>"
+                messageString += "<td class=ourChatMessageText onClick=\"ShowMessgeMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\">"
+                messageString += "<div id=msg-text-"+  item.ItemId +" style=\""+ ((longMessage)? "max-height:190px; overflow:hidden" : "") +"\">" + formattedMessage + "</div>"
+                if(longMessage){
+                    messageString += "<div id=msg-readmore-"+  item.ItemId +" class=messageReadMore><span onclick=\"ExpandMessage(this,'"+ item.ItemId +"', '"+ buddyObj.identity +"')\">Read More</span></div>"
+                }
                 messageString += "<div class=messageDate>" + DateTime + " " + deliveryStatus +"</div>"
-                messageString += "</td><td>"
-                messageString += "<div class=ourChatMessageText onClick=\"ShowMessgeMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\" style=\"cursor:pointer\">" + formattedMessage + "</div>"
-                messageString += "</td><td style=\"padding-left:8px\">"
+                messageString += "</td>"
+                messageString += "<td style=\"padding-left:8px\">"
                 messageString += "<div class=buddyIconSmall style=\"margin-right: 3px; float:right; background-image: url('"+ getPicture("profilePicture") +"')\"></div>"
-                messageString += "</td></tr></table>";
+                messageString += "</td>";
+                messageString += "</tr></table>";
             } else {
                 // You are the destination (receiving)
-                var ActualSender = "";
-                var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr><td style=\"padding-right:8px;\">";
+                var ActualSender = ""; //TODO
+                var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr>"
+                messageString += "<td style=\"padding-right:8px;\">";
                 messageString += "<div class=\"buddyIconSmall\" style=\"background-image: url('"+ getPicture(item.SrcUserId) +"')\"></div>";
-                messageString += "</td><td>";
-                messageString += "<div class=theirChatMessageText onClick=\"ShowMessgeMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\" style=\"cursor:pointer\">" + formattedMessage + "</div>";
-                messageString += "</td><td style=\"padding-left:4px; padding-right:4px; white-space: nowrap\">";
-                messageString += "<div class=messageDate>"+ DateTime + "</div>";
+                messageString += "</td>";
+                messageString += "<td class=theirChatMessageText onClick=\"ShowMessgeMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\">";
                 if(buddyObj.type == "group"){
                     messageString += "<div class=messageDate>" + ActualSender + "</div>";
                 }
-                messageString += "</td></tr></table>";
+                messageString += "<div style=\"text-align:left\">" + formattedMessage + "</div>";
+                messageString += "<div class=messageDate>"+ DateTime + "</div>";
+                messageString += "</td>";
+                messageString += "</tr></table>";
             }
             $("#contact-" + buddyObj.identity + "-ChatHistory").prepend(messageString);
         } else if (item.ItemType == "CDR") {
@@ -4775,17 +4896,18 @@ function RefreshStream(buddyObj) {
                 } else {
                     formattedMessage += " You made "+ audioVideo +" call, and spoke for " + formatDuration(item.Billsec) + ".";
                 }
-                var messageString = "<table class=ourChatMessage cellspacing=0 cellpadding=0><tr><td style=\"padding-left:4px; padding-right:4px; white-space: nowrap\">";
-                messageString += "<div class=messageDate>" + DateTime  + " " + flag + "</div>";
-                messageString += "</td><td>";
-                messageString += "<div class=ourChatMessageText onClick=\"ShowMessgeMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\" style=\"cursor:pointer\">";
+                var messageString = "<table class=ourChatMessage cellspacing=0 cellpadding=0><tr>"
+                messageString += "<td style=\"padding-right:4px;\">" + flag + "</td>"
+                messageString += "<td class=ourChatMessageText onClick=\"ShowMessgeMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\">";
                 messageString += "<div>" + formattedMessage + "</div>";
                 messageString += "<div>" + CallTags + "</div>";
                 messageString += "<div id=cdr-comment-"+  item.CdrId +" class=cdrComment>" + callComment + "</div>";
-                messageString += "</div>";
-                messageString += "</td><td style=\"padding-left:8px\">";
+                messageString += "<div class=messageDate>" + DateTime  + "</div>";
+                messageString += "</td>"
+                messageString += "<td style=\"padding-left:8px\">";
                 messageString += "<div class=buddyIconSmall style=\"margin-right: 3px; float:right; background-image: url('"+ getPicture("profilePicture") +"')\"></div>";
-                messageString += "</td></tr></table>";
+                messageString += "</td>";
+                messageString += "</tr></table>";
             } else {
                 // (Inbound) you(profileUserID) received a call
                 if(item.Billsec == "0"){
@@ -4793,17 +4915,18 @@ function RefreshStream(buddyObj) {
                 } else {
                     formattedMessage += " You received "+ audioVideo +" call, and spoke for " + formatDuration(item.Billsec) + ".";
                 }
-                var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr><td  style=\"padding-right:8px\">";
+                var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr>";
+                messageString += "<td style=\"padding-right:8px\">";
                 messageString += "<div class=buddyIconSmall style=\"background-image: url('"+ getPicture(item.SrcUserId) +"')\"></div>";
-                messageString += "</td><td>";
-                messageString += "<div class=theirChatMessageText onClick=\"ShowMessgeMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\" style=\"cursor:pointer\">";
-                messageString += "<div>" + formattedMessage + "</div>";
+                messageString += "</td>";
+                messageString += "<td class=theirChatMessageText onClick=\"ShowMessgeMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\">";
+                messageString += "<div style=\"text-align:left\">" + formattedMessage + "</div>";
                 messageString += "<div>" + CallTags + "</div>";
                 messageString += "<div id=cdr-comment-"+  item.CdrId +" class=cdrComment>" + callComment + "</div>";
-                messageString += "</div>";
-                messageString += "</td><td style=\"padding-left:4px; padding-right:4px; white-space: nowrap\">";
-                messageString += "<div class=messageDate>" + flag + " " + DateTime + "</div>";
-                messageString += "</td></tr></table>";
+                messageString += "<div class=messageDate> " + DateTime + "</div>";
+                messageString += "</td>";
+                messageString += "<td style=\"padding-left:4px\">" + flag + "</td>";
+                messageString += "</tr></table>";
             }
 
             $("#contact-" + buddyObj.identity + "-ChatHistory").prepend(messageString);
@@ -4815,7 +4938,20 @@ function RefreshStream(buddyObj) {
     });
     updateScroll(buddyObj.identity);
 }
+function ExpandMessage(obj, ItemId, buddy){
+    $("#msg-text-" + ItemId).css("max-height", "");
+    $("#msg-text-" + ItemId).css("overflow", "");
+    $("#msg-readmore-" + ItemId).remove();
 
+    window.setTimeout(function(){
+        if(dhtmlxPopup != null)
+        {
+            dhtmlxPopup.hide();
+            dhtmlxPopup.unload();
+            dhtmlxPopup = null;
+        }
+    }, 500);
+}
 function ExpandVideoArea(buddy){
     $("#contact-" + buddy + "-ActiveCall").prop("class","FullScreenVideo");
     $("#contact-" + buddy + "-VideoCall").css("height", "calc(100% - 100px)");
@@ -4911,11 +5047,10 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
         var TagState = $("#cdr-flagged-"+ cdrId).is(":visible");
         var TagText = (TagState)? "Clear Flag" : "Flag Call";
         menu = [
-            { id: 1, name: "<i class=\"fa fa-external-link\"></i> Show Call Detail Record" },
+            // { id: 1, name: "<i class=\"fa fa-external-link\"></i> Show Call Detail Record" },
             { id: 2, name: "<i class=\"fa fa-tags\"></i> Tag Call" },
             { id: 3, name: "<i class=\"fa fa-flag\"></i> "+ TagText },
-            { id: 4, name: "<i class=\"fa fa-quote-left\"></i> Edit Comment" },
-            { id: 8, name: "Delete Comment" },
+            { id: 4, name: "<i class=\"fa fa-quote-left\"></i> Edit Comment" }
         ];
     }
     // 
@@ -5132,6 +5267,39 @@ function TagFocus(obj){
         }
     }, 500);
 }
+function AddMenu(obj, buddy){
+    var x = window.dhx4.absLeft(obj);
+    var y = window.dhx4.absTop(obj);
+    var w = obj.offsetWidth;
+    var h = obj.offsetHeight;
+
+    if(dhtmlxPopup != null)
+    {
+        dhtmlxPopup.hide();
+        dhtmlxPopup.unload();
+        dhtmlxPopup = null;
+    }
+    dhtmlxPopup = new dhtmlXPopup();
+
+    var menu = [
+        { id: 1, name: "<i class=\"fa fa-smile-o\"></i> Select Expression" },
+        { id: 1, name: "<i class=\"fa fa-share-alt\"></i> Share File" },
+        { id: 2, name: "<i class=\"fa fa-file-audio-o\"></i> Record Audio Message" },
+        { id: 3, name: "<i class=\"fa fa-file-video-o\"></i> Record Video Message" }
+    ];
+
+    dhtmlxPopup.attachList("name", menu);
+    dhtmlxPopup.attachEvent("onClick", function(id){
+        dhtmlxPopup.hide();
+        dhtmlxPopup.unload();
+        dhtmlxPopup = null;
+
+
+
+    });
+    dhtmlxPopup.show(x, y, w, h);
+}
+
 
 
 // My Profile
@@ -5308,7 +5476,17 @@ function ChangeSettings(buddy, obj){
         dhtmlxPopup.unload();
         dhtmlxPopup = null;
     }
+
+    // Check if you are in a call
+    var session = getSession(buddy);
+    if(session == null) {
+        console.warn("You dont appear to be on a call any more.");
+        return;
+    }
+
     dhtmlxPopup = new dhtmlXPopup();
+    dhtmlxPopup.attachHTML("<div id=DeviceSelector style=\"width:250px\">Loading...</DIV>");
+    dhtmlxPopup.show(x, y, w, h);
 
     var audioSelect = $('<select/>');
     audioSelect.prop("id", "audioSrcSelect");
@@ -5326,178 +5504,177 @@ function ChangeSettings(buddy, obj){
     ringerSelect.prop("id", "ringerSelect");
     ringerSelect.css("width", "100%");
 
-    var session = getSession(buddy);
+    // Handle Audio Source changes (Microphone)
+    // ========================================
+    audioSelect.change(function(){
+        console.log("Call to change Microphone: ", this.value);
+
+        // Switch Tracks if you are in a call
+        // ==================================
+        var session = getSession(buddy);
+        if(session != null){
+            // Save Setting
+            session.data.AudioSourceDevice = this.value;
+
+            var constraints = {
+                audio: {
+                    deviceId: (this.value != "default")? { exact: this.value } : "default"
+                },
+                video: false
+            }
+            navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+                // Assume that since we are selecting from a dropdown, this is possible
+                var newMediaTrack = newStream.getAudioTracks()[0];
+                var pc = session.sessionDescriptionHandler.peerConnection;
+                pc.getSenders().forEach(function (RTCRtpSender) {
+                    if(RTCRtpSender.track.kind == "audio") {
+                        console.log("Switching Audio Track : "+ RTCRtpSender.track.label + " to "+ newMediaTrack.label);
+                        RTCRtpSender.track.stop();
+                        RTCRtpSender.replaceTrack(newMediaTrack).then(function(){
+                            // Monitor Adio Stream
+                            StartLocalAudioMediaMonitoring(buddy, session);
+                        }).catch(function(e){
+                            console.error("Error replacing track: ", e);
+                        });
+                    }
+                });
+            }).catch(function(e){
+                console.error("Error on getUserMedia");
+            });
+        }
+
+        dhtmlxPopup.hide();
+        dhtmlxPopup.unload();
+        dhtmlxPopup = null;
+    });
+
+    // Handle output change (speaker)
+    // ==============================
+    speakerSelect.change(function(){
+        console.log("Call to change Speaker: ", this.value);
+
+        var session = getSession(buddy);
+        if(session != null){
+            // Save Setting
+            session.data.AudioOutputDevice = this.value;
+
+            // Also change the sinkId
+            // ======================
+            var sinkId = this.value;
+            console.log("Attempting to set Audio Output SinkID for "+ buddy +" [" + sinkId + "]");
+
+            // Remote Audio
+            var element = $("#contact-"+ buddy +"-remoteAudio").get(0);
+            if(element) {
+                if (typeof element.sinkId !== 'undefined') {
+                    element.setSinkId(sinkId).then(function(){
+                        console.log("sinkId applied: "+ sinkId);
+                    }).catch(function(e){
+                        console.warn("Error using setSinkId: ", e);
+                    });
+                } else {
+                    console.warn("setSinkId() is not possible using this browser.")
+                }
+            }
+        }
+
+        dhtmlxPopup.hide();
+        dhtmlxPopup.unload();
+        dhtmlxPopup = null;
+    });
+
+    // Handle video input change (WebCam)
+    // ==================================
+    videoSelect.change(function(){
+        console.log("Call to change WebCam");
+
+        var session = getSession(buddy);
+        if(session != null)  switchVideoSource(buddy, this.value);
+
+        dhtmlxPopup.hide();
+        dhtmlxPopup.unload();
+        dhtmlxPopup = null;
+    });
 
     if(navigator.mediaDevices) // Only works under HTTPS
     {
-        // TODO: check if output exists, double dip the devices for the lables
         navigator.mediaDevices.enumerateDevices().then(function(deviceInfos){
         
-            var foundVideoSourceDevices = false;
+            var MicrophoneFound = false;
+            var SpeakerFound = false;
+            var VideoFound = false;
+
             for (var i = 0; i < deviceInfos.length; ++i) {
-                var deviceInfo = deviceInfos[i];
-                var devideId = deviceInfo.deviceId;
-                var DisplayName = (deviceInfo.label)? deviceInfo.label : "";
-                if(DisplayName.indexOf("(")) DisplayName = DisplayName.substring(0,DisplayName.indexOf("("));
-                console.log("Found Device: ", DisplayName);
-    
-                // Create Option
-                var option = $('<option/>');
-                option.prop("value", devideId);
-                
-                // Handle Type
-                if (deviceInfo.kind === "audioinput") {
-                    if(session != null){ // We are on a call
+                console.log("Found Device ("+ deviceInfos[i].kind +"): ", deviceInfos[i].label);
+
+                // Check Devices so that GUM works
+                if (deviceInfos[i].kind === "audioinput") {
+                    MicrophoneFound = true;               
+                } else if (deviceInfos[i].kind === "audiooutput") {
+                    SpeakerFound = true;
+                } else if (deviceInfos[i].kind === "videoinput") {
+                    VideoFound = true;
+                }
+            }
+
+            var contraints = {
+                audio: MicrophoneFound,
+                video: VideoFound
+            }
+            navigator.mediaDevices.getUserMedia(contraints).then(function(mediaStream){
+                return navigator.mediaDevices.enumerateDevices();
+            }).then(function(deviceInfos){
+
+                for (var i = 0; i < deviceInfos.length; ++i) {
+                    console.log("Found Device ("+ deviceInfos[i].kind +") Again: ", deviceInfos[i].label, deviceInfos[i].deviceId);
+
+                    var deviceInfo = deviceInfos[i];
+                    var devideId = deviceInfo.deviceId;
+                    var DisplayName = (deviceInfo.label)? deviceInfo.label : "";
+                    if(DisplayName.indexOf("(") > 0) DisplayName = DisplayName.substring(0,DisplayName.indexOf("("));
+
+                    // Create Option
+                    var option = $('<option/>');
+                    option.prop("value", devideId);
+
+                    // Handle Type
+                    if (deviceInfo.kind === "audioinput") {
+                        option.text((DisplayName != "")? DisplayName : "Microphone");
                         if(session.data.AudioSourceDevice == devideId) option.prop("selected", true);
-                    } else {
-                        if(getAudioSrcID() == devideId) option.prop("selected", true);
-                    }                    
-                    option.text((DisplayName != "")? DisplayName : "Microphone ("+ devideId +")");
-                    audioSelect.append(option);
-                } else if (deviceInfo.kind === "audiooutput") {
-                    if(session != null){ // We are on a call
+                        audioSelect.append(option);
+                    } else if (deviceInfo.kind === "audiooutput") {
+                        option.text((DisplayName != "")? DisplayName : "Speaker"); 
                         if(session.data.AudioOutputDevice == devideId) option.prop("selected", true);
-                    } else {
-                        if(getAudioOutputID() == devideId) option.prop("selected", true);
-                    }
-                    option.text((DisplayName != "")? DisplayName : "Speaker ("+ devideId +")"); 
-                    speakerSelect.append(option);
-                } else if (deviceInfo.kind === "videoinput") {
-                    if(session != null){ // We are on a call
+                        speakerSelect.append(option);
+                    } else if (deviceInfo.kind === "videoinput") {
+                        option.text((DisplayName != "")? DisplayName : "Webcam");
                         if(session.data.VideoSourceDevice == devideId) option.prop("selected", true);
-                    } else {
-                        if(getVideoSrcID() == devideId) option.prop("selected", true);
-                    }
-                    option.text((DisplayName != "")? DisplayName : "Webcam ("+ devideId +")");
-                    videoSelect.append(option);
-                }
-            }
-
-            // Add default Option
-            // ==================
-            var defaultVideoOption = $('<option/>');
-            defaultVideoOption.prop("value", "default");
-            defaultVideoOption.text("(Default)");
-            if(session != null)
-            {
-                // We are on a call
-                if(session.data.VideoSourceDevice == "default")
-                {
-                    defaultVideoOption.prop("selected", true);
-                }
-            } else {
-                // Not on a call
-                if(getVideoSrcID() == "default"){
-                    defaultVideoOption.prop("selected", true);
-                }
-            }
-            videoSelect.append(defaultVideoOption);
-    
-            // Handle Audio Source changes (Microphone)
-            // ========================================
-            audioSelect.change(function(){
-                console.log("Call to change Microphone");
-                localDB.setItem("AudioSrcId", this.value) // For subsequent calls
-    
-                // Switch Tracks if you are in a call
-                // ==================================
-                var session = getSession(buddy);
-                if(session != null){
-                    var constraints = {
-                        audio: {
-                            deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
-                        },
-                        video: false
-                    }
-                    navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
-                        var newMediaTrack = newStream.getAudioTracks()[0];
-                        var pc = session.sessionDescriptionHandler.peerConnection;
-                        pc.getSenders().forEach(function (RTCRtpSender) {
-                            if(RTCRtpSender.track.kind == "audio") {
-                                console.log("Switching Audio Track : "+ RTCRtpSender.track.label + " to "+ newMediaTrack.label);
-                                RTCRtpSender.track.stop();
-                                RTCRtpSender.replaceTrack(newMediaTrack);
-                            }
-                        });
-                    }).catch(function(){
-                        console.error("Error on getUserMedia");
-                    });             
-                }
-    
-                dhtmlxPopup.hide();
-                dhtmlxPopup.unload();
-                dhtmlxPopup = null;
-            });
-
-            // Handle output change (speaker)
-            // ==============================
-            speakerSelect.change(function(){
-                console.log("Call to change Speaker");
-                localDB.setItem("AudioOutputId", this.value); // For subsequest calls
-    
-                var session = getSession(buddy);
-                if(session != null){
-                    // Also change the sinkId
-                    // ======================
-                    var sinkId = this.value;
-                    console.log("Attempting to set Audio Output SinkID for "+ buddy +" [" + sinkId + "]");
-        
-                    // Remote Audio
-                    var element = $("#contact-"+ buddy +"-remoteAudio").get(0);
-                    if(element) {
-                        if (typeof element.sinkId !== 'undefined') {
-                            element.setSinkId(sinkId).then(function(){
-                                console.log("sinkId applied: "+ sinkId);
-                            }).catch(function(e){
-                                console.warn("Error using setSinkId: ", e);
-                            });
-                        } else {
-                            console.warn("setSinkId() is not possible using this browser.")
-                        }
+                        videoSelect.append(option);
                     }
                 }
-    
-                dhtmlxPopup.hide();
-                dhtmlxPopup.unload();
-                dhtmlxPopup = null;
-            });
-    
-            // Handle video input change (WebCam)
-            // ==================================
-            videoSelect.change(function(){
-                console.log("Call to change WebCam");
-    
-                var session = getSession(buddy);
-                if(session != null){
-                    switchVideoSource(buddy, this.value)
+
+                // Show Popup
+                // ==========
+                dhtmlxPopup.attachHTML("<div id=DeviceSelector style=\"width:250px\"></DIV>");
+
+                // Mic Serttings
+                $("#DeviceSelector").append("<div style=\"margin-top:20px\">Microphone: </div>");
+                $("#DeviceSelector").append(audioSelect);
+                
+                // Speaker
+                if(SpeakerFound){
+                    $("#DeviceSelector").append("<div style=\"margin-top:20px\">Speaker: </div>");
+                    $("#DeviceSelector").append(speakerSelect);
                 }
+                // Camera
+                $("#DeviceSelector").append("<div style=\"margin-top:20px\">Camera: </div>");
+                $("#DeviceSelector").append(videoSelect);
 
-                console.log("Saving default Video Source Device as: "+ this.value);
-                localDB.setItem("VideoSrcId", this.value);
-
-                dhtmlxPopup.hide();
-                dhtmlxPopup.unload();
-                dhtmlxPopup = null;
+                // Show Menu
+                dhtmlxPopup.show(x, y, w, h);
+            }).catch(function (error) {
+                console.error(error);
             });
-    
-            // Show Popup  TODO: conditional
-            // ==========
-            dhtmlxPopup.attachHTML("<div id=DeviceSelector style=\"width:250px\"></DIV>");
-
-            // Mic Serttings
-            $("#DeviceSelector").append("<div style=\"margin-top:20px\">Microphone: </div>");
-            $("#DeviceSelector").append(audioSelect);
-            
-            // Speaker
-            $("#DeviceSelector").append("<div style=\"margin-top:20px\">Speaker: </div>");
-            $("#DeviceSelector").append(speakerSelect);
-
-            // Camera
-            $("#DeviceSelector").append("<div style=\"margin-top:20px\">Camera: </div>");
-            $("#DeviceSelector").append(videoSelect);
-
-            dhtmlxPopup.show(x, y, w, h);
-    
         }).catch(function (error) {
             console.error(error);
         });
@@ -5575,21 +5752,15 @@ function PresentVideo(buddy){
         Alert("You must be in a Video call to select this option.");
     }
 }
-
-function ToggleThisHeight(obj,smallHeight,bigHeight)
-{
-    var $Obj = $(obj);
-    if($Obj.height() == smallHeight){
-        $Obj.find("i").prop("class", "fa fa-caret-down");
-        $Obj.css("height", bigHeight + "px");
-    }
-    else if($Obj.height() == bigHeight)
-    {
-        $Obj.find("i").prop("class", "fa fa-caret-right");
-        $Obj.css("height", smallHeight + "px");
-    }
-
+function ShowCallStats(buddy, obj){
+    console.log("Show Call Stats");
+    $("#contact-"+ buddy +"-AdioStats").show(300);
 }
+function HideCallStats(buddy, obj){
+    console.log("Hide Call Stats");
+    $("#contact-"+ buddy +"-AdioStats").hide(300);
+}
+
 
 // Chatting
 // ========
@@ -5636,7 +5807,24 @@ function chatOnbeforepaste(event, obj, buddy)
     if (preventDefault) event.preventDefault();
 }
 function chatOnkeydown(event, obj, buddy) {
+    var keycode = (event.keyCode ? event.keyCode : event.which);
+    if (keycode == '13'){
+        if(event.shiftKey || event.ctrlKey) {
+            // Leave as is
+            // Windows and Mac react differently here.
+        } else {
+            event.preventDefault();
+            
+            SendChatMessage(buddy);
+            return false;
+        }
+    } 
+
     // handle paste, etc
+    RefreshChatPreview(event, $.trim($(obj).val()), buddy);
+}
+function chatOnInput(event, obj, buddy) {
+    console.log(event);
     RefreshChatPreview(event, $.trim($(obj).val()), buddy);
 }
 function chatOnkeyup(event, obj, buddy) {
