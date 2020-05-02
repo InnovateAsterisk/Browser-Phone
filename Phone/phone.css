@@ -177,6 +177,7 @@
     background-color: #000000 !important;
     margin: 0px !important;
     padding: 0px !important;
+    z-index: 2147483647 !important;
 }
 
 .dtmfButtons{
@@ -987,7 +988,6 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .answerCall {
-    border-top: 1px solid #404040;
     text-align: center;
     padding: 25px;
     margin-top: 10px;
@@ -1205,6 +1205,7 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .theirChatMessage {
+    padding-left:5px;
     margin-top: 5px;
     margin-right: auto;
     max-width: 85%;
@@ -1214,7 +1215,23 @@ div.dhx_popup_material div.dhx_popup_area {
     vertical-align: top;
     text-align: left;
 }
+.theirChatMessage AUDIO {
+    width: 100%;
+    height: 30px;
+    outline: none;
 
+    border-radius: 5px;
+    background-color: #f2f3f4;
+    color: #333333;
+}
+.theirChatMessage  VIDEO {
+    max-width: 640px;
+    width: 100%;
+    outline: none;
+    max-height: 360px;
+    background-color: #000000;
+    border-radius: 5px;
+}
 .theirChatMessageText {
     display: inline-block;
     background-color: rgba(231, 231, 231, 0.8);
@@ -1222,10 +1239,11 @@ div.dhx_popup_material div.dhx_popup_area {
     border-radius: 5px;
     font-size: 14px;
     color: #272f39;
-    cursor: pointer;
+    position: relative;
 }
 
 .ourChatMessage {
+    padding-right: 5px;
     margin-top: 5px;
     margin-left: auto;
     max-width: 85%;
@@ -1235,7 +1253,23 @@ div.dhx_popup_material div.dhx_popup_area {
     vertical-align: top;
     text-align: left;
 }
+.ourChatMessage AUDIO {
+    width: 100%;
+    height: 30px;
+    outline: none;
 
+    border-radius: 5px;
+    background-color: #f2f3f4;
+    color: #333333;
+}
+.ourChatMessage VIDEO {
+    max-width: 640px;
+    width: 100%;
+    outline: none;
+    max-height: 360px;
+    background-color: #000000;
+    border-radius: 5px;
+}
 .ourChatMessageText {
     display: inline-block;
     background-color: rgba(215, 232, 247, 0.8);
@@ -1243,13 +1277,56 @@ div.dhx_popup_material div.dhx_popup_area {
     border-radius: 5px;
     font-size: 14px;
     color: #272f39;
-    cursor: pointer;
+    position: relative;
 }
 
 .messageDate {
     font-size: 11px;
     color: #666666;
 }
+
+.chatMessageDropdown{
+    cursor: pointer;
+    position: absolute;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 50px;
+}
+.callRecordings{
+    font-size:11px
+}
+.callRecordings button{
+    width: 30px;
+    text-align: center;
+    height: 30px;
+    line-height: 30px;
+
+    float: left;
+    margin-right: 10px;
+
+    color: #333333;
+    background-color: #CCCCCC;
+    border: 1px solid #222222;
+    border-radius: 50px;
+}
+.callRecordings button:hover{
+    color: #cccccc;
+    background-color: #333333;
+    border: 1px solid #222222;
+}
+
+.callRecording{
+    background-color: #CCCCCC;
+    border-radius: 10px;
+    padding: 5px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
 
 .addEmoji {
 
@@ -1287,23 +1364,37 @@ div.dhx_popup_material div.dhx_popup_area {
     border-radius: 50px;
     padding: 5px;
     padding-left: 15px;
-    padding-right: 10px;
+    text-align: left;
+}
+
+.answerButton{
+    background-color: #059609;
+    border: 1px solid #055d05;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+.answerButton:hover {
+    background-color: #0aa80f;
+    border: 1px solid #055d05;
+}
+
+.answerButton:active {
+    background-color: #017a05;
 }
 
 .hangupButton {
     background-color: #dc0000;
+    border: 1px solid #870000;
     padding-left: 15px;
     padding-right: 15px;
-    border: 1px solid #870000;
 }
-
 .hangupButton:hover {
     background-color: #ff1b1b;
+    border: 1px solid #870000;
 }
 
 .hangupButton:active {
     background-color: #d80000;
-    box-shadow: none;
 }
 
 .dotOnline {
