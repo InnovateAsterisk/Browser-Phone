@@ -17,14 +17,14 @@ Git: https://github.com/InnovateAsterisk/Browser-Phone
 =========
 Requires:
 =========
-    ✅ sip-0.11.6.js
-    ✅ jquery-3.3.1.min.js
-    ✅ jquery.md5-min.js
-    ✅ Chart.bundle-2.7.2.js
-    ✅ dhtmlx.js
-    ✅ fabric-2.4.6.min.js
-    ✅ moment-with-locales-2.24.0.min.js
-    ✅ croppie.min.js
+    ✅ sip-0.11.6.js                        : WebRTC and SIP signaling library
+    ✅ jquery-3.3.1.min.js                  : Javascript tolkit
+    ✅ jquery.md5-min.js                    : Md5 Hash plugin
+    ✅ Chart.bundle-2.7.2.js                : Graph and Chart UI
+    ✅ dhtmlx.js                            : Layout and windowing library
+    ✅ fabric-2.4.6.min.js                  : Canvas Editing Library
+    ✅ moment-with-locales-2.24.0.min.js    : Date and Time libary
+    ✅ croppie.min.js                       : Profile picture crop tool
 
 ===============
 Features to do:
@@ -36,7 +36,7 @@ Features to do:
     ✅ Stream Row Buffering
     ✅ Stream Search
     ✅ Scratchpad
-    ✅ Present Video
+    ✅ Present Video (mix in audio)
     ✅ Present Blank
     ✅ Action URLs
     ✅ Conference in caller during call
@@ -45,7 +45,6 @@ Features to do:
     ✅ Auto-add Buddy from inbound (and check duplicates)
     ✅ Delete Buddy (Partial/Complete/Blacklist)
     ✅ Blacklists / Whitelists (Inbound)
-    ✅ Sinkid of Attended Transfer Call
     ✅ Group Call
     ✅ Personalisation: Audio, Backgrounds
     ✅ Group Handling / Conference / Monitoring
@@ -54,6 +53,7 @@ Features to do:
     ✅ Keyboard Shortcuts
     ✅ Languages
     ✅ Web Speech API?
+    ✅ Code Cleanup: namespace, objects, memory cleanup
  */
 
 // ========================================================
@@ -173,6 +173,14 @@ function formatShortDuration(seconds){
         return ((duration.hours() > 9)? duration.hours() : "0"+duration.hours())  + ":" + ((duration.minutes() > 9)? duration.minutes() : "0"+duration.minutes())  + ":" + ((duration.seconds() > 9)? duration.seconds() : "0"+duration.seconds());
     } 
     //  Otherwise.. this is just too long
+}
+function formatBytes(bytes, decimals=2) {
+    if (bytes === 0) return '0 Bytes';
+    var k = 1024;
+    var dm = decimals < 0 ? 0 : decimals;
+    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    var i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 // Window and Document Events
@@ -838,7 +846,7 @@ function ConfigureExtensionWindow(){
                 outputStream = audioObj.webkitCaptureStream();
             }
             else {
-                console.log("Cannot display Audio Levels")
+                console.warn("Cannot display Audio Levels")
                 return;
             }
             // Monitor Output
@@ -1850,16 +1858,11 @@ function wireupAudioSession(session, typeStr, buddy) {
     session.on('trackAdded', function () {      
         var pc = session.sessionDescriptionHandler.peerConnection;
 
-        // Gets Remote Audio Track
-        // =======================
+        // Gets Remote Audio Track (Local audio is setup via initial GUM)
         var remoteStream = new MediaStream();
         pc.getReceivers().forEach(function (receiver) {
             if(receiver.track && receiver.track.kind == "audio"){
-                try {
-                    remoteStream.addTrack(receiver.track);
-                } catch (e) {
-                    console.error(e);
-                }
+                remoteStream.addTrack(receiver.track);
             } 
         });
         var remoteAudio = $("#contact-" + buddy + "-remoteAudio").get(0);
@@ -1967,20 +1970,10 @@ function wireupVideoSession(session, typeStr, buddy) {
         pc.getReceivers().forEach(function (receiver) {
             if(receiver.track){
                 if(receiver.track.kind == "audio"){
-                    try{
-                        remoteAudioStream.addTrack(receiver.track);
-                    }
-                    catch (e) {
-                        console.error(e);
-                    }
+                    remoteAudioStream.addTrack(receiver.track);
                 }
                 if(receiver.track.kind == "video"){
-                    try{
-                        remoteVideoStream.addTrack(receiver.track);
-                    }
-                    catch (e) {
-                        console.error(e);
-                    }
+                    remoteVideoStream.addTrack(receiver.track);
                 }
             }
         });
@@ -2012,12 +2005,7 @@ function wireupVideoSession(session, typeStr, buddy) {
             var pc = session.sessionDescriptionHandler.peerConnection;
             pc.getSenders().forEach(function (sender) {
                 if(sender.track && sender.track.kind == "video"){
-                    try{
-                        localVideoStream.addTrack(sender.track);
-                    }
-                    catch (e) {
-                        console.error("Failed to Add Sender Video Track:", e);
-                    }
+                    localVideoStream.addTrack(sender.track);
                 }
             });
             var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
@@ -2120,12 +2108,19 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
     if(session.data.teardownComplete == true) return;
 
     // Call UI
-    if(dhtmlxPopup != null)
-    {
-        dhtmlxPopup.hide();
-        dhtmlxPopup.unload();
-        dhtmlxPopup = null;
+    HidePopup();
+    // End any child calls
+    if(session.data.childsession){
+        try{
+            if(session.data.childsession.state == SIP.Session.C.STATUS_ANSWERED){
+                session.data.childsession.bye();
+            } 
+            else{
+                session.data.childsession.cancel();
+            } 
+        } catch(e){}
     }
+    session.data.childsession = null;
     // Stop Recording if we are
     StopRecording(buddy,true);
     //Video
@@ -2380,14 +2375,8 @@ function StartRemoteAudioMediaMonitoring(buddy, session) {
     var pc = session.sessionDescriptionHandler.peerConnection;
     pc.getReceivers().forEach(function (RTCRtpReceiver) {
         if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio"){
-            if(audioReceiver == null)
-            {
-                try{
-                    remoteAudioStream.addTrack(RTCRtpReceiver.track);
-                }
-                catch(e){
-                    console.log("Error adding Track: "+ RTCRtpReceiver.track.label);
-                }
+            if(audioReceiver == null) {
+                remoteAudioStream.addTrack(RTCRtpReceiver.track);
                 audioReceiver = RTCRtpReceiver;
             }
             else {
@@ -2652,13 +2641,8 @@ function StartLocalAudioMediaMonitoring(buddy, session) {
     pc.getSenders().forEach(function (RTCRtpSender) {
         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio"){
             if(audioSender == null){
-                try{
-                    console.log("Adding Track to Monitor: ", RTCRtpSender.track.label);
-                    localAudioStream.addTrack(RTCRtpSender.track);
-                }
-                catch(e){
-                    console.log("Error adding Track: "+ RTCRtpSender.track.label);
-                }
+                console.log("Adding Track to Monitor: ", RTCRtpSender.track.label);
+                localAudioStream.addTrack(RTCRtpSender.track);
                 audioSender = RTCRtpSender;
             }
             else {
@@ -3350,6 +3334,7 @@ function AddCallMessage(buddy, session, reasonCode, reasonText) { //(buddy, sess
         Mutes: (session.data.mute)? session.data.mute : [],
         Holds: (session.data.hold)? session.data.hold : [],
         Recordings: (session.data.recordings)? session.data.recordings : [],
+        ConfCalls: (session.data.confcalls)? session.data.confcalls : [],
         QOS: []
     }
 
@@ -3961,7 +3946,7 @@ function StartRecording(buddy){
             var recordStream = new MediaStream();
             var pc = session.sessionDescriptionHandler.peerConnection;
             pc.getSenders().forEach(function (RTCRtpSender) {
-                if(RTCRtpSender.track.kind == "audio") {
+                if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
                     console.log("Adding sender audio track to record:", RTCRtpSender.track.label);
                     recordStream.addTrack(RTCRtpSender.track);
                 }
@@ -3974,38 +3959,20 @@ function StartRecording(buddy){
                 // }
             });
             pc.getReceivers().forEach(function (RTCRtpReceiver) {
-                if(RTCRtpReceiver.track.kind == "audio") {
+                if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
                     console.log("Adding receiver audio track to record:", RTCRtpReceiver.track.label);
                     recordStream.addTrack(RTCRtpReceiver.track);
                 }
                 if(session.data.withvideo){
-                    if(RTCRtpReceiver.track.kind == "video") {
+                    if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "video") {
                         console.log("Adding receiver video track to record:", RTCRtpReceiver.track.label);
                         recordStream.addTrack(RTCRtpReceiver.track);
                     }
                 }
             });
 
-            // Mix the Audio Stream into one
-            var audioContext = null;
-            try {
-                window.AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioContext = new AudioContext();
-            }
-            catch(e){
-                console.warn("AudioContext() not available, cannot record");
-                return;
-            }
-            var mixedAudioStream = audioContext.createMediaStreamDestination();
-            recordStream.getAudioTracks().forEach(function(audioTrack){
-                var srcStream = new MediaStream();
-                srcStream.addTrack(audioTrack);
-                var streamSourceNode = audioContext.createMediaStreamSource(srcStream);
-                streamSourceNode.connect(mixedAudioStream);
-            });
-
             var mixedAudioVideoRecordStream = new MediaStream();
-            mixedAudioVideoRecordStream.addTrack(mixedAudioStream.stream.getAudioTracks()[0]); // Add Audio Track
+            mixedAudioVideoRecordStream.addTrack(MixAudioStreams(recordStream).getAudioTracks()[0]); // Add Audio Track
             if(session.data.withvideo){
                 // Maybe look at Video Merge / Overlay??
                 mixedAudioVideoRecordStream.addTrack(recordStream.getVideoTracks()[0]); // Add Video Track
@@ -4031,6 +3998,8 @@ function StartRecording(buddy){
             session.data.mediaRecorder = mediaRecorder;
             session.data.mediaRecorder.start(); // Safari does not support timeslice
             session.data.recordings[session.data.recordings.length-1].startTime = utcDateNow();
+
+            $("#contact-" + buddy + "-msg").html("Call Recording Started");
         }
         else if(session.data.mediaRecorder.state == "inactive") {
             session.data.mediaRecorder.data = {};
@@ -4041,6 +4010,8 @@ function StartRecording(buddy){
             console.log("Starting Call Recording", id);
             session.data.mediaRecorder.start();
             session.data.recordings[session.data.recordings.length-1].startTime = utcDateNow();
+
+            $("#contact-" + buddy + "-msg").html("Call Recording Started");
         } 
         else {
             console.warn("Recorder is in an unknow state");
@@ -4117,6 +4088,8 @@ function StopRecording(buddy, noConfirm){
                 console.log("Stopping Call Recording");
                 session.data.mediaRecorder.stop();
                 session.data.recordings[session.data.recordings.length-1].stopTime = utcDateNow();
+
+                $("#contact-" + buddy + "-msg").html("Call Recording Stopped");
             } 
             else{
                 console.warn("Recorder is in an unknow state");
@@ -4134,6 +4107,8 @@ function StopRecording(buddy, noConfirm){
                     console.log("Stopping Call Recording");
                     session.data.mediaRecorder.stop();
                     session.data.recordings[session.data.recordings.length-1].stopTime = utcDateNow();
+
+                    $("#contact-" + buddy + "-msg").html("Call Recording Stopped");
                 }
                 else{
                     console.warn("Recorder is in an unknow state");
@@ -4142,7 +4117,7 @@ function StopRecording(buddy, noConfirm){
         });
     }
 }
-function PlayAudioCallRecording(obj, buddy, uID){
+function PlayAudioCallRecording(obj, cdrId, uID){
     var container = $(obj).parent();
     container.empty();
 
@@ -4188,6 +4163,9 @@ function PlayAudioCallRecording(obj, buddy, uID){
             console.error("IndexDB Get Error:", event);
         };
         objectStoreGet.onsuccess = function(event) {
+            $("#cdr-media-meta-size-"+ cdrId +"-"+ uID).html(" Size: "+ formatBytes(event.target.result.bytes));
+            $("#cdr-media-meta-codec-"+ cdrId +"-"+ uID).html(" Codec: "+ event.target.result.type);
+
             // Play
             audioObj.src = window.URL.createObjectURL(event.target.result.mediaBlob);
             audioObj.oncanplaythrough = function(){
@@ -4201,13 +4179,17 @@ function PlayAudioCallRecording(obj, buddy, uID){
     }
 }
 
-function PlayVideoCallRecording(obj, buddy, uID){
+function PlayVideoCallRecording(obj, cdrId, uID){
     var container = $(obj).parent();
     container.empty();
 
     var videoObj = $("<video>").get(0);
     videoObj.autoplay = false;
     videoObj.controls = true;
+    videoObj.ontimeupdate = function(event){
+        $("#cdr-video-meta-width-"+ cdrId +"-"+ uID).html(" Width: "+ event.target.videoWidth +"px");
+        $("#cdr-video-meta-height-"+ cdrId +"-"+ uID).html(" Height: "+ event.target.videoHeight +"px");
+    }
 
     var sinkId = getAudioOutputID();
     if (typeof videoObj.sinkId !== 'undefined') {
@@ -4246,6 +4228,9 @@ function PlayVideoCallRecording(obj, buddy, uID){
             console.error("IndexDB Get Error:", event);
         };
         objectStoreGet.onsuccess = function(event) {
+            $("#cdr-media-meta-size-"+ cdrId +"-"+ uID).html(" Size: "+ formatBytes(event.target.result.bytes));
+            $("#cdr-media-meta-codec-"+ cdrId +"-"+ uID).html(" Codec: "+ event.target.result.type);
+
             // Play
             videoObj.src = window.URL.createObjectURL(event.target.result.mediaBlob);
             videoObj.oncanplaythrough = function(){
@@ -4260,14 +4245,40 @@ function PlayVideoCallRecording(obj, buddy, uID){
     }
 }
 
+// Stream Manipulations
+// ====================
+function MixAudioStreams(MultiAudioTackStream){
+    // Takes in a MediaStream with any mumber of audio tracks and mixes them together
 
+    var audioContext = null;
+    try {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+    }
+    catch(e){
+        console.warn("AudioContext() not available, cannot record");
+        return MultiAudioTackStream;
+    }
+    var mixedAudioStream = audioContext.createMediaStreamDestination();
+    MultiAudioTackStream.getAudioTracks().forEach(function(audioTrack){
+        var srcStream = new MediaStream();
+        srcStream.addTrack(audioTrack);
+        var streamSourceNode = audioContext.createMediaStreamSource(srcStream);
+        streamSourceNode.connect(mixedAudioStream);
+    });
+
+    return mixedAudioStream.stream;
+}
+
+// Call Transfer
+// =============
 function StartTransferSession(buddy){
     $("#contact-"+ buddy +"-btn-Transfer").hide();
     $("#contact-"+ buddy +"-btn-CancelTransfer").show();
 
     holdSession(buddy);
-    $("#contact-"+ buddy +"-txt-FindBuddy").val("");
-    $("#contact-"+ buddy +"-txt-FindBuddy").parent().show();
+    $("#contact-"+ buddy +"-txt-FindTransferBuddy").val("");
+    $("#contact-"+ buddy +"-txt-FindTransferBuddy").parent().show();
 
     $("#contact-"+ buddy +"-btn-blind-transfer").show();
     $("#contact-"+ buddy +"-btn-attended-transfer").show();
@@ -4281,11 +4292,11 @@ function StartTransferSession(buddy){
 function CancelTransferSession(buddy){
     $("#contact-"+ buddy +"-btn-Transfer").show();
     $("#contact-"+ buddy +"-btn-CancelTransfer").hide();
-
+    // TODO: End Child Call if any
     unholdSession(buddy);
     $("#contact-"+ buddy +"-Transfer").hide();
 }
-function TrnasferFindBuddy(obj,buddy){
+function QuickFindBuddy(obj,buddy){
     var x = window.dhx4.absLeft(obj);
     var y = window.dhx4.absTop(obj);
     var w = obj.offsetWidth;
@@ -4348,214 +4359,551 @@ function TrnasferFindBuddy(obj,buddy){
 
 
 function BlindTransfer(buddy) {
-    var dstNo = $("#contact-"+ buddy +"-txt-FindBuddy").val().replace(/[^0-9\*\#\+]/g,'');
+    var dstNo = $("#contact-"+ buddy +"-txt-FindTransferBuddy").val().replace(/[^0-9\*\#\+]/g,'');
     if(dstNo == ""){
         console.warn("Cannot transfer, must be [0-9*+#]");
         return;
     }
 
     var session = getSession(buddy);
-    if (session != null) {
-
-        if(!session.data.transfer) session.data.transfer = [];
-        session.data.transfer.push({ 
-            type: "Blind", 
-            to: dstNo, 
-            transferTime: utcDateNow(), 
-            disposition: "refer",
-            dispositionTime: utcDateNow(), 
-            accept : {
-                complete: null,
-                eventTime: null,
-                disposition: ""
-            }
-        });
-        var transferid = session.data.transfer.length-1;
-
-        var transferOptions  = { 
-            receiveResponse: function doReceiveResponse(response){
-                console.log("Blind transfer response: ", response.reason_phrase);
-
-                session.data.terminateby = "refer";
-                session.data.transfer[transferid].accept.disposition = response.reason_phrase;
-                session.data.transfer[transferid].accept.eventTime = utcDateNow();
-            }
-        }
-        console.log("REFER: ", dstNo + "@" + wssServer);
-        session.refer("sip:" + dstNo + "@" + wssServer, transferOptions);
-    } else {
-        $("#contact-" + buddy + "-msg").html("transfer failed, null session");
+    if (session == null) {
+        console.warn("Transfer failed, null session");
+        return;
     }
+
+    if(!session.data.transfer) session.data.transfer = [];
+    session.data.transfer.push({ 
+        type: "Blind", 
+        to: dstNo, 
+        transferTime: utcDateNow(), 
+        disposition: "refer",
+        dispositionTime: utcDateNow(), 
+        accept : {
+            complete: null,
+            eventTime: null,
+            disposition: ""
+        }
+    });
+    var transferid = session.data.transfer.length-1;
+
+    var transferOptions  = { 
+        receiveResponse: function doReceiveResponse(response){
+            console.log("Blind transfer response: ", response.reason_phrase);
+
+            session.data.terminateby = "refer";
+            session.data.transfer[transferid].accept.disposition = response.reason_phrase;
+            session.data.transfer[transferid].accept.eventTime = utcDateNow();
+
+            $("#contact-" + buddy + "-msg").html("Call Blind Transfered (Accepted)");
+        }
+    }
+    console.log("REFER: ", dstNo + "@" + wssServer);
+    session.refer("sip:" + dstNo + "@" + wssServer, transferOptions);
+    $("#contact-" + buddy + "-msg").html("Call Blind Transfered");
 }
 function AttendedTransfer(buddy){
-    var dstNo = $("#contact-"+ buddy +"-txt-FindBuddy").val().replace(/[^0-9\*\#\+]/g,'');
+    var dstNo = $("#contact-"+ buddy +"-txt-FindTransferBuddy").val().replace(/[^0-9\*\#\+]/g,'');
     if(dstNo == ""){
         console.warn("Cannot transfer, must be [0-9*+#]");
         return;
     }
     
     var session = getSession(buddy);
-    if (session != null) {
+    if (session == null) {
+        console.warn("Transfer failed, null session");
+        return;
+    }
 
-        $("#contact-"+ buddy +"-txt-FindBuddy").parent().hide();
-        $("#contact-"+ buddy +"-btn-blind-transfer").hide();
-        $("#contact-"+ buddy +"-btn-attended-transfer").hide();
+    HidePopup();
+
+    $("#contact-"+ buddy +"-txt-FindTransferBuddy").parent().hide();
+    $("#contact-"+ buddy +"-btn-blind-transfer").hide();
+    $("#contact-"+ buddy +"-btn-attended-transfer").hide();
+
+    $("#contact-"+ buddy +"-btn-complete-attended-transfer").hide();
+    $("#contact-"+ buddy +"-btn-cancel-attended-transfer").hide();
+    $("#contact-"+ buddy +"-btn-terminate-attended-transfer").hide();
+
+    var newCallStatus = $("#contact-"+ buddy +"-transfer-status");
+    newCallStatus.html("Connecting....");
+    newCallStatus.show();
+
+    if(!session.data.transfer) session.data.transfer = [];
+    session.data.transfer.push({ 
+        type: "Attended", 
+        to: dstNo, 
+        transferTime: utcDateNow(), 
+        disposition: "invite",
+        dispositionTime: utcDateNow(), 
+        accept : {
+            complete: null,
+            eventTime: null,
+            disposition: ""
+        }
+    });
+    var transferid = session.data.transfer.length-1;
+
+    // SDP options
+    var spdOptions = {
+        sessionDescriptionHandlerOptions: {
+            constraints: {
+                audio: {
+                    deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
+                },
+                video: false
+            }
+        }
+    }
+    if(session.data.withvideo){
+        spdOptions.constraints.video = {
+            deviceId: (session.data.VideoSourceDevice != "default")? { exact: session.data.VideoSourceDevice } : "default"
+        }
+        // Add additional Constraints
+        if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+        if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+        if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    }
+
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+    if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+
+    // Create new call session
+    console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
+    var newSession = userAgent.invite("sip:" + dstNo + "@" + wssServer, spdOptions);
+    newSession.on('progress', function (response) {
+        newCallStatus.html("Ringing....");
+        session.data.transfer[transferid].disposition = "progress";
+        session.data.transfer[transferid].dispositionTime = utcDateNow();
+
+        $("#contact-" + buddy + "-msg").html("Attended Transfer Call Started...");
+        
+        var CancelAttendedTransferBtn = $("#contact-"+ buddy +"-btn-cancel-attended-transfer");
+        CancelAttendedTransferBtn.off('click');
+        CancelAttendedTransferBtn.on('click', function(){
+            newSession.cancel();
+            newCallStatus.html("Call canceled");
+            console.log("New call session canceled");
+
+            session.data.transfer[transferid].accept.complete = false;
+            session.data.transfer[transferid].accept.disposition = "cancel";
+            session.data.transfer[transferid].accept.eventTime = utcDateNow();
+
+            $("#contact-" + buddy + "-msg").html("Attended Transfer Call Cancelled");
+        });
+        CancelAttendedTransferBtn.show();
+    });
+    newSession.on('accepted', function (response) {
+        newCallStatus.html("Call in progress");
+        $("#contact-"+ buddy +"-btn-cancel-attended-transfer").hide();
+        session.data.transfer[transferid].disposition = "accepted";
+        session.data.transfer[transferid].dispositionTime = utcDateNow();
+
+        var CompleteTransferBtn = $("#contact-"+ buddy +"-btn-complete-attended-transfer");
+        CompleteTransferBtn.off('click');
+        CompleteTransferBtn.on('click', function(){
+            var transferOptions  = { 
+                receiveResponse: function doReceiveResponse(response){
+                    console.log("Attended transfer response: ", response.reason_phrase);
+
+                    session.data.terminateby = "refer";
+                    session.data.transfer[transferid].accept.disposition = response.reason_phrase;
+                    session.data.transfer[transferid].accept.eventTime = utcDateNow();
+
+                    $("#contact-" + buddy + "-msg").html("Attended Transfer Complete (Accepted)");
+                }
+            }
+
+            // Send REFER
+            session.refer(newSession, transferOptions);
+
+            newCallStatus.html("Transfer complete");
+            console.log("Attended transfer complete");
+            // Call will now teardown...
+
+            session.data.transfer[transferid].accept.complete = true;
+            session.data.transfer[transferid].accept.disposition = "refer";
+            session.data.transfer[transferid].accept.eventTime = utcDateNow();
+
+            $("#contact-" + buddy + "-msg").html("Attended Transfer Complete");
+        });
+        CompleteTransferBtn.show();
+
+        var TerminateAttendedTransferBtn = $("#contact-"+ buddy +"-btn-terminate-attended-transfer");
+        TerminateAttendedTransferBtn.off('click');
+        TerminateAttendedTransferBtn.on('click', function(){
+            newSession.bye();
+            newCallStatus.html("Call ended, bye");
+            console.log("New call session end");
+
+            session.data.transfer[transferid].accept.complete = false;
+            session.data.transfer[transferid].accept.disposition = "bye";
+            session.data.transfer[transferid].accept.eventTime = utcDateNow();
+
+            $("#contact-" + buddy + "-msg").html("Attended Transfer Call Ended");
+        });
+        TerminateAttendedTransferBtn.show();
+    });
+    newSession.on('trackAdded', function () {
+        var pc = newSession.sessionDescriptionHandler.peerConnection;
+
+        // Gets Remote Audio Track (Local audio is setup via initial GUM)
+        var remoteStream = new MediaStream();
+        pc.getReceivers().forEach(function (receiver) {
+            if(receiver.track && receiver.track.kind == "audio"){
+                remoteStream.addTrack(receiver.track);
+            }
+        });
+        var remoteAudio = $("#contact-" + buddy + "-transfer-remoteAudio").get(0);
+        remoteAudio.srcObject = remoteStream;
+        remoteAudio.onloadedmetadata = function(e) {
+            if (typeof remoteAudio.sinkId !== 'undefined') {
+                remoteAudio.setSinkId(session.data.AudioOutputDevice).then(function(){
+                    console.log("sinkId applied: "+ session.data.AudioOutputDevice);
+                }).catch(function(e){
+                    console.warn("Error using setSinkId: ", e);
+                });            
+            }
+            remoteAudio.play();
+        }
+    });
+    newSession.on('rejected', function (response, cause) {
+        console.log("New call session rejected: ", cause);
+        newCallStatus.html("Call rejected");
+        session.data.transfer[transferid].disposition = "rejected";
+        session.data.transfer[transferid].dispositionTime = utcDateNow();
+
+        $("#contact-"+ buddy +"-txt-FindTransferBuddy").parent().show();
+        $("#contact-"+ buddy +"-btn-blind-transfer").show();
+        $("#contact-"+ buddy +"-btn-attended-transfer").show();
 
         $("#contact-"+ buddy +"-btn-complete-attended-transfer").hide();
         $("#contact-"+ buddy +"-btn-cancel-attended-transfer").hide();
         $("#contact-"+ buddy +"-btn-terminate-attended-transfer").hide();
-    
-        var newCallStatus = $("#contact-"+ buddy +"-transfer-status");
-        newCallStatus.html("Connecting....");
-        newCallStatus.show();
 
-        if(!session.data.transfer) session.data.transfer = [];
-        session.data.transfer.push({ 
-            type: "Attended", 
-            to: dstNo, 
-            transferTime: utcDateNow(), 
-            disposition: "invite",
-            dispositionTime: utcDateNow(), 
-            accept : {
-                complete: null,
-                eventTime: null,
-                disposition: ""
-            }
-        });
-        var transferid = session.data.transfer.length-1;
+        $("#contact-" + buddy + "-msg").html("Attended Transfer Call Rejected");
 
-        // SDP options
-        var spdOptions = {
-            sessionDescriptionHandlerOptions: {
-                constraints: {
-                    audio: {
-                        deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
-                    },
-                    video: false
-                }
-            }
-        }
-        if(session.data.withvideo){
-            spdOptions.constraints.video = {
-                deviceId: (session.data.VideoSourceDevice != "default")? { exact: session.data.VideoSourceDevice } : "default"
-            }
-            // Add additional Constraints
-            if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
-            if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
-            if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
-        }
+        window.setTimeout(function(){
+            newCallStatus.hide();
+        }, 1000);
+    });
+    newSession.on('terminated', function (response, cause) {
+        console.log("New call session terminated: ", cause);
+        newCallStatus.html("Call ended");
+        session.data.transfer[transferid].disposition = "terminated";
+        session.data.transfer[transferid].dispositionTime = utcDateNow();
 
-        var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
-        if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
-        if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
-        if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+        $("#contact-"+ buddy +"-txt-FindTransferBuddy").parent().show();
+        $("#contact-"+ buddy +"-btn-blind-transfer").show();
+        $("#contact-"+ buddy +"-btn-attended-transfer").show();
 
-        // Create new call session
-        console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
-        var newSession = userAgent.invite("sip:" + dstNo + "@" + wssServer, spdOptions);
-        newSession.on('progress', function (response) {
-            newCallStatus.html("Ringing....");
-            session.data.transfer[transferid].disposition = "progress";
-            session.data.transfer[transferid].dispositionTime = utcDateNow();
-            
-            var CancelAttendedTransferBtn = $("#contact-"+ buddy +"-btn-cancel-attended-transfer");
-            CancelAttendedTransferBtn.off('click');
-            CancelAttendedTransferBtn.on('click', function(){
-                newSession.cancel();
-                newCallStatus.html("Call canceled");
-                console.log("New call session canceled");
+        $("#contact-"+ buddy +"-btn-complete-attended-transfer").hide();
+        $("#contact-"+ buddy +"-btn-cancel-attended-transfer").hide();
+        $("#contact-"+ buddy +"-btn-terminate-attended-transfer").hide();
 
-                session.data.transfer[transferid].accept.complete = false;
-                session.data.transfer[transferid].accept.disposition = "cancel";
-                session.data.transfer[transferid].accept.eventTime = utcDateNow();
-            });
-            CancelAttendedTransferBtn.show();
-        });
-        newSession.on('accepted', function (response) {
-            newCallStatus.html("Call in progress");
-            $("#contact-"+ buddy +"-btn-cancel-attended-transfer").hide();
-            session.data.transfer[transferid].disposition = "accepted";
-            session.data.transfer[transferid].dispositionTime = utcDateNow();
+        $("#contact-" + buddy + "-msg").html("Attended Transfer Call Terminated");
 
-            var CompleteTransferBtn = $("#contact-"+ buddy +"-btn-complete-attended-transfer");
-            CompleteTransferBtn.off('click');
-            CompleteTransferBtn.on('click', function(){
-                var transferOptions  = { 
-                    receiveResponse: function doReceiveResponse(response){
-                        console.log("Attended transfer response: ", response.reason_phrase);
-
-                        session.data.terminateby = "refer";
-                        session.data.transfer[transferid].accept.disposition = response.reason_phrase;
-                        session.data.transfer[transferid].accept.eventTime = utcDateNow();
-                    }
-                }
-
-                // Send REFER
-                session.refer(newSession, transferOptions);
-
-                newCallStatus.html("Transfer complete");
-                console.log("Attended transfer complete");
-                // Call will now teardown...
-
-                session.data.transfer[transferid].accept.complete = true;
-                session.data.transfer[transferid].accept.disposition = "refer";
-                session.data.transfer[transferid].accept.eventTime = utcDateNow();
-            });
-            CompleteTransferBtn.show();
-
-            var TerminateAttendedTransferBtn = $("#contact-"+ buddy +"-btn-terminate-attended-transfer");
-            TerminateAttendedTransferBtn.off('click');
-            TerminateAttendedTransferBtn.on('click', function(){
-                newSession.bye();
-                newCallStatus.html("Call ended, bye");
-                console.log("New call session end");
-
-                session.data.transfer[transferid].accept.complete = false;
-                session.data.transfer[transferid].accept.disposition = "bye";
-                session.data.transfer[transferid].accept.eventTime = utcDateNow();
-            });
-            TerminateAttendedTransferBtn.show();
-        });
-        newSession.on('rejected', function (response, cause) {
-            console.log("New call session rejected: ", cause);
-            newCallStatus.html("Call rejected");
-            session.data.transfer[transferid].disposition = "rejected";
-            session.data.transfer[transferid].dispositionTime = utcDateNow();
-
-            $("#contact-"+ buddy +"-txt-FindBuddy").parent().show();
-            $("#contact-"+ buddy +"-btn-blind-transfer").show();
-            $("#contact-"+ buddy +"-btn-attended-transfer").show();
-
-            $("#contact-"+ buddy +"-btn-complete-attended-transfer").hide();
-            $("#contact-"+ buddy +"-btn-cancel-attended-transfer").hide();
-            $("#contact-"+ buddy +"-btn-terminate-attended-transfer").hide();
-
-            window.setTimeout(function(){
-                newCallStatus.hide();
-            }, 1000);
-        });
-        newSession.on('terminated', function (response, cause) {
-            console.log("New call session terminated: ", cause);
-            newCallStatus.html("Call ended");
-            session.data.transfer[transferid].disposition = "terminated";
-            session.data.transfer[transferid].dispositionTime = utcDateNow();
-
-            $("#contact-"+ buddy +"-txt-FindBuddy").parent().show();
-            $("#contact-"+ buddy +"-btn-blind-transfer").show();
-            $("#contact-"+ buddy +"-btn-attended-transfer").show();
-
-            $("#contact-"+ buddy +"-btn-complete-attended-transfer").hide();
-            $("#contact-"+ buddy +"-btn-cancel-attended-transfer").hide();
-            $("#contact-"+ buddy +"-btn-terminate-attended-transfer").hide();
-
-            window.setTimeout(function(){
-                newCallStatus.hide();
-            }, 1000);
-        });
-    } else {
-        $("#contact-" + buddy + "-msg").html("transfer failed, null session");
-    }
+        window.setTimeout(function(){
+            newCallStatus.hide();
+        }, 1000);
+    });
+    session.data.childsession = newSession;
 }
+
+// Conference Calls
+// ================
+function StartConferenceCall(buddy){
+    $("#contact-"+ buddy +"-btn-Conference").hide();
+    $("#contact-"+ buddy +"-btn-CancelConference").show();
+
+    holdSession(buddy);
+    $("#contact-"+ buddy +"-txt-FindConferenceBuddy").val("");
+    $("#contact-"+ buddy +"-txt-FindConferenceBuddy").parent().show();
+
+    $("#contact-"+ buddy +"-btn-conference-dial").show();
+    $("#contact-"+ buddy +"-btn-cancel-conference-dial").hide();
+    $("#contact-"+ buddy +"-btn-join-conference-call").hide();
+    $("#contact-"+ buddy +"-btn-terminate-conference-call").hide();
+
+    $("#contact-"+ buddy +"-conference-status").hide();
+
+    $("#contact-"+ buddy +"-Conference").show();
+}
+function CancelConference(buddy){
+    $("#contact-"+ buddy +"-btn-Conference").show();
+    $("#contact-"+ buddy +"-btn-CancelConference").hide();
+    // TODO: End Child Call if any
+    unholdSession(buddy);
+    $("#contact-"+ buddy +"-Conference").hide();
+}
+function ConferenceDail(buddy){
+    var dstNo = $("#contact-"+ buddy +"-txt-FindConferenceBuddy").val().replace(/[^0-9\*\#\+]/g,'');
+    if(dstNo == ""){
+        console.warn("Cannot transfer, must be [0-9*+#]");
+        return;
+    }
+    
+    var session = getSession(buddy);
+    if (session == null) {
+        console.warn("Transfer failed, null session");
+        return;
+    }
+
+    HidePopup();
+
+    $("#contact-"+ buddy +"-txt-FindConferenceBuddy").parent().hide();
+
+    $("#contact-"+ buddy +"-btn-conference-dial").hide();
+    $("#contact-"+ buddy +"-btn-cancel-conference-dial")
+    $("#contact-"+ buddy +"-btn-join-conference-call").hide();
+    $("#contact-"+ buddy +"-btn-terminate-conference-call").hide();
+
+    var newCallStatus = $("#contact-"+ buddy +"-conference-status");
+    newCallStatus.html("Connecting....");
+    newCallStatus.show();
+
+    if(!session.data.confcalls) session.data.confcalls = [];
+    session.data.confcalls.push({ 
+        to: dstNo, 
+        startTime: utcDateNow(), 
+        disposition: "invite",
+        dispositionTime: utcDateNow(), 
+        accept : {
+            complete: null,
+            eventTime: null,
+            disposition: ""
+        }
+    });
+    var confcallid = session.data.confcalls.length-1;
+
+    // SDP options
+    var spdOptions = {
+        sessionDescriptionHandlerOptions: {
+            constraints: {
+                audio: {
+                    deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
+                },
+                video: false
+            }
+        }
+    }
+    if(session.data.withvideo){
+        spdOptions.constraints.video = {
+            deviceId: (session.data.VideoSourceDevice != "default")? { exact: session.data.VideoSourceDevice } : "default"
+        }
+        // Add additional Constraints
+        if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+        if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+        if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    }
+
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+    if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+
+    // Create new call session
+    console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
+    var newSession = userAgent.invite("sip:" + dstNo + "@" + wssServer, spdOptions);
+    newSession.on('progress', function (response) {
+        newCallStatus.html("Ringing....");
+        session.data.confcalls[confcallid].disposition = "progress";
+        session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+
+        $("#contact-" + buddy + "-msg").html("Conference Call Started...");
+
+        var CancelConferenceDialBtn = $("#contact-"+ buddy +"-btn-cancel-conference-dial");
+        CancelConferenceDialBtn.off('click');
+        CancelConferenceDialBtn.on('click', function(){
+            newSession.cancel();
+            newCallStatus.html("Call canceled");
+            console.log("New call session canceled");
+
+            session.data.confcalls[confcallid].accept.complete = false;
+            session.data.confcalls[confcallid].accept.disposition = "cancel";
+            session.data.confcalls[confcallid].accept.eventTime = utcDateNow();
+
+            $("#contact-" + buddy + "-msg").html("Conference Call Cancelled");
+        });
+        CancelConferenceDialBtn.show();
+    });
+    newSession.on('accepted', function (response) {
+        newCallStatus.html("Call in progress");
+        $("#contact-"+ buddy +"-btn-cancel-conference-dial").hide();
+        session.data.confcalls[confcallid].disposition = "accepted";
+        session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+
+        // Join Call
+        var JoinCallBtn = $("#contact-"+ buddy +"-btn-join-conference-call");
+        JoinCallBtn.off('click');
+        JoinCallBtn.on('click', function(){
+            // Merge Call Audio
+            if(!session.data.childsession){
+                console.warn("Conference session lost");
+                return;
+            }
+
+            var constraints = {
+                audio: {
+                    deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
+                },
+                video: false
+            }
+            navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+
+                var outputStreamForSession = new MediaStream();
+                var outputStreamForConfSession = new MediaStream();
+
+                var pc = session.sessionDescriptionHandler.peerConnection;
+                var confPc = session.data.childsession.sessionDescriptionHandler.peerConnection;
+
+                // Get conf call input channel
+                confPc.getReceivers().forEach(function (RTCRtpReceiver) {
+                    if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
+                        console.log("Adding conference session:", RTCRtpReceiver.track.label);
+                        outputStreamForSession.addTrack(RTCRtpReceiver.track);
+                    }
+                });
+                // Add own mic input channel
+                outputStreamForSession.addTrack(newStream.getAudioTracks()[0]);    
+
+                // Get session input channel
+                pc.getReceivers().forEach(function (RTCRtpReceiver) {
+                    if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
+                        console.log("Adding conference session:", RTCRtpReceiver.track.label);
+                        outputStreamForConfSession.addTrack(RTCRtpReceiver.track);
+                    }
+                });
+                // Add own mic input channel
+                outputStreamForConfSession.addTrack(newStream.getAudioTracks()[0]);    
+
+                // Replace Tracks
+                pc.getSenders().forEach(function (RTCRtpSender) {
+                    if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                        console.log("Switching to mixed Audio track on session");
+                        RTCRtpSender.track.stop();
+                        RTCRtpSender.replaceTrack(MixAudioStreams(outputStreamForSession).getAudioTracks()[0]).then(function(){
+                            // Sender Track Replaced
+                        }).catch(function(e){
+                            console.error("Error replacing track: ", e);
+                        });
+                    }
+                });
+                confPc.getSenders().forEach(function (RTCRtpSender) {
+                    if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                        console.log("Switching to mixed Audio track on conf call");
+                        RTCRtpSender.track.stop();
+                        RTCRtpSender.replaceTrack(MixAudioStreams(outputStreamForConfSession).getAudioTracks()[0]).then(function(){
+                            // Sender Track Replaced
+                        }).catch(function(e){
+                            console.error("Error replacing track: ", e);
+                        });
+                    }
+                });
+
+                newCallStatus.html("Call Active");
+                console.log("Conference Call Active");
+
+                session.data.confcalls[confcallid].accept.complete = true;
+                session.data.confcalls[confcallid].accept.disposition = "join";
+                session.data.confcalls[confcallid].accept.eventTime = utcDateNow();
+
+                $("#contact-"+ buddy +"-btn-terminate-conference-call").show();
+
+                $("#contact-" + buddy + "-msg").html("Conference Call Active");
+
+                // Take the parent call off hold
+                unholdSession(buddy);
+
+            }).catch(function(e){
+                console.error("Error on getUserMedia", e);
+            });
+        });
+        JoinCallBtn.show();
+
+        // End Call
+        var TerminateAttendedTransferBtn = $("#contact-"+ buddy +"-btn-terminate-conference-call");
+        TerminateAttendedTransferBtn.off('click');
+        TerminateAttendedTransferBtn.on('click', function(){
+            newSession.bye();
+            newCallStatus.html("Call ended, bye");
+            console.log("New call session end");
+
+            session.data.confcalls[confcallid].accept.complete = false;
+            session.data.confcalls[confcallid].accept.disposition = "bye";
+            session.data.confcalls[confcallid].accept.eventTime = utcDateNow();
+
+            $("#contact-" + buddy + "-msg").html("Conference Call Ended");
+        });
+        TerminateAttendedTransferBtn.show();
+    });
+    newSession.on('trackAdded', function () {
+
+        // MixAudioStreams(recordStream)
+        var pc = newSession.sessionDescriptionHandler.peerConnection;
+
+        // Gets Remote Audio Track (Local audio is setup via initial GUM)
+        var remoteStream = new MediaStream();
+        pc.getReceivers().forEach(function (receiver) {
+            if(receiver.track && receiver.track.kind == "audio"){
+                remoteStream.addTrack(receiver.track);
+            }
+        });
+        var remoteAudio = $("#contact-" + buddy + "-conference-remoteAudio").get(0);
+        remoteAudio.srcObject = remoteStream;
+        remoteAudio.onloadedmetadata = function(e) {
+            if (typeof remoteAudio.sinkId !== 'undefined') {
+                remoteAudio.setSinkId(session.data.AudioOutputDevice).then(function(){
+                    console.log("sinkId applied: "+ session.data.AudioOutputDevice);
+                }).catch(function(e){
+                    console.warn("Error using setSinkId: ", e);
+                });            
+            }
+            remoteAudio.play();
+        }
+    });
+    newSession.on('rejected', function (response, cause) {
+        console.log("New call session rejected: ", cause);
+        newCallStatus.html("Call rejected");
+        session.data.confcalls[confcallid].disposition = "rejected";
+        session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+
+        $("#contact-"+ buddy +"-txt-FindConferenceBuddy").parent().show();
+        $("#contact-"+ buddy +"-btn-conference-dial").show();
+
+        $("#contact-"+ buddy +"-btn-cancel-conference-dial").hide();
+        $("#contact-"+ buddy +"-btn-join-conference-call").hide();
+        $("#contact-"+ buddy +"-btn-terminate-conference-call").hide();
+
+        $("#contact-" + buddy + "-msg").html("Conference Call Rejected");
+
+        window.setTimeout(function(){
+            newCallStatus.hide();
+        }, 1000);
+    });
+    newSession.on('terminated', function (response, cause) {
+        console.log("New call session terminated: ", cause);
+        newCallStatus.html("Call ended");
+        session.data.confcalls[confcallid].disposition = "terminated";
+        session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+
+        $("#contact-"+ buddy +"-txt-FindConferenceBuddy").parent().show();
+        $("#contact-"+ buddy +"-btn-conference-dial").show();
+
+        $("#contact-"+ buddy +"-btn-cancel-conference-dial").hide();
+        $("#contact-"+ buddy +"-btn-join-conference-call").hide();
+        $("#contact-"+ buddy +"-btn-terminate-conference-call").hide();
+
+        $("#contact-" + buddy + "-msg").html("Conference Call Terminated");
+
+        window.setTimeout(function(){
+            newCallStatus.hide();
+        }, 1000);
+    });
+    session.data.childsession = newSession;
+}
+
 
 function cancelSession(buddy) {
     var session = getSession(buddy);
@@ -5200,20 +5548,25 @@ function AddBuddyMessageStream(buddyObj) {
     // In Call Buttons
     html += "<div style=\"text-align:center\">";
     html += "<div style=\"margin-top:10px\">";
-    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-ShowDtmf\" onclick=\"ShowDtmfMenu(this, '"+ buddyObj.identity +"')\"><i class=\"fa fa-keyboard-o\"></i> Keypad</button>";
-    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Mute\" onclick=\"MuteSession('"+ buddyObj.identity +"')\"><i class=\"fa fa-microphone-slash\"></i> Mute</button><button id=\"contact-"+ buddyObj.identity +"-btn-Unmute\" onclick=\"UnmuteSession('"+ buddyObj.identity +"')\" style=\"color: red; display:none\"><i class=\"fa fa-microphone\"></i> Unmute</button>";
+    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-ShowDtmf\" onclick=\"ShowDtmfMenu(this, '"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Show Key Pad\"><i class=\"fa fa-keyboard-o\"></i></button>";
+    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Mute\" onclick=\"MuteSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Mute\"><i class=\"fa fa-microphone-slash\"></i></button><button id=\"contact-"+ buddyObj.identity +"-btn-Unmute\" onclick=\"UnmuteSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Unmute\" style=\"color: red; display:none\"><i class=\"fa fa-microphone\"></i></button>";
     if(typeof MediaRecorder != "undefined"){
         // Safari: must enable in Develop > Experimental Features > MediaRecorder
-        html += "<button id=\"contact-"+ buddyObj.identity +"-btn-start-recording\" onclick=\"StartRecording('"+ buddyObj.identity +"')\"><i class=\"fa fa-dot-circle-o\"></i> Record</button><button id=\"contact-"+ buddyObj.identity +"-btn-stop-recording\" onclick=\"StopRecording('"+ buddyObj.identity +"')\" style=\"color: red; display:none\"><i class=\"fa fa-circle\"></i> Recording</button>";
+        html += "<button id=\"contact-"+ buddyObj.identity +"-btn-start-recording\" onclick=\"StartRecording('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Start Call Recording\"><i class=\"fa fa-dot-circle-o\"></i></button><button id=\"contact-"+ buddyObj.identity +"-btn-stop-recording\" onclick=\"StopRecording('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Stop Call Recording\" style=\"color: red; display:none\"><i class=\"fa fa-circle\"></i></button>";
     }
-    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Transfer\" onclick=\"StartTransferSession('"+ buddyObj.identity +"')\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i> Transfer</button><button id=\"contact-"+ buddyObj.identity +"-btn-CancelTransfer\" onclick=\"CancelTransferSession('"+ buddyObj.identity +"')\" style=\"color: red; display:none\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i> Transfer</button>";
-    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Hold\" onclick=\"holdSession('"+ buddyObj.identity +"')\"><i class=\"fa fa-pause-circle\"></i> Hold</button><button id=\"contact-"+ buddyObj.identity +"-btn-Unhold\" onclick=\"unholdSession('"+ buddyObj.identity +"')\" style=\"color: red; display:none\"><i class=\"fa fa-play-circle\"></i> Unhold</button>";
-    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-End\" onclick=\"endSession('"+ buddyObj.identity +"')\" class=hangupButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> End Call</button>";
+    if(true){ // any conditions for transfer
+        html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Transfer\" onclick=\"StartTransferSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Transfer Call\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button><button id=\"contact-"+ buddyObj.identity +"-btn-CancelTransfer\" onclick=\"CancelTransferSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Cancel Transfer\" style=\"color: red; display:none\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
+    }
+    if(true){ // any conditons for conference
+        html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Conference\" onclick=\"StartConferenceCall('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Conference Call\"><i class=\"fa fa-users\"></i></button><button id=\"contact-"+ buddyObj.identity +"-btn-CancelConference\" onclick=\"CancelConference('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Cancel Conference\" style=\"color: red; display:none\"><i class=\"fa fa-users\"></i></button>";
+    }
+    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Hold\" onclick=\"holdSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\"  title=\"Hold Call\"><i class=\"fa fa-pause-circle\"></i></button><button id=\"contact-"+ buddyObj.identity +"-btn-Unhold\" onclick=\"unholdSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\"Resume Call\" style=\"color: red; display:none\"><i class=\"fa fa-play-circle\"></i></button>";
+    html += "<button id=\"contact-"+ buddyObj.identity +"-btn-End\" onclick=\"endSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons hangupButton\" title=\"End Call\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i></button>";
     html += "</div>";
     // Call Transfer
     html += "<div id=\"contact-"+ buddyObj.identity +"-Transfer\" style=\"display:none\">";
     html += "<div style=\"margin-top:10px\">";
-    html += "<span class=searchClean><input id=\"contact-"+ buddyObj.identity +"-txt-FindBuddy\" oninput=\"TrnasferFindBuddy(this,'"+ buddyObj.identity +"')\" type=text autocomplete=none style=\"width:150px;\" placeholder=\"Search or enter number\"></span>";
+    html += "<span class=searchClean><input id=\"contact-"+ buddyObj.identity +"-txt-FindTransferBuddy\" oninput=\"QuickFindBuddy(this,'"+ buddyObj.identity +"')\" type=text autocomplete=none style=\"width:150px;\" placeholder=\"Search or enter number\"></span>";
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-blind-transfer\" onclick=\"BlindTransfer('"+ buddyObj.identity +"')\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i> Blind Transfer</button>"
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-attended-transfer\" onclick=\"AttendedTransfer('"+ buddyObj.identity +"')\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> Attended Transfer</button>";
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-complete-attended-transfer\" style=\"display:none\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> Complete Transfer</buuton>";
@@ -5221,6 +5574,19 @@ function AddBuddyMessageStream(buddyObj) {
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-terminate-attended-transfer\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> End Transfer Call</buuton>";
     html += "</div>";
     html += "<div id=\"contact-"+ buddyObj.identity +"-transfer-status\" class=callStatus style=\"margin-top:10px; display:none\">...</div>";
+    html += "<audio id=\"contact-"+ buddyObj.identity +"-transfer-remoteAudio\" style=\"display:none\"></audio>";
+    html += "</div>";
+    // Call Conference
+    html += "<div id=\"contact-"+ buddyObj.identity +"-Conference\" style=\"display:none\">";
+    html += "<div style=\"margin-top:10px\">";
+    html += "<span class=searchClean><input id=\"contact-"+ buddyObj.identity +"-txt-FindConferenceBuddy\" oninput=\"QuickFindBuddy(this,'"+ buddyObj.identity +"')\" type=text autocomplete=none style=\"width:150px;\" placeholder=\"Search or enter number\"></span>";
+    html += " <button id=\"contact-"+ buddyObj.identity +"-btn-conference-dial\" onclick=\"ConferenceDail('"+ buddyObj.identity +"')\"><i class=\"fa fa-phone\"></i> Call</button>";
+    html += " <button id=\"contact-"+ buddyObj.identity +"-btn-cancel-conference-dial\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> Cancel Call</buuton>";
+    html += " <button id=\"contact-"+ buddyObj.identity +"-btn-join-conference-call\" style=\"display:none\"><i class=\"fa fa-users\"></i> Join Conference Call</buuton>";
+    html += " <button id=\"contact-"+ buddyObj.identity +"-btn-terminate-conference-call\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> End Conference Call</buuton>";
+    html += "</div>";
+    html += "<div id=\"contact-"+ buddyObj.identity +"-conference-status\" class=callStatus style=\"margin-top:10px; display:none\">...</div>";
+    html += "<audio id=\"contact-"+ buddyObj.identity +"-conference-remoteAudio\" style=\"display:none\"></audio>";
     html += "</div>";
     
     // Monitoring
@@ -5481,17 +5847,11 @@ function RefreshStream(buddyObj) {
                 }
                 messageString += "<div class=messageDate>" + DateTime + " " + deliveryStatus +"</div>"
                 messageString += "</td>"
-                //messageString += "<td style=\"padding-left:8px\">"
-                //messageString += "<div class=buddyIconSmall style=\"margin-right: 3px; float:right; background-image: url('"+ getPicture("profilePicture") +"')\"></div>"
-                //messageString += "</td>";
                 messageString += "</tr></table>";
             } else {
                 // You are the destination (receiving)
                 var ActualSender = ""; //TODO
                 var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr>"
-                //messageString += "<td style=\"padding-right:8px;\">";
-                //messageString += "<div class=\"buddyIconSmall\" style=\"background-image: url('"+ getPicture(item.SrcUserId) +"')\"></div>";
-                //messageString += "</td>";
                 messageString += "<td class=theirChatMessageText onmouseenter=\"ShowChatMenu(this)\" onmouseleave=\"HideChatMenu(this)\">";
                 messageString += "<span onclick=\"ShowMessgeMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
                 if(buddyObj.type == "group"){
@@ -5562,13 +5922,19 @@ function RefreshStream(buddyObj) {
                         var recordingDuration = moment.duration(StopTime.diff(StartTime));
                         recordingsHtml += "<div class=callRecording>";
                         if(item.WithVideo){
-                            recordingsHtml += "<div><button onclick=\"PlayVideoCallRecording(this, '"+ buddyObj.identity +"', '"+ recording.uID +"')\"><i class=\"fa fa-video-camera\"></i></button></div>";
+                            recordingsHtml += "<div><button onclick=\"PlayVideoCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"')\"><i class=\"fa fa-video-camera\"></i></button></div>";
                         } 
                         else {
-                            recordingsHtml += "<div><button onclick=\"PlayAudioCallRecording(this, '"+ buddyObj.identity +"', '"+ recording.uID +"')\"><i class=\"fa fa-play\"></i></button></div>";
+                            recordingsHtml += "<div><button onclick=\"PlayAudioCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"')\"><i class=\"fa fa-play\"></i></button></div>";
                         } 
                         recordingsHtml += "<div>Started: "+ StartTime.format("h:mm:ss A") +" <i class=\"fa fa-arrow-right\"></i> Stopped: "+ StopTime.format("h:mm:ss A") +"</div>";
                         recordingsHtml += "<div>Recording Duration: "+ formatShortDuration(recordingDuration.asSeconds()) +"</div>";
+                        recordingsHtml += "<div>";
+                        recordingsHtml += "<span id=\"cdr-video-meta-width-"+ item.CdrId +"-"+ recording.uID +"\"></span>";
+                        recordingsHtml += "<span id=\"cdr-video-meta-height-"+ item.CdrId +"-"+ recording.uID +"\"></span>";
+                        recordingsHtml += "<span id=\"cdr-media-meta-size-"+ item.CdrId +"-"+ recording.uID +"\"></span>";
+                        recordingsHtml += "<span id=\"cdr-media-meta-codec-"+ item.CdrId +"-"+ recording.uID +"\"></span>";
+                        recordingsHtml += "</div>";
                         recordingsHtml += "</div>";
                     }
                 });
@@ -5591,9 +5957,6 @@ function RefreshStream(buddyObj) {
                 messageString += "<div class=callRecordings>" + recordingsHtml + "</div>";
                 messageString += "<div class=messageDate>" + DateTime  + "</div>";
                 messageString += "</td>"
-                //messageString += "<td style=\"padding-left:8px\">";
-                //messageString += "<div class=buddyIconSmall style=\"margin-right: 3px; float:right; background-image: url('"+ getPicture("profilePicture") +"')\"></div>";
-                //messageString += "</td>";
                 messageString += "</tr></table>";
             } else {
                 // (Inbound) you(profileUserID) received a call
@@ -5603,9 +5966,6 @@ function RefreshStream(buddyObj) {
                     formattedMessage += " You received "+ audioVideo +" call, and spoke for " + formatDuration(item.Billsec) + ".";
                 }
                 var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr>";
-                //messageString += "<td style=\"padding-right:8px\">";
-                // messageString += "<div class=buddyIconSmall style=\"background-image: url('"+ getPicture(item.SrcUserId) +"')\"></div>";
-                //messageString += "</td>";
                 messageString += "<td class=theirChatMessageText onmouseenter=\"ShowChatMenu(this)\" onmouseleave=\"HideChatMenu(this)\">";
                 messageString += "<span onClick=\"ShowMessgeMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
                 messageString += "<div style=\"text-align:left\">" + formattedMessage + "</div>";
@@ -5672,6 +6032,8 @@ function MuteSession(buddy){
 
         if(!session.data.mute) session.data.mute = [];
         session.data.mute.push({ event: "mute", eventTime: utcDateNow() });
+
+        $("#contact-" + buddy + "-msg").html("Call on Mute");
     } 
     else {
         console.warn("Could not find sesson")
@@ -5693,6 +6055,8 @@ function UnmuteSession(buddy){
 
         if(!session.data.mute) session.data.mute = [];
         session.data.mute.push({ event: "unmute", eventTime: utcDateNow() });
+
+        $("#contact-" + buddy + "-msg").html("Call Mute Removed");
     } 
     else {
         console.warn("Could not find sesson")
@@ -6159,56 +6523,56 @@ function ChangeSettings(buddy, obj){
     ringerSelect.css("width", "100%");
 
     // Handle Audio Source changes (Microphone)
-    // ========================================
     audioSelect.change(function(){
         console.log("Call to change Microphone: ", this.value);
 
+        HidePopup();
+
         // Switch Tracks if you are in a call
-        // ==================================
         var session = getSession(buddy);
-        var mustRestartRecording = false;
-        if(session != null){
-            // First Stop Recording the call
-            if(session.data.mediaRecorder && session.data.mediaRecorder.state == "recording"){
-                StopRecording(buddy, true);
-                mustRestartRecording = true;
-            }
-
-            // Save Setting
-            session.data.AudioSourceDevice = this.value;
-
-            var constraints = {
-                audio: {
-                    deviceId: (this.value != "default")? { exact: this.value } : "default"
-                },
-                video: false
-            }
-            navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
-                // Assume that since we are selecting from a dropdown, this is possible
-                var newMediaTrack = newStream.getAudioTracks()[0];
-                var pc = session.sessionDescriptionHandler.peerConnection;
-                pc.getSenders().forEach(function (RTCRtpSender) {
-                    if(RTCRtpSender.track.kind == "audio") {
-                        console.log("Switching Audio Track : "+ RTCRtpSender.track.label + " to "+ newMediaTrack.label);
-                        RTCRtpSender.track.stop();
-                        RTCRtpSender.replaceTrack(newMediaTrack).then(function(){
-                            // Start Recording again
-                            if(mustRestartRecording){
-                                StartRecording(buddy);
-                            }
-                            // Monitor Adio Stream
-                            StartLocalAudioMediaMonitoring(buddy, session);
-                        }).catch(function(e){
-                            console.error("Error replacing track: ", e);
-                        });
-                    }
-                });
-            }).catch(function(e){
-                console.error("Error on getUserMedia");
-            });
+        if(session == null){
+            return;
         }
 
-        HidePopup();
+        // First Stop Recording the call
+        var mustRestartRecording = false;
+        if(session.data.mediaRecorder && session.data.mediaRecorder.state == "recording"){
+            StopRecording(buddy, true);
+            mustRestartRecording = true;
+        }
+
+        // Save Setting
+        session.data.AudioSourceDevice = this.value;
+
+        var constraints = {
+            audio: {
+                deviceId: (this.value != "default")? { exact: this.value } : "default"
+            },
+            video: false
+        }
+        navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+            // Assume that since we are selecting from a dropdown, this is possible
+            var newMediaTrack = newStream.getAudioTracks()[0];
+            var pc = session.sessionDescriptionHandler.peerConnection;
+            pc.getSenders().forEach(function (RTCRtpSender) {
+                if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                    console.log("Switching Audio Track : "+ RTCRtpSender.track.label + " to "+ newMediaTrack.label);
+                    RTCRtpSender.track.stop();
+                    RTCRtpSender.replaceTrack(newMediaTrack).then(function(){
+                        // Start Recording again
+                        if(mustRestartRecording){
+                            StartRecording(buddy);
+                        }
+                        // Monitor Adio Stream
+                        StartLocalAudioMediaMonitoring(buddy, session);
+                    }).catch(function(e){
+                        console.error("Error replacing track: ", e);
+                    });
+                }
+            });
+        }).catch(function(e){
+            console.error("Error on getUserMedia");
+        });
     });
 
     // Handle output change (speaker)
@@ -6216,43 +6580,44 @@ function ChangeSettings(buddy, obj){
     speakerSelect.change(function(){
         console.log("Call to change Speaker: ", this.value);
 
+        HidePopup();
+
         var session = getSession(buddy);
-        if(session != null){
-            // Save Setting
-            session.data.AudioOutputDevice = this.value;
-
-            // Also change the sinkId
-            // ======================
-            var sinkId = this.value;
-            console.log("Attempting to set Audio Output SinkID for "+ buddy +" [" + sinkId + "]");
-
-            // Remote Audio
-            var element = $("#contact-"+ buddy +"-remoteAudio").get(0);
-            if(element) {
-                if (typeof element.sinkId !== 'undefined') {
-                    element.setSinkId(sinkId).then(function(){
-                        console.log("sinkId applied: "+ sinkId);
-                    }).catch(function(e){
-                        console.warn("Error using setSinkId: ", e);
-                    });
-                } else {
-                    console.warn("setSinkId() is not possible using this browser.")
-                }
-            }
+        if(session == null){
+            return;
         }
 
-        HidePopup();
+        // Save Setting
+        session.data.AudioOutputDevice = this.value;
+
+        // Also change the sinkId
+        // ======================
+        var sinkId = this.value;
+        console.log("Attempting to set Audio Output SinkID for "+ buddy +" [" + sinkId + "]");
+
+        // Remote Audio
+        var element = $("#contact-"+ buddy +"-remoteAudio").get(0);
+        if(element) {
+            if (typeof element.sinkId !== 'undefined') {
+                element.setSinkId(sinkId).then(function(){
+                    console.log("sinkId applied: "+ sinkId);
+                }).catch(function(e){
+                    console.warn("Error using setSinkId: ", e);
+                });
+            } else {
+                console.warn("setSinkId() is not possible using this browser.")
+            }
+        }
     });
 
     // Handle video input change (WebCam)
-    // ==================================
     videoSelect.change(function(){
         console.log("Call to change WebCam");
 
+        HidePopup();
+
         var session = getSession(buddy);
         if(session != null)  switchVideoSource(buddy, this.value);
-
-        HidePopup();
     });
 
     if(navigator.mediaDevices) // Only works under HTTPS
