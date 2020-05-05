@@ -182,6 +182,15 @@ function formatBytes(bytes, decimals=2) {
     var i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+function UserLocale(){
+    var language = window.navigator.userLanguage || window.navigator.language; // "en", "en-US", "fr", "fr-FR", "es-ES", etc.
+    language = language.toLowerCase();
+    if(language.indexOf("-") > -1){
+        return language.substring(language.indexOf("-")+1);
+    } else {
+        return language;
+    }
+}
 
 // Window and Document Events
 // ==========================
@@ -1650,7 +1659,7 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        rinnger.src = hostingPrefex + "/Alert.mp3";
+        rinnger.src = hostingPrefex + "/Tone_CallWaiting.mp3";
         session.data.rinngerObj = rinnger;
     } else {
         // Play Ring Tone
@@ -1837,23 +1846,46 @@ function wireupAudioSession(session, typeStr, buddy) {
     $("#contact-" + buddy + "-sipCallId").val(session.id);
 
     session.on('progress', function (response) {
-        $(MessageObjId).html("Ringing...");
-
-        // Handle Early Media
-        /*
-        if (response.status_code === 183 && response.body && session.hasOffer && !session.dialog) {
-            if (!response.hasHeader('require') || response.getHeader('require').indexOf('100rel') === -1) {
-                session.mediaHandler.setDescription(response.body).then(function onSuccess() {
-                    session.status = SIP.Session.C.STATUS_EARLY_MEDIA;
-                    session.mute();
-                }, function onFailure(e) {
-                    session.logger.warn(e);
-                    session.acceptAndTerminate(response, 488, 'Not Acceptable Here');
-                    session.failed(response, SIP.C.causes.BAD_MEDIA_DESCRIPTION);
-                });
+        // Provisional 1xx
+        if(response.status_code == 100){
+            $(MessageObjId).html("Trying...");
+        } else if(response.status_code == 180){
+            $(MessageObjId).html("Ringing...");
+            // Play Early Media
+            var earlyMedia = new Audio();
+            earlyMedia.loop = true;
+            earlyMedia.oncanplaythrough = function(e) {
+                if (typeof earlyMedia.sinkId !== 'undefined' && getAudioOutputID() != "default") {
+                    earlyMedia.setSinkId(getAudioOutputID()).then(function() {
+                        console.log("Set sinkId to:", getAudioOutputID());
+                    }).catch(function(e){
+                        console.warn("Failed not apply setSinkId.", e);
+                    });
+                }
+                earlyMedia.play().then(function(){
+                    // Audio Is Playing
+                }).catch(function(e){
+                    console.warn("Unable to play audio file.", e);
+                }); 
             }
+            var soundFile = hostingPrefex + "/Tone_EarlyMedia-European.mp3";
+            if(UserLocale().indexOf("us") > -1){
+                soundFile = hostingPrefex + "/Tone_EarlyMedia-US.mp3";
+            }
+            if(UserLocale().indexOf("gb") > -1){
+                soundFile = hostingPrefex + "/Tone_EarlyMedia-UK.mp3";
+            }
+            if(UserLocale().indexOf("au") > -1){
+                soundFile = hostingPrefex + "/Tone_EarlyMedia-Australia.mp3";
+            }
+            if(UserLocale().indexOf("jp") > -1){
+                soundFile = hostingPrefex + "/Tone_EarlyMedia-Japan.mp3";
+            }
+            earlyMedia.src = soundFile;
+            session.data.earlyMedia = earlyMedia;
+        } else {
+            $(MessageObjId).html(response.reason_phrase + "...");
         }
-        */
     });
     session.on('trackAdded', function () {      
         var pc = session.sessionDescriptionHandler.peerConnection;
@@ -1879,7 +1911,11 @@ function wireupAudioSession(session, typeStr, buddy) {
         }
     });
     session.on('accepted', function (data) {
-        $(MessageObjId).html("Audo Call in Progress!");
+
+        if(session.data.earlyMedia){
+            session.data.earlyMedia.pause();
+            session.data.earlyMedia = null;
+        }
 
         window.clearInterval(session.data.callTimer);
         var startTime = moment.utc();
@@ -1898,6 +1934,8 @@ function wireupAudioSession(session, typeStr, buddy) {
         // Audo Monitoring
         StartLocalAudioMediaMonitoring(buddy, session);
         StartRemoteAudioMediaMonitoring(buddy, session);
+        
+        $(MessageObjId).html("Audo Call in Progress!");
     });
     session.on('rejected', function (response, cause) {
         $(MessageObjId).html("Call rejected: " + cause);
@@ -2016,26 +2054,53 @@ function wireupVideoSession(session, typeStr, buddy) {
         }, 1000);
     });
     session.on('progress', function (response) {
-        $(MessageObjId).html("Ringing...");
-
-        // Handle Early Media
-        /*
-        if (response.status_code === 183 && response.body && session.hasOffer && !session.dialog) {
-            if (!response.hasHeader('require') || response.getHeader('require').indexOf('100rel') === -1) {
-                session.mediaHandler.setDescription(response.body).then(function onSuccess() {
-                    session.status = SIP.Session.C.STATUS_EARLY_MEDIA;
-                    session.mute();
-                }, function onFailure(e) {
-                    session.logger.warn(e);
-                    session.acceptAndTerminate(response, 488, 'Not Acceptable Here');
-                    session.failed(response, SIP.C.causes.BAD_MEDIA_DESCRIPTION);
-                });
+        // Provisional 1xx
+        if(response.status_code == 100){
+            $(MessageObjId).html("Trying...");
+        } else if(response.status_code == 180){
+            $(MessageObjId).html("Ringing...");
+            // Play Early Media
+            var earlyMedia = new Audio();
+            earlyMedia.loop = true;
+            earlyMedia.oncanplaythrough = function(e) {
+                if (typeof earlyMedia.sinkId !== 'undefined' && getAudioOutputID() != "default") {
+                    earlyMedia.setSinkId(getAudioOutputID()).then(function() {
+                        console.log("Set sinkId to:", getAudioOutputID());
+                    }).catch(function(e){
+                        console.warn("Failed not apply setSinkId.", e);
+                    });
+                }
+                earlyMedia.play().then(function(){
+                    // Audio Is Playing
+                }).catch(function(e){
+                    console.warn("Unable to play audio file.", e);
+                }); 
             }
+            var soundFile = hostingPrefex + "/Tone_EarlyMedia-European.mp3";
+            if(UserLocale().indexOf("us") > -1){
+                soundFile = hostingPrefex + "/Tone_EarlyMedia-US.mp3";
+            }
+            if(UserLocale().indexOf("gb") > -1){
+                soundFile = hostingPrefex + "/Tone_EarlyMedia-UK.mp3";
+            }
+            if(UserLocale().indexOf("au") > -1){
+                soundFile = hostingPrefex + "/Tone_EarlyMedia-Australia.mp3";
+            }
+            if(UserLocale().indexOf("jp") > -1){
+                soundFile = hostingPrefex + "/Tone_EarlyMedia-Japan.mp3";
+            }
+            earlyMedia.src = soundFile;
+            session.data.earlyMedia = earlyMedia;
+        } else {
+            $(MessageObjId).html(response.reason_phrase + "...");
         }
-        */
     });
     session.on('accepted', function (data) {
-        $(MessageObjId).html("Video Call in Progress!");
+        
+        if(session.data.earlyMedia){
+            session.data.earlyMedia.pause();
+            session.data.earlyMedia = null;
+        }
 
         window.clearInterval(session.data.callTimer);
         $("#contact-" + buddy + "-timer").show();
@@ -2052,9 +2117,19 @@ function wireupVideoSession(session, typeStr, buddy) {
         $("#contact-" + buddy + "-VideoCall").show();
         $("#contact-" + buddy + "-ActiveCall").show();
 
+        $("#contact-"+ buddy +"-btn-Conference").hide(); // Cannot conference a Video Call (Yet...)
+        $("#contact-"+ buddy +"-btn-CancelConference").hide();
+        $("#contact-"+ buddy +"-Conference").hide();
+
+        $("#contact-"+ buddy +"-btn-Transfer").hide(); // Cannot transfer a Video Call (Yet...)
+        $("#contact-"+ buddy +"-btn-CancelTransfer").hide();
+        $("#contact-"+ buddy +"-Transfer").hide();
+
         // Start Audio Monitoring
         StartLocalAudioMediaMonitoring(buddy, session);
         StartRemoteAudioMediaMonitoring(buddy, session);
+
+        $(MessageObjId).html("Video Call in Progress!");
     });
     session.on('rejected', function (response, cause) {
         $(MessageObjId).html("Call rejected: "+ cause);
@@ -2111,16 +2186,34 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
     HidePopup();
     // End any child calls
     if(session.data.childsession){
+            // STATUS_NULL: 0
+            // STATUS_INVITE_SENT: 1
+            // STATUS_1XX_RECEIVED: 2
+            // STATUS_INVITE_RECEIVED: 3
+            // STATUS_WAITING_FOR_ANSWER: 4
+            // STATUS_ANSWERED: 5
+            // STATUS_WAITING_FOR_PRACK: 6
+            // STATUS_WAITING_FOR_ACK: 7
+            // STATUS_CANCELED: 8
+            // STATUS_TERMINATED: 9
+            // STATUS_ANSWERED_WAITING_FOR_PRACK: 10
+            // STATUS_EARLY_MEDIA: 11
+            // STATUS_CONFIRMED: 12
         try{
-            if(session.data.childsession.state == SIP.Session.C.STATUS_ANSWERED){
+            if(session.data.childsession.status == SIP.Session.C.STATUS_CONFIRMED){
                 session.data.childsession.bye();
             } 
             else{
                 session.data.childsession.cancel();
-            } 
+            }
         } catch(e){}
     }
     session.data.childsession = null;
+    // Stop any Early Media
+    if(session.data.earlyMedia){
+        session.data.earlyMedia.pause();
+        session.data.earlyMedia = null;
+    }
     // Stop Recording if we are
     StopRecording(buddy,true);
     //Video
@@ -2135,6 +2228,10 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
     $("#contact-"+ buddy +"-btn-Transfer").show();
     $("#contact-"+ buddy +"-btn-CancelTransfer").hide();
     $("#contact-"+ buddy +"-Transfer").hide();
+    // Conference
+    $("#contact-"+ buddy +"-btn-Conference").show();
+    $("#contact-"+ buddy +"-btn-CancelConference").hide();
+    $("#contact-"+ buddy +"-Conference").hide();
 
     // Audio Meters
     for (var a = 0; a < RemoteAudioMeters.length; a++) {
@@ -4290,9 +4387,24 @@ function StartTransferSession(buddy){
     $("#contact-"+ buddy +"-Transfer").show();
 }
 function CancelTransferSession(buddy){
+    var session = getSession(buddy);
+    if (session != null) {
+        if(session.data.childsession){
+            console.log("Child Transfer call detected:", session.data.childsession.status)
+            try{
+                if(session.data.childsession.status == SIP.Session.C.STATUS_CONFIRMED){
+                    session.data.childsession.bye();
+                } 
+                else{
+                    session.data.childsession.cancel();
+                }
+            } catch(e){}
+        }
+    }
+
     $("#contact-"+ buddy +"-btn-Transfer").show();
     $("#contact-"+ buddy +"-btn-CancelTransfer").hide();
-    // TODO: End Child Call if any
+
     unholdSession(buddy);
     $("#contact-"+ buddy +"-Transfer").hide();
 }
@@ -4472,6 +4584,7 @@ function AttendedTransfer(buddy){
     // Create new call session
     console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
     var newSession = userAgent.invite("sip:" + dstNo + "@" + wssServer, spdOptions);
+    session.data.childsession = newSession;
     newSession.on('progress', function (response) {
         newCallStatus.html("Ringing....");
         session.data.transfer[transferid].disposition = "progress";
@@ -4608,7 +4721,6 @@ function AttendedTransfer(buddy){
             newCallStatus.hide();
         }, 1000);
     });
-    session.data.childsession = newSession;
 }
 
 // Conference Calls
@@ -4631,9 +4743,23 @@ function StartConferenceCall(buddy){
     $("#contact-"+ buddy +"-Conference").show();
 }
 function CancelConference(buddy){
+    var session = getSession(buddy);
+    if (session != null) {
+        if(session.data.childsession){
+            try{
+                if(session.data.childsession.status == SIP.Session.C.STATUS_CONFIRMED){
+                    session.data.childsession.bye();
+                } 
+                else{
+                    session.data.childsession.cancel();
+                }
+            } catch(e){}
+        }
+    }
+
     $("#contact-"+ buddy +"-btn-Conference").show();
     $("#contact-"+ buddy +"-btn-CancelConference").hide();
-    // TODO: End Child Call if any
+
     unholdSession(buddy);
     $("#contact-"+ buddy +"-Conference").hide();
 }
@@ -4706,6 +4832,7 @@ function ConferenceDail(buddy){
     // Create new call session
     console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
     var newSession = userAgent.invite("sip:" + dstNo + "@" + wssServer, spdOptions);
+    session.data.childsession = newSession;
     newSession.on('progress', function (response) {
         newCallStatus.html("Ringing....");
         session.data.confcalls[confcallid].disposition = "progress";
@@ -4819,6 +4946,8 @@ function ConferenceDail(buddy){
             }).catch(function(e){
                 console.error("Error on getUserMedia", e);
             });
+
+            JoinCallBtn.hide();
         });
         JoinCallBtn.show();
 
@@ -4901,7 +5030,6 @@ function ConferenceDail(buddy){
             newCallStatus.hide();
         }, 1000);
     });
-    session.data.childsession = newSession;
 }
 
 
@@ -5425,13 +5553,11 @@ function AddBuddyMessageStream(buddyObj) {
     html += "<tr><td class=streamSection style=\"height: 48px;\">";
 
     // Close|Return|Back Button
-    // ========================
     html += "<div style=\"float:left; margin:0px; padding:5px; height:38px; line-height:38px\">"
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-back\" onclick=\"CloseBuddy('"+ buddyObj.identity +"')\" class=roundButtons title=\"Back\"><i class=\"fa fa-chevron-left\"></i></button> ";
     html += "</div>"
     
     // Profile UI
-    // ==========
     html += "<div class=contact style=\"float: left;\" onclick=\"ShowBuddyProfileMenu('"+ buddyObj.identity +"', this, '"+ buddyObj.type +"')\">";
     if(buddyObj.type == "extension") {
         html += "<span id=\"contact-"+ buddyObj.identity +"-devstate-main\" class=\""+ buddyObj.devState +"\"></span>";
@@ -5465,7 +5591,6 @@ function AddBuddyMessageStream(buddyObj) {
     html += "</div>";
 
     // Action Buttons
-    // ==============
     html += "<div style=\"float:right; line-height: 46px;\">";
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-audioCall\" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\" class=roundButtons title=\"Audio Call\"><i class=\"fa fa-phone\"></i></button> ";
     if(buddyObj.type == "extension") {
@@ -5475,22 +5600,17 @@ function AddBuddyMessageStream(buddyObj) {
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-remove\" onclick=\"RemoveBuddy('"+ buddyObj.identity +"')\" class=roundButtons title=\"Remove\"><i class=\"fa fa-trash\"></i></button> ";
     html += "</div>";
 
-    // Separator
-    // ============================================================================
+    // Separator --------------------------------------------------------------------------
     html += "<div style=\"clear:both; height:0px\"></div>"
 
     // ScratchPad
-    // ==========
     html += "<div id=\"contact-"+ buddyObj.identity +"-scratchpad-container\" style=\"display:none\"></div>";
     // Video Source
-    // ============
     html += "<div id=\"contact-"+ buddyObj.identity +"-sharevideo-contaner\" style=\"display:none\"></div>";
     // Conference
-    // ==========
     html += "<div id=\"contact-"+ buddyObj.identity +"-conference\" style=\"display:none\"></div>";
 
-    // Calling UI
-    // ============================================================================
+    // Calling UI --------------------------------------------------------------------------
     html += "<div id=\"contact-"+ buddyObj.identity +"-calling\">";
 
     // Gneral Messages
@@ -5507,7 +5627,6 @@ function AddBuddyMessageStream(buddyObj) {
     }
     html += "<button onclick=\"RejectCall('"+ buddyObj.identity +"')\" class=hangupButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> Reject Call</button> ";
     html += "</div>";
-    // html += "<audio id=\"contact-"+ buddyObj.identity +"-ringer\" autoplay style=\"display:none\"></audio>";
     html += "</div>";
 
     // Dialing Out Progress
