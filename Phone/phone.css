@@ -1318,7 +1318,38 @@ div.dhx_popup_material div.dhx_popup_area {
     background-color: #333333;
     border: 1px solid #222222;
 }
+.callRecordings img{
+    width: 100%;
+    max-width: 480px; /* 854x480 (16:9) */
+    border-radius: 5px;
+}
+.videoPoster{
+    border-radius: 50px !important;
+    margin: 0px !important;
+    border: none !important;
+    color: #cccccc !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    width: 50px !important;
+    height: 50px !important;
+    padding: 0px !important;
 
+    position: absolute;
+    left: calc(50% - 25px);
+    top: calc(50% - 25px);
+}
+.videoPoster:hover{
+    color: #e0e0e0 !important;
+}
+.videoPoster I{
+    border: 1px solid #cccccc;
+    border-radius: 50px;
+    width: 48px;
+    text-align: center;
+    height: 48px;
+    line-height: 48px;
+    font-size: 24px;
+    background-color: rgba(0, 0, 0, 0.5);
+}
 .callRecording{
     background-color: #CCCCCC;
     border-radius: 10px;
@@ -1807,3 +1838,4 @@ div.dhx_popup_material div.dhx_popup_area {
     padding-left: 0px !important;
     padding-right: 0px !important;
 }
+

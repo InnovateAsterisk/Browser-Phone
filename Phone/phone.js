@@ -2125,6 +2125,12 @@ function wireupVideoSession(session, typeStr, buddy) {
         $("#contact-"+ buddy +"-btn-CancelTransfer").hide();
         $("#contact-"+ buddy +"-Transfer").hide();
 
+        // Default to use Camera
+        $("#contact-"+ buddy +"-src-camera").prop("disabled", true);
+        $("#contact-"+ buddy +"-src-canvas").prop("disabled", false);
+        $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
+        $("#contact-"+ buddy +"-src-video").prop("disabled", false);
+
         // Start Audio Monitoring
         StartLocalAudioMediaMonitoring(buddy, session);
         StartRemoteAudioMediaMonitoring(buddy, session);
@@ -2213,6 +2219,10 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
     if(session.data.earlyMedia){
         session.data.earlyMedia.pause();
         session.data.earlyMedia = null;
+    }
+    if(session.data.VideoSourcePresentation) {
+        session.data.VideoSourcePresentation.pause();
+        session.data.VideoSourcePresentation = null;
     }
     // Stop Recording if we are
     StopRecording(buddy,true);
@@ -4276,11 +4286,12 @@ function PlayAudioCallRecording(obj, cdrId, uID){
     }
 }
 
-function PlayVideoCallRecording(obj, cdrId, uID){
+function PlayVideoCallRecording(obj, cdrId, uID, buddy){
     var container = $(obj).parent();
     container.empty();
 
     var videoObj = $("<video>").get(0);
+    videoObj.id = "callrecording-video-"+ cdrId;
     videoObj.autoplay = false;
     videoObj.controls = true;
     videoObj.ontimeupdate = function(event){
@@ -4323,7 +4334,7 @@ function PlayVideoCallRecording(obj, cdrId, uID){
         var objectStoreGet = transaction.objectStore("Recordings").get(uID);
         objectStoreGet.onerror = function(event) {
             console.error("IndexDB Get Error:", event);
-        };
+        }
         objectStoreGet.onsuccess = function(event) {
             $("#cdr-media-meta-size-"+ cdrId +"-"+ uID).html(" Size: "+ formatBytes(event.target.result.bytes));
             $("#cdr-media-meta-codec-"+ cdrId +"-"+ uID).html(" Codec: "+ event.target.result.type);
@@ -4331,12 +4342,47 @@ function PlayVideoCallRecording(obj, cdrId, uID){
             // Play
             videoObj.src = window.URL.createObjectURL(event.target.result.mediaBlob);
             videoObj.oncanplaythrough = function(){
-                videoObj.scrollIntoView(false);
+                videoObj.scrollIntoViewIfNeeded(false);
                 videoObj.play().then(function(){
                     console.log("Playback started");
                 }).catch(function(e){
                     console.error("Error playing back file: ", e);
                 });
+
+                // Create a Post Image after a second
+                if(buddy){
+                    window.setTimeout(function(){
+                        var canvas = $("<canvas>").get(0);
+                        canvas.width = videoObj.videoWidth;
+                        canvas.height = videoObj.videoHeight;
+                        canvas.getContext('2d').drawImage(videoObj, 0, 0, videoObj.videoWidth, videoObj.videoHeight);  
+                        canvas.toBlob(function(blob) {
+                            var reader = new FileReader();
+                            reader.readAsDataURL(blob);
+                            reader.onloadend = function() {
+                                var Poster = { width: videoObj.videoWidth, height: videoObj.videoHeight, posterBase64: reader.result }
+                                console.log(Poster);
+    
+                                // Update DB
+                                var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
+                                if(currentStream != null || currentStream.DataCollection != null){
+                                    $.each(currentStream.DataCollection, function(i, item) {
+                                        if (item.ItemType == "CDR" && item.CdrId == cdrId) {
+                                            // Found
+                                            if(item.Recordings && item.Recordings.length >= 1){
+                                                $.each(item.Recordings, function(r, recording) {
+                                                    if(recording.uID == uID) recording.Poster = Poster;
+                                                });
+                                            }
+                                            return false;
+                                        }
+                                    });
+                                    localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
+                                }
+                            }
+                        }, 'image/jpeg', 0.95);
+                    }, 1000);
+                }
             }
         }
     }
@@ -5246,9 +5292,15 @@ function SendVideo(buddy, src){
 
     session.data.VideoSourceDevice = "video";
 
-    // TODO: Send Audio (may need to mix audio with mic)
-    // Make sure other presentations stop this video if its playing.
-    // Fix playback propotions
+    if(session.data.VideoSourcePresentation) {
+        session.data.VideoSourcePresentation.pause();
+        session.data.VideoSourcePresentation = null;
+    }
+
+    // TODO: While a Webcam can only send a video up to the max suppored by the devices.
+    // sending a video will result in the origional size video being sent, but compressed.
+    // This may not have the best results. 
+    // Resize the video with max height 720p
 
     // Create Video Object
     var newVideo = $('<video/>');
@@ -5260,34 +5312,57 @@ function SendVideo(buddy, src){
     newVideo.on("canplay", function () {
         console.log("Video can play now... ");
 
-        var videoMediaStream = $("#contact-"+ buddy +"-sharevideo").get(0).captureStream();
-        var videoMediaTrack = videoMediaStream.getVideoTracks()[0];
 
-        // Switch Tracks
-        var pc = session.sessionDescriptionHandler.peerConnection;
-        pc.getSenders().forEach(function (RTCRtpSender) {
-            if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
-                console.log("Switching Track : "+ RTCRtpSender.track.label);
-                RTCRtpSender.track.stop();
-                RTCRtpSender.replaceTrack(videoMediaTrack);
-            }
-        });
-
-        // Set Preview
-        console.log("Showing as preview...");
-        var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
-        localVideo.srcObject = videoMediaStream;
-        localVideo.onloadedmetadata = function(e) {
-            localVideo.play().then(function(){
-                console.log("Playing Preview Video File");
-            }).catch(function(e){
-                console.error("Cannot play back video", e);
-            });
+        var constraints = {
+            audio: {
+                deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
+            },
+            video: false
         }
-        // Play the video
-        console.log("Starting Video...");
-        $("#contact-"+ buddy +"-sharevideo").get(0).play();
+        navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+
+            var videoMediaStream = $("#contact-"+ buddy +"-sharevideo").get(0).captureStream();
+            var videoMediaTrack = videoMediaStream.getVideoTracks()[0];
+            var audioTrackFromVideo = videoMediaStream.getAudioTracks()[0];
+            var audioTrackFromMic = newStream.getAudioTracks()[0];
+            var mixedAudioStream = new MediaStream();
+            mixedAudioStream.addTrack(audioTrackFromVideo);
+            mixedAudioStream.addTrack(audioTrackFromMic);
+
+            // Switch Tracks
+            var pc = session.sessionDescriptionHandler.peerConnection;
+            pc.getSenders().forEach(function (RTCRtpSender) {
+                if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
+                    console.log("Switching Track : "+ RTCRtpSender.track.label);
+                    RTCRtpSender.track.stop();
+                    RTCRtpSender.replaceTrack(videoMediaTrack);
+                }
+                if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                    console.log("Switching to mixed Audio track on session");
+                    RTCRtpSender.track.stop();
+                    RTCRtpSender.replaceTrack(MixAudioStreams(mixedAudioStream).getAudioTracks()[0]);
+                }
+            });
+    
+            // Set Preview
+            console.log("Showing as preview...");
+            var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
+            localVideo.srcObject = videoMediaStream;
+            localVideo.onloadedmetadata = function(e) {
+                localVideo.play().then(function(){
+                    console.log("Playing Preview Video File");
+                }).catch(function(e){
+                    console.error("Cannot play back video", e);
+                });
+            }
+            // Play the video
+            console.log("Starting Video...");
+            $("#contact-"+ buddy +"-sharevideo").get(0).play();
+
+        });
     });
+
+    session.data.VideoSourcePresentation = newVideo.get(0);;
 
     $("#contact-" + buddy + "-sharevideo-contaner").append(newVideo);
 
@@ -6041,10 +6116,18 @@ function RefreshStream(buddyObj) {
                         var recordingDuration = moment.duration(StopTime.diff(StartTime));
                         recordingsHtml += "<div class=callRecording>";
                         if(item.WithVideo){
-                            recordingsHtml += "<div><button onclick=\"PlayVideoCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"')\"><i class=\"fa fa-video-camera\"></i></button></div>";
+                            if(recording.Poster){
+                                var posterWidth = recording.Poster.width;
+                                var posterHeight = recording.Poster.height;
+                                var posterImage = recording.Poster.posterBase64;
+                                recordingsHtml += "<div><IMG src=\""+ posterImage +"\"><button onclick=\"PlayVideoCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"')\" class=videoPoster><i class=\"fa fa-play\"></i></button></div>";
+                            }
+                            else {
+                                recordingsHtml += "<div><button onclick=\"PlayVideoCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"', '"+ buddyObj.identity +"')\"><i class=\"fa fa-video-camera\"></i></button></div>";
+                            }
                         } 
                         else {
-                            recordingsHtml += "<div><button onclick=\"PlayAudioCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"')\"><i class=\"fa fa-play\"></i></button></div>";
+                            recordingsHtml += "<div><button onclick=\"PlayAudioCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"', '"+ buddyObj.identity +"')\"><i class=\"fa fa-play\"></i></button></div>";
                         } 
                         recordingsHtml += "<div>Started: "+ StartTime.format("h:mm:ss A") +" <i class=\"fa fa-arrow-right\"></i> Stopped: "+ StopTime.format("h:mm:ss A") +"</div>";
                         recordingsHtml += "<div>Recording Duration: "+ formatShortDuration(recordingDuration.asSeconds()) +"</div>";
@@ -6225,16 +6308,16 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
     // 
     if (typeStr == "MSG") {
         menu = [
-            { id: 5, name: "<i class=\"fa fa-clipboard\"></i> Copy Message" },
-            { id: 6, name: "<i class=\"fa fa-pencil\"></i> Edit Message" },
-            { id: 7, name: "<i class=\"fa fa-quote-left\"></i> Quote Message" }
+            { id: 10, name: "<i class=\"fa fa-clipboard\"></i> Copy Message" },
+            { id: 11, name: "<i class=\"fa fa-pencil\"></i> Edit Message" },
+            { id: 12, name: "<i class=\"fa fa-quote-left\"></i> Quote Message" }
         ];
     }
+
     dhtmlxPopup.attachList("name", menu);
     dhtmlxPopup.attachEvent("onClick", function(id){
         HidePopup();
 
-        // Show Call Detail Record
         if(id == 1){
             // parent.AddTab("CDR Details", "/Page.aspx?PageType=Tab&PageId=exten-cdr-details&id=" + itemId, true);
         }
@@ -6278,7 +6361,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                     localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
                 }
             }
-        }        
+        }
         if(id == 4){
             var currentText = $("#cdr-comment-"+ cdrId).text();
             $("#cdr-comment-"+ cdrId).empty();
@@ -6314,17 +6397,18 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
         }
 
         // Text Messages
-        if(id == 5){
+        if(id == 10){
 
         }
-        if(id == 6){
+        if(id == 11){
 
         }
-        if(id == 7){
+        if(id == 12){
 
         }
-        if(id == 8){
-            // Update DB
+
+        // Delete CDR
+        if(id == 20){
             var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
             if(currentStream != null || currentStream.DataCollection != null){
                 $.each(currentStream.DataCollection, function (i, item) {
