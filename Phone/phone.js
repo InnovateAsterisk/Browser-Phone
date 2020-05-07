@@ -36,10 +36,7 @@ Features to do:
     ✅ Stream Row Buffering
     ✅ Stream Search
     ✅ Scratchpad
-    ✅ Present Video (mix in audio)
-    ✅ Present Blank / Poster
     ✅ Action URLs
-    ✅ Conference in caller during call
     ✅ Take picture during call
     ✅ Auto-add Buddy from inbound (and check duplicates)
     ✅ Delete Buddy (Partial/Complete/Blacklist)
@@ -5273,7 +5270,7 @@ function SendCanvas(buddy){
     session.data.VideoSourceDevice = "scratchpad";
 
     // Get The Canvas Stream
-    var canvasMediaStream = $("#contact-"+ buddy +"-scratchpad").get(0).captureStream();
+    var canvasMediaStream = $("#contact-"+ buddy +"-scratchpad").get(0).captureStream(25);
     var canvasMediaTrack = canvasMediaStream.getVideoTracks()[0];
 
     // Switch Tracks
@@ -5349,17 +5346,49 @@ function SendVideo(buddy, src){
     newVideo.css("max-width", "640px");
     newVideo.css("max-height", "360x");
     newVideo.prop("src", src);
-    newVideo.on("canplay", function () {
+    newVideo.on("loadedmetadata", function () {
         console.log("Video can play now... ");
 
-        // Resample Video
-        var newCanvas = $('<canvas/>');
-
-
+        // Mute the video to avoid echo
         newVideo.get(0).muted = true;
 
+        // Resample Video
+        var videoObj = newVideo.get(0);
+        var resampleCanvas = $('<canvas/>').get(0);
+        var videoWidth = videoObj.videoWidth;
+        var videoHeight = videoObj.videoHeight;
+        if(videoWidth > videoHeight){
+            // Landscape
+            if(videoHeight > 720){
+                // Resample
+                var p = 720 / videoHeight;
+                videoHeight = 720;
+                videoWidth = videoWidth * p;
+            }
+        }
+        else {
+            // Portrate... (phone turned on its side)
+            if(videoWidth > 720){
+                // Resample
+                var p = 720 / videoWidth;
+                videoWidth = 720;
+                videoHeight = videoHeight * p;
+            }
+        }
+
+        resampleCanvas.width = videoWidth;
+        resampleCanvas.height = videoHeight;
+        var resampleContext = resampleCanvas.getContext("2d");
+
+        window.clearInterval(resampleRedraw);
+        var resampleRedraw = window.setInterval(function(){
+            resampleContext.drawImage(videoObj, 0, 0, videoWidth, videoHeight);
+        }, 40); // 25frames per second
+
         var videoMediaStream = newVideo.get(0).captureStream();
-        var videoMediaTrack = videoMediaStream.getVideoTracks()[0];
+        var resampleVideoMediaStream = resampleCanvas.captureStream(25);
+        //var videoMediaTrack = videoMediaStream.getVideoTracks()[0];
+        var videoMediaTrack = resampleVideoMediaStream.getVideoTracks()[0];
         var audioTrackFromVideo = videoMediaStream.getAudioTracks()[0];
 
         // Switch & Merge Tracks
