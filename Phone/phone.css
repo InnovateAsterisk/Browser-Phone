@@ -1379,7 +1379,8 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .localVideo {
-    max-height: 100px;
+    height: 100px;
+    width: auto;
     background-color: #000000;
     border: 1px solid #222222;
     box-shadow: 1px 1px 5px rgba(0, 0, 0, .25);

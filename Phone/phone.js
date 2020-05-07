@@ -37,17 +37,15 @@ Features to do:
     ✅ Stream Search
     ✅ Scratchpad
     ✅ Present Video (mix in audio)
-    ✅ Present Blank
+    ✅ Present Blank / Poster
     ✅ Action URLs
     ✅ Conference in caller during call
-    ✅ Teardown child call in transfer/conference situation
     ✅ Take picture during call
     ✅ Auto-add Buddy from inbound (and check duplicates)
     ✅ Delete Buddy (Partial/Complete/Blacklist)
     ✅ Blacklists / Whitelists (Inbound)
-    ✅ Group Call
-    ✅ Personalisation: Audio, Backgrounds
-    ✅ Group Handling / Conference / Monitoring
+    ✅ Personalisation: Audio, Buddy Backgrounds, Buddy Ringtones
+    ✅ Group: Managment / Conference / Monitoring
     ✅ Extended Servces: File, Image, Video, YouTube, Audio
     ✅ Send: Image, Recording, Video, SMS, Email
     ✅ Keyboard Shortcuts
@@ -2215,6 +2213,11 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
         } catch(e){}
     }
     session.data.childsession = null;
+    // Mixed Tracks
+    if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+        session.data.AudioSourceTrack.stop();
+        session.data.AudioSourceTrack = null;
+    }
     // Stop any Early Media
     if(session.data.earlyMedia){
         session.data.earlyMedia.pause();
@@ -4917,81 +4920,68 @@ function ConferenceDail(buddy){
                 return;
             }
 
-            var constraints = {
-                audio: {
-                    deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
-                },
-                video: false
-            }
-            navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+            var outputStreamForSession = new MediaStream();
+            var outputStreamForConfSession = new MediaStream();
 
-                var outputStreamForSession = new MediaStream();
-                var outputStreamForConfSession = new MediaStream();
+            var pc = session.sessionDescriptionHandler.peerConnection;
+            var confPc = session.data.childsession.sessionDescriptionHandler.peerConnection;
 
-                var pc = session.sessionDescriptionHandler.peerConnection;
-                var confPc = session.data.childsession.sessionDescriptionHandler.peerConnection;
-
-                // Get conf call input channel
-                confPc.getReceivers().forEach(function (RTCRtpReceiver) {
-                    if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
-                        console.log("Adding conference session:", RTCRtpReceiver.track.label);
-                        outputStreamForSession.addTrack(RTCRtpReceiver.track);
-                    }
-                });
-                // Add own mic input channel
-                outputStreamForSession.addTrack(newStream.getAudioTracks()[0]);    
-
-                // Get session input channel
-                pc.getReceivers().forEach(function (RTCRtpReceiver) {
-                    if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
-                        console.log("Adding conference session:", RTCRtpReceiver.track.label);
-                        outputStreamForConfSession.addTrack(RTCRtpReceiver.track);
-                    }
-                });
-                // Add own mic input channel
-                outputStreamForConfSession.addTrack(newStream.getAudioTracks()[0]);    
-
-                // Replace Tracks
-                pc.getSenders().forEach(function (RTCRtpSender) {
-                    if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
-                        console.log("Switching to mixed Audio track on session");
-                        RTCRtpSender.track.stop();
-                        RTCRtpSender.replaceTrack(MixAudioStreams(outputStreamForSession).getAudioTracks()[0]).then(function(){
-                            // Sender Track Replaced
-                        }).catch(function(e){
-                            console.error("Error replacing track: ", e);
-                        });
-                    }
-                });
-                confPc.getSenders().forEach(function (RTCRtpSender) {
-                    if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
-                        console.log("Switching to mixed Audio track on conf call");
-                        RTCRtpSender.track.stop();
-                        RTCRtpSender.replaceTrack(MixAudioStreams(outputStreamForConfSession).getAudioTracks()[0]).then(function(){
-                            // Sender Track Replaced
-                        }).catch(function(e){
-                            console.error("Error replacing track: ", e);
-                        });
-                    }
-                });
-
-                newCallStatus.html("Call Active");
-                console.log("Conference Call Active");
-
-                session.data.confcalls[confcallid].accept.complete = true;
-                session.data.confcalls[confcallid].accept.disposition = "join";
-                session.data.confcalls[confcallid].accept.eventTime = utcDateNow();
-
-                $("#contact-"+ buddy +"-btn-terminate-conference-call").show();
-
-                $("#contact-" + buddy + "-msg").html("Conference Call Active");
-
-                // Take the parent call off hold
-                unholdSession(buddy);
-
-            }).catch(function(e){
-                console.error("Error on getUserMedia", e);
+            // Get conf call input channel
+            confPc.getReceivers().forEach(function (RTCRtpReceiver) {
+                if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
+                    console.log("Adding conference session:", RTCRtpReceiver.track.label);
+                    outputStreamForSession.addTrack(RTCRtpReceiver.track);
+                }
             });
+
+            // Get session input channel
+            pc.getReceivers().forEach(function (RTCRtpReceiver) {
+                if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
+                    console.log("Adding conference session:", RTCRtpReceiver.track.label);
+                    outputStreamForConfSession.addTrack(RTCRtpReceiver.track);
+                }
+            });
+
+            // Replace tracks of Parent Call
+            pc.getSenders().forEach(function (RTCRtpSender) {
+                if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                    console.log("Switching to mixed Audio track on session");
+
+                    session.data.AudioSourceTrack = RTCRtpSender.track;
+                    outputStreamForSession.addTrack(RTCRtpSender.track);
+                    var mixedAudioTrack = MixAudioStreams(outputStreamForSession).getAudioTracks()[0];
+                    mixedAudioTrack.IsMixedTrack = true;
+
+                    RTCRtpSender.replaceTrack(mixedAudioTrack);
+                }
+            });
+            // Replace tracks of Child Call
+            confPc.getSenders().forEach(function (RTCRtpSender) {
+                if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                    console.log("Switching to mixed Audio track on conf call");
+
+                    session.data.childsession.data.AudioSourceTrack = RTCRtpSender.track;
+                    outputStreamForConfSession.addTrack(RTCRtpSender.track);
+                    var mixedAudioTrackForConf = MixAudioStreams(outputStreamForConfSession).getAudioTracks()[0];
+                    mixedAudioTrackForConf.IsMixedTrack = true;
+
+                    RTCRtpSender.replaceTrack(mixedAudioTrackForConf);
+                }
+            });
+
+            newCallStatus.html("Call Active");
+            console.log("Conference Call Active");
+
+            session.data.confcalls[confcallid].accept.complete = true;
+            session.data.confcalls[confcallid].accept.disposition = "join";
+            session.data.confcalls[confcallid].accept.eventTime = utcDateNow();
+
+            $("#contact-"+ buddy +"-btn-terminate-conference-call").show();
+
+            $("#contact-" + buddy + "-msg").html("Conference Call Active");
+
+            // Take the parent call off hold
+            unholdSession(buddy);
 
             JoinCallBtn.hide();
         });
@@ -5015,7 +5005,6 @@ function ConferenceDail(buddy){
     });
     newSession.on('trackAdded', function () {
 
-        // MixAudioStreams(recordStream)
         var pc = newSession.sessionDescriptionHandler.peerConnection;
 
         // Gets Remote Audio Track (Local audio is setup via initial GUM)
@@ -5063,6 +5052,25 @@ function ConferenceDail(buddy){
         session.data.confcalls[confcallid].disposition = "terminated";
         session.data.confcalls[confcallid].dispositionTime = utcDateNow();
 
+        // Ends the mixed audio, and releases the mic
+        if(session.data.childsession.data.AudioSourceTrack && session.data.childsession.data.AudioSourceTrack.kind == "audio"){
+            session.data.childsession.data.AudioSourceTrack.stop();
+        }
+        // Restore Audio Stream is it was changed
+        if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+            pc.getSenders().forEach(function (RTCRtpSender) {
+                if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                    RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
+                        if(session.data.ismute){
+                            RTCRtpSender.track.enabled = false;
+                        }
+                    }).catch(function(){
+                        console.error(e);
+                    });
+                    session.data.AudioSourceTrack = null;
+                }
+            });
+        }
         $("#contact-"+ buddy +"-txt-FindConferenceBuddy").parent().show();
         $("#contact-"+ buddy +"-btn-conference-dial").show();
 
@@ -5176,6 +5184,8 @@ function switchVideoSource(buddy, srcId){
 
     session.data.VideoSourceDevice = srcId;
 
+    var pc = session.sessionDescriptionHandler.peerConnection;
+
     var localStream = new MediaStream();
     navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
         var newMediaTrack = newStream.getVideoTracks()[0];
@@ -5191,6 +5201,22 @@ function switchVideoSource(buddy, srcId){
     }).catch(function(){
         console.error("Error on getUserMedia");
     });
+
+    // Restore Audio Stream is it was changed
+    if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+        pc.getSenders().forEach(function (RTCRtpSender) {
+            if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
+                    if(session.data.ismute){
+                        RTCRtpSender.track.enabled = false;
+                    }
+                }).catch(function(){
+                    console.error(e);
+                });
+                session.data.AudioSourceTrack = null;
+            }
+        });
+    }
 
     // Set Preview
     // ===========
@@ -5209,9 +5235,6 @@ function SendCanvas(buddy){
     }
     
     $("#contact-" + buddy + "-msg").html("Switching to canvas");
-
-    $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
 
     // Create scratch Pad
     var scratchpad = GetCanvas("contact-" + buddy + "-scratchpad");
@@ -5263,6 +5286,22 @@ function SendCanvas(buddy){
         }
     });
 
+    // Restore Audio Stream is it was changed
+    if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+        pc.getSenders().forEach(function (RTCRtpSender) {
+            if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
+                    if(session.data.ismute){
+                        RTCRtpSender.track.enabled = false;
+                    }
+                }).catch(function(){
+                    console.error(e);
+                });
+                session.data.AudioSourceTrack = null;
+            }
+        });
+    }
+
     // Set Preview
     // ===========
     console.log("Showing as preview...");
@@ -5277,6 +5316,7 @@ function SendVideo(buddy, src){
     $("#contact-"+ buddy +"-src-canvas").prop("disabled", false);
     $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
     $("#contact-"+ buddy +"-src-video").prop("disabled", true);
+    $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
 
     var session = getSession(buddy);
     if (session == null) {
@@ -5306,60 +5346,59 @@ function SendVideo(buddy, src){
     var newVideo = $('<video/>');
     newVideo.prop("id", "contact-" + buddy + "-sharevideo");
     newVideo.prop("controls",true);
-    newVideo.prop("src", src);
     newVideo.css("max-width", "640px");
     newVideo.css("max-height", "360x");
+    newVideo.prop("src", src);
     newVideo.on("canplay", function () {
         console.log("Video can play now... ");
 
+        // Resample Video
+        var newCanvas = $('<canvas/>');
 
-        var constraints = {
-            audio: {
-                deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
-            },
-            video: false
-        }
-        navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
 
-            var videoMediaStream = $("#contact-"+ buddy +"-sharevideo").get(0).captureStream();
-            var videoMediaTrack = videoMediaStream.getVideoTracks()[0];
-            var audioTrackFromVideo = videoMediaStream.getAudioTracks()[0];
-            var audioTrackFromMic = newStream.getAudioTracks()[0];
-            var mixedAudioStream = new MediaStream();
-            mixedAudioStream.addTrack(audioTrackFromVideo);
-            mixedAudioStream.addTrack(audioTrackFromMic);
+        newVideo.get(0).muted = true;
 
-            // Switch Tracks
-            var pc = session.sessionDescriptionHandler.peerConnection;
-            pc.getSenders().forEach(function (RTCRtpSender) {
-                if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
-                    console.log("Switching Track : "+ RTCRtpSender.track.label);
-                    RTCRtpSender.track.stop();
-                    RTCRtpSender.replaceTrack(videoMediaTrack);
-                }
-                if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
-                    console.log("Switching to mixed Audio track on session");
-                    RTCRtpSender.track.stop();
-                    RTCRtpSender.replaceTrack(MixAudioStreams(mixedAudioStream).getAudioTracks()[0]);
-                }
-            });
-    
-            // Set Preview
-            console.log("Showing as preview...");
-            var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
-            localVideo.srcObject = videoMediaStream;
-            localVideo.onloadedmetadata = function(e) {
-                localVideo.play().then(function(){
-                    console.log("Playing Preview Video File");
-                }).catch(function(e){
-                    console.error("Cannot play back video", e);
-                });
+        var videoMediaStream = newVideo.get(0).captureStream();
+        var videoMediaTrack = videoMediaStream.getVideoTracks()[0];
+        var audioTrackFromVideo = videoMediaStream.getAudioTracks()[0];
+
+        // Switch & Merge Tracks
+        var pc = session.sessionDescriptionHandler.peerConnection;
+        pc.getSenders().forEach(function (RTCRtpSender) {
+            if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
+                console.log("Switching Track : "+ RTCRtpSender.track.label);
+                RTCRtpSender.track.stop();
+                RTCRtpSender.replaceTrack(videoMediaTrack);
             }
-            // Play the video
-            console.log("Starting Video...");
-            $("#contact-"+ buddy +"-sharevideo").get(0).play();
+            if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                console.log("Switching to mixed Audio track on session");
+                
+                session.data.AudioSourceTrack = RTCRtpSender.track;
 
+                var mixedAudioStream = new MediaStream();
+                mixedAudioStream.addTrack(audioTrackFromVideo);
+                mixedAudioStream.addTrack(RTCRtpSender.track);
+                var mixedAudioTrack = MixAudioStreams(mixedAudioStream).getAudioTracks()[0];
+                mixedAudioTrack.IsMixedTrack = true;
+
+                RTCRtpSender.replaceTrack(mixedAudioTrack);
+            }
         });
+
+        // Set Preview
+        console.log("Showing as preview...");
+        var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
+        localVideo.srcObject = videoMediaStream;
+        localVideo.onloadedmetadata = function(e) {
+            localVideo.play().then(function(){
+                console.log("Playing Preview Video File");
+            }).catch(function(e){
+                console.error("Cannot play back video", e);
+            });
+        }
+        // Play the video
+        console.log("Starting Video...");
+        $("#contact-"+ buddy +"-sharevideo").get(0).play();
     });
 
     session.data.VideoSourcePresentation = newVideo.get(0);;
@@ -5379,9 +5418,6 @@ function ShareScreen(buddy){
     }
 
     $("#contact-" + buddy + "-msg").html("Switching to Shared Screen");
-
-    $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
 
     session.data.VideoSourceDevice = "screen";
 
@@ -5459,7 +5495,6 @@ function ShareScreen(buddy){
             });
 
             // Set Preview
-            // ===========
             console.log("Showing as preview...");
             var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
             localVideo.srcObject = localStream;
@@ -5470,7 +5505,63 @@ function ShareScreen(buddy){
             console.error("Error on getUserMedia");
         });
     }
+
+    // Restore Audio Stream is it was changed
+    if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+        pc.getSenders().forEach(function (RTCRtpSender) {
+            if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
+                    if(session.data.ismute){
+                        RTCRtpSender.track.enabled = false;
+                    }
+                }).catch(function(){
+                    console.error(e);
+                });
+                session.data.AudioSourceTrack = null;
+            }
+        });
+    }
+
 }
+function DisableVideoStream(buddy){
+    var session = getSession(buddy);
+    if (session == null) {
+        console.log("Session is Null, probably not in a call yet");
+        return;
+    }
+
+    var pc = session.sessionDescriptionHandler.peerConnection;
+    pc.getSenders().forEach(function (RTCRtpSender) {
+        if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
+            console.log("Disable Video Track : "+ RTCRtpSender.track.label + "");
+            RTCRtpSender.track.enabled = false; //stop();
+        }
+        if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+            if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+                RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
+                    if(session.data.ismute){
+                        RTCRtpSender.track.enabled = false;
+                    }
+                }).catch(function(){
+                    console.error(e);
+                });
+                session.data.AudioSourceTrack = null;
+            }
+        }
+    });
+
+    // Set Preview
+    console.log("Showing as preview...");
+    var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
+    localVideo.src = null;
+    localVideo.pause();
+
+    session.data.VideoSourceDevice = "blank";
+
+    $("#contact-" + buddy + "-msg").html("Video Disabled");
+
+}
+
 
 // Buddy & Contacts
 // ================
@@ -5724,6 +5815,7 @@ function AddBuddyMessageStream(buddyObj) {
         html += "<button id=\"contact-"+ buddyObj.identity +"-src-canvas\" onclick=\"PresentScratchpad('"+ buddyObj.identity +"')\"><i class=\"fa fa-pencil-square\"></i> Scratchpad</button>";
         html += "<button id=\"contact-"+ buddyObj.identity +"-src-desktop\" onclick=\"PresentScreen('"+ buddyObj.identity +"')\"><i class=\"fa fa-desktop\"></i> Screen</button>";
         html += "<button id=\"contact-"+ buddyObj.identity +"-src-video\" onclick=\"PresentVideo('"+ buddyObj.identity +"')\"><i class=\"fa fa-file-video-o\"></i> Video</button>";
+        html += "<button id=\"contact-"+ buddyObj.identity +"-src-blank\" onclick=\"PresentBlank('"+ buddyObj.identity +"')\"><i class=\"fa fa-ban\"></i> Blank</button>";
         html += "</div>";
         html += "&nbsp;<button id=\"contact-"+ buddyObj.identity +"-expand\" onclick=\"ExpandVideoArea('"+ buddyObj.identity +"')\"><i class=\"fa fa-expand\"></i></button><button id=\"contact-"+ buddyObj.identity +"-restore\" onclick=\"RestoreVideoArea('"+ buddyObj.identity +"')\" style=\"display:none\"><i class=\"fa fa-compress\"></i></button>";
         html += "</div>";
@@ -6129,7 +6221,7 @@ function RefreshStream(buddyObj) {
                         else {
                             recordingsHtml += "<div><button onclick=\"PlayAudioCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"', '"+ buddyObj.identity +"')\"><i class=\"fa fa-play\"></i></button></div>";
                         } 
-                        recordingsHtml += "<div>Started: "+ StartTime.format("h:mm:ss A") +" <i class=\"fa fa-arrow-right\"></i> Stopped: "+ StopTime.format("h:mm:ss A") +"</div>";
+                        recordingsHtml += "<div>Started: "+ StartTime.format("h:mm:ss A") +" <i class=\"fa fa-long-arrow-right\"></i> Stopped: "+ StopTime.format("h:mm:ss A") +"</div>";
                         recordingsHtml += "<div>Recording Duration: "+ formatShortDuration(recordingDuration.asSeconds()) +"</div>";
                         recordingsHtml += "<div>";
                         recordingsHtml += "<span id=\"cdr-video-meta-width-"+ item.CdrId +"-"+ recording.uID +"\"></span>";
@@ -6227,13 +6319,22 @@ function MuteSession(buddy){
         var pc = session.sessionDescriptionHandler.peerConnection;
         pc.getSenders().forEach(function (RTCRtpSender) {
             if(RTCRtpSender.track.kind == "audio") {
-                console.log("Muting Audio Track : "+ RTCRtpSender.track.label);
-                RTCRtpSender.track.enabled = false;
+                if(RTCRtpSender.track.IsMixedTrack == true){
+                    if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+                        console.log("Muting Audio Track : "+ session.data.AudioSourceTrack.label);
+                        session.data.AudioSourceTrack.enabled = false;
+                    }
+                }
+                else {
+                    console.log("Muting Audio Track : "+ RTCRtpSender.track.label);
+                    RTCRtpSender.track.enabled = false;
+                }
             }
         });
 
         if(!session.data.mute) session.data.mute = [];
         session.data.mute.push({ event: "mute", eventTime: utcDateNow() });
+        session.data.ismute = true;
 
         $("#contact-" + buddy + "-msg").html("Call on Mute");
     } 
@@ -6250,13 +6351,22 @@ function UnmuteSession(buddy){
         var pc = session.sessionDescriptionHandler.peerConnection;
         pc.getSenders().forEach(function (RTCRtpSender) {
             if(RTCRtpSender.track.kind == "audio") {
-                console.log("Unmuting Audio Track : "+ RTCRtpSender.track.label);
-                RTCRtpSender.track.enabled = true;
+                if(RTCRtpSender.track.IsMixedTrack == true){
+                    if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+                        console.log("Unmuting Audio Track : "+ session.data.AudioSourceTrack.label);
+                        session.data.AudioSourceTrack.enabled = true;
+                    }
+                }
+                else {
+                    console.log("Unmuting Audio Track : "+ RTCRtpSender.track.label);
+                    RTCRtpSender.track.enabled = true;
+                }
             }
         });
 
         if(!session.data.mute) session.data.mute = [];
         session.data.mute.push({ event: "unmute", eventTime: utcDateNow() });
+        session.data.ismute = false;
 
         $("#contact-" + buddy + "-msg").html("Call Mute Removed");
     } 
@@ -6760,12 +6870,10 @@ function ChangeSettings(buddy, obj){
             pc.getSenders().forEach(function (RTCRtpSender) {
                 if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
                     console.log("Switching Audio Track : "+ RTCRtpSender.track.label + " to "+ newMediaTrack.label);
-                    RTCRtpSender.track.stop();
+                    RTCRtpSender.track.stop(); // Must stop, or this mic will stay in use
                     RTCRtpSender.replaceTrack(newMediaTrack).then(function(){
                         // Start Recording again
-                        if(mustRestartRecording){
-                            StartRecording(buddy);
-                        }
+                        if(mustRestartRecording) StartRecording(buddy);
                         // Monitor Adio Stream
                         StartLocalAudioMediaMonitoring(buddy, session);
                     }).catch(function(e){
@@ -6909,32 +7017,43 @@ function ChangeSettings(buddy, obj){
 }
 
 function PresentCamera(buddy){
+    var session = getSession(buddy);
+    if(session == null){
+        console.log("Session is Null, probably not in a call yet.");
+        return;
+    }
+
     $("#contact-"+ buddy +"-src-camera").prop("disabled", true);
     $("#contact-"+ buddy +"-src-canvas").prop("disabled", false);
     $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
     $("#contact-"+ buddy +"-src-video").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
 
-    var session = getSession(buddy);
-    if(session != null){
-        switchVideoSource(buddy, getVideoSrcID());
-    }else {
-        Alert("You must be in a Video call to select this option.");
-    }
+    $("#contact-" + buddy + "-scratchpad-container").hide();
+    $("#contact-" + buddy + "-sharevideo-contaner").hide();
+    $("#contact-" + buddy + "-sharevideo-contaner").empty();
+
+    switchVideoSource(buddy, getVideoSrcID());
 }
 
 function PresentScreen(buddy){
+    var session = getSession(buddy);
+    if(session == null){
+        console.log("Session is Null, probably not in a call yet.");
+        return;
+    }
+
     $("#contact-"+ buddy +"-src-camera").prop("disabled", false);
     $("#contact-"+ buddy +"-src-canvas").prop("disabled", false);
     $("#contact-"+ buddy +"-src-desktop").prop("disabled", true);
     $("#contact-"+ buddy +"-src-video").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
 
-    var session = getSession(buddy);
-    if(session != null)
-    {
-        ShareScreen(buddy);
-    } else {
-        Alert("You must be in a Video call to select this option.");
-    }
+    $("#contact-" + buddy + "-scratchpad-container").hide();
+    $("#contact-" + buddy + "-sharevideo-contaner").hide();
+    $("#contact-" + buddy + "-sharevideo-contaner").empty();
+
+    ShareScreen(buddy);
 }
 
 function PresentScratchpad(buddy){
@@ -6942,14 +7061,19 @@ function PresentScratchpad(buddy){
     $("#contact-"+ buddy +"-src-canvas").prop("disabled", true);
     $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
     $("#contact-"+ buddy +"-src-video").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
+
+    $("#contact-" + buddy + "-scratchpad-container").hide();
+    $("#contact-" + buddy + "-sharevideo-contaner").hide();
+    $("#contact-" + buddy + "-sharevideo-contaner").empty();
 
     var session = getSession(buddy);
-    if(session != null)
-    {
-        SendCanvas(buddy);
-    } else {
-        Alert("You must be in a Video call to select this option.");
+    if(session == null){
+        console.log("Session is Null, probably not in a call yet.");
+        return;
     }
+
+    SendCanvas(buddy);
 }
 function PresentVideo(buddy){
     var session = getSession(buddy);
@@ -6978,6 +7102,25 @@ function PresentVideo(buddy){
         });
     }, null);
 }
+function PresentBlank(buddy){
+    $("#contact-"+ buddy +"-src-camera").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-canvas").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-video").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-blank").prop("disabled", true);
+    
+    $("#contact-" + buddy + "-scratchpad-container").hide();
+    $("#contact-" + buddy + "-sharevideo-contaner").hide();
+    $("#contact-" + buddy + "-sharevideo-contaner").empty();
+
+    var session = getSession(buddy);
+    if(session == null){
+        console.log("Session is Null, probably not in a call yet.");
+        return;
+    }
+    DisableVideoStream(buddy);
+}
+
 function ShowCallStats(buddy, obj){
     console.log("Show Call Stats");
     $("#contact-"+ buddy +"-AdioStats").show(300);
@@ -6990,8 +7133,7 @@ function HideCallStats(buddy, obj){
 
 // Chatting
 // ========
-function chatOnbeforepaste(event, obj, buddy)
-{
+function chatOnbeforepaste(event, obj, buddy){
     console.log("Handle paste, checking for Images...");
     var items = (event.clipboardData || event.originalEvent.clipboardData).items;
 
