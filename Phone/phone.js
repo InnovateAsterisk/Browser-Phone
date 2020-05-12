@@ -32,8 +32,7 @@ Note: These Libraries get loaded automatically.
 ==========
 TODO List:
 ==========
-    ✅ Recording Styles: You | Me | You (with me pnp) | Me (with you pnp) | Side-By-Side
-    ✅ Recording Quality
+    ✅ Ring Device Settings
 
 =============
 New Features:
@@ -41,21 +40,16 @@ New Features:
     ✅ Voicemail Notification
     ✅ Group: Managment / Conference / Monitoring
     ✅ Scratchpad Toolbar
-    ✅ QOS Storage
+    ✅ QOS Data Storage
     ✅ CDR Details window
     ✅ Action URLs
-    ✅ Web Speech API?
     ✅ Personalisation: Audio, Buddy Backgrounds, Buddy Ringtones
     ✅ Blacklists / Whitelists (Inbound)
     ✅ Trim Buddy Stream (rather than delete)
-    ✅ Languages
     ✅ Keyboard Shortcuts
-
-==================================
-Extensded & Non-standard Features:
-==================================
-    ✅ Extended Servces Send: Image, Recording, Video, SMS, Email
-    ✅ Preview : File, Image, Video, YouTube, Audio
+    ✅ Disk Storage Analysis
+    ✅ Languages
+    ✅ Busy Tone
 
 =========================
 Performance Improvements:
@@ -63,13 +57,20 @@ Performance Improvements:
     ✅ IndexDB for Images
     ✅ IndexDB for Streams
     ✅ Code Cleanup: namespace, objects, memory cleanup
+    ✅ Hosted Tones and Audio files (commit to storage on apply)
+
+==================================
+Extensded & Non-standard Features:
+==================================
+    ✅ Extended Servces Send: Image, Recording, Video, SMS, Email
+    ✅ Preview : File, Image, Video, YouTube, Audio
 
 */
 
 // Global Settings
 // ===============
-var enabledExtendedServices = false;                    // Send: Image, Recording, Video, SMS, Email
-var enabledGroupServices = false;                       // Group calling functionality - requires Asterisks config
+var enabledExtendedServices = false;   // Send: Image, Recording, Video, SMS, Email
+var enabledGroupServices = false;      // Group calling functionality - requires Asterisks config
 
 // Rather don't fiddle with anything beyond this point
 // -------------------------------------------------------------------------------------------------------------------------
@@ -154,7 +155,7 @@ var PosterJpegQuality = parseFloat(getDbItem("PosterJpegQuality", 0.6));    // T
 var VideoResampleSize = getDbItem("VideoResampleSize", "HD");               // The resample size (height) to re-render video that gets presented (sent). (SD = ???x360 | HD = ???x720 | FHD = ???x1080)
 var RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recodings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
 var RecordingVideoFps = parseInt(getDbItem("RecordingVideoFps", 12));       // The Frame Per Second of the Video Track recording
-var RecordingLayout = getDbItem("RecordingLayout", "side-by-side");             // The Layout of the Recording Video Track (side-by-side | us-pnp | them-pnp | us-only | them-only)
+var RecordingLayout = getDbItem("RecordingLayout", "them-pnp");         // The Layout of the Recording Video Track (side-by-side | us-pnp | them-pnp | us-only | them-only)
 
 // Utilities
 // =========
@@ -535,7 +536,7 @@ function ConfigureExtensionWindow(){
             { id: "2", text: "Audio & Video", active:  false },
             { id: "3", text: "Appearance", active:  false },
             { id: "4", text: "Notifications", active:  false },
-            { id: "5", text: "Language", active:  false },
+            // TODO { id: "5", text: "Language", active:  false },
         ]
     });
 
@@ -1236,7 +1237,7 @@ function ConfigureExtensionWindow(){
     LanguageHtml += "<div>TODO...</div>";
     LanguageHtml += "<div>";
 
-    ConfigureTabbar.tabs("5").attachHTMLString(LanguageHtml);
+    // ConfigureTabbar.tabs("5").attachHTMLString(LanguageHtml);
 }
 function checkNotificationPromise() {
     try {
@@ -4341,9 +4342,7 @@ function StartRecording(buddy){
                 recordingHeight = 1080;
                 pnpVideSize = 240;
             }
-            if(RecordingLayout == "us-pnp"){
-                recordingWidth = (recordingWidth * 2) + 5;
-            }
+
             // them-pnp
             var pnpVideo = $("#contact-" + buddy + "-localVideo").get(0);
             var mainVideo = $("#contact-" + buddy + "-remoteVideo").get(0);
@@ -4352,7 +4351,7 @@ function StartRecording(buddy){
                 mainVideo = $("#contact-" + buddy + "-localVideo").get(0);
             }
             var recordingCanvas = $('<canvas/>').get(0);
-            recordingCanvas.width = recordingWidth;
+            recordingCanvas.width = (RecordingLayout == "side-by-side")? (recordingWidth * 2) + 5: recordingWidth;
             recordingCanvas.height = recordingHeight;
             var recordingContext = recordingCanvas.getContext("2d");
 
@@ -4382,34 +4381,51 @@ function StartRecording(buddy){
                 }
                 var offsetX = (videoWidth < recordingWidth)? (recordingWidth - videoWidth) / 2 : 0;
                 var offsetY = (videoHeight < recordingHeight)? (recordingHeight - videoHeight) / 2 : 0;
-                if(RecordingLayout == "side-by-side") offsetX = offsetX + videoWidth + 5;
+                if(RecordingLayout == "side-by-side") offsetX = recordingWidth + 5 + offsetX;
 
                 // Picture-in-Picture Video
-                var pnpVideoHeight = 0;
-                var pnpVideoWidth = 0;
-                if(pnpVideo.videoHeight > 0){
-                    if(pnpVideo.videoWidth >= pnpVideo.videoHeight){
-                        var p = pnpVideSize / pnpVideo.videoHeight;
+                var pnpVideoHeight = pnpVideo.videoHeight;
+                var pnpVideoWidth = pnpVideo.videoWidth;
+                if(pnpVideoHeight > 0){
+                    if(pnpVideoWidth >= pnpVideoHeight){
+                        var scale = pnpVideSize / pnpVideoHeight;
                         pnpVideoHeight = pnpVideSize;
-                        pnpVideoWidth = pnpVideo.videoWidth * p;
+                        pnpVideoWidth = pnpVideoWidth * scale;
                     } 
                     else{
-                        var p = pnpVideSize / pnpVideo.videoWidth;
+                        var scale = pnpVideSize / pnpVideoWidth;
                         pnpVideoWidth = pnpVideSize;
-                        pnpVideoHeight = pnpVideo.videoHeight * p;
+                        pnpVideoHeight = pnpVideoHeight * scale;
                     }
                 }
                 var pnpOffsetX = 10;
                 var pnpOffsetY = 10;
                 if(RecordingLayout == "side-by-side"){
-                    pnpVideoWidth = videoWidth;
-                    pnpVideoHeight = videoHeight;
-                    pnpOffsetX = 0;
-                    pnpOffsetY = 0;
+                    pnpVideoWidth = pnpVideo.videoWidth;
+                    pnpVideoHeight = pnpVideo.videoHeight;
+                    if(pnpVideoWidth >= pnpVideoHeight){
+                        // Landscape / Square
+                        var scale = recordingWidth / pnpVideoWidth;
+                        pnpVideoWidth = recordingWidth;
+                        pnpVideoHeight = pnpVideoHeight * scale;
+                        if(pnpVideoHeight > recordingHeight){
+                            var scale = recordingHeight / pnpVideoHeight;
+                            pnpVideoHeight = recordingHeight;
+                            pnpVideoWidth = pnpVideoWidth * scale;
+                        }
+                    } 
+                    else {
+                        // Portrait
+                        var scale = recordingHeight / pnpVideoHeight;
+                        pnpVideoHeight = recordingHeight;
+                        pnpVideoWidth = pnpVideoWidth * scale;
+                    }
+                    pnpOffsetX = (pnpVideoWidth < recordingWidth)? (recordingWidth - pnpVideoWidth) / 2 : 0;
+                    pnpOffsetY = (pnpVideoHeight < recordingHeight)? (recordingHeight - pnpVideoHeight) / 2 : 0;
                 }
 
                 // Draw Elements
-                recordingContext.fillRect(0, 0, recordingWidth, recordingHeight);
+                recordingContext.fillRect(0, 0, recordingCanvas.width, recordingCanvas.height);
                 if(mainVideo.videoHeight > 0){
                     recordingContext.drawImage(mainVideo, offsetX, offsetY, videoWidth, videoHeight);
                 }
@@ -7225,8 +7241,10 @@ function ShowDictate(buddy){
             instructions.html('No speech was detected. Try again.');  
         }
         else {
-            console.warn("SpeechRecognition Error: ", event);
-            buddyObj.recognition.abort();
+            if(buddyObj.recognition){
+                console.warn("SpeechRecognition Error: ", event);
+                buddyObj.recognition.abort();
+            }
             buddyObj.recognition = null;
         }
         window.setTimeout(function(){
@@ -7237,8 +7255,13 @@ function ShowDictate(buddy){
         var transcript = event.results[event.resultIndex][0].transcript;
         if((event.resultIndex == 1 && transcript == event.results[0][0].transcript) == false) {
             if($.trim(textarea.val()).endsWith(".") || $.trim(textarea.val()) == "") {
-                transcript = $.trim(transcript);
-                transcript = transcript.replace(/^./, " "+ transcript[0].toUpperCase());
+                if(transcript == "\r" || transcript == "\n" || transcript == "\r\n" || transcript == "\t"){
+                    // WHITESPACE ONLY
+                }
+                else {
+                    transcript = $.trim(transcript);
+                    transcript = transcript.replace(/^./, " "+ transcript[0].toUpperCase());
+                }
             }
             console.log("Dictate:", transcript);
             textarea.val(textarea.val() + transcript);
@@ -8730,34 +8753,4 @@ function HidePopup(timeout){
 }
 
 // =================================================================================
-
-// 4:3
-var qvgaConstraints = {
-    video: { width: { exact: 320 }, height: { exact: 240 }, aspectRatio: 1.33 }
-};
-var vgaConstraints = {
-    video: { width: { exact: 640 }, height: { exact: 480 }, aspectRatio: 1.33 }
-};
-
-// 16:9
-var qhdConstraints = {
-    video: { width: { exact: 640 }, height: { exact: 360 }, aspectRatio: 1.77 }
-};
-var nhdConstraints = {
-    video: { width: { exact: 960 }, height: { exact: 540 }, aspectRatio: 1.77 }
-};
-var hdConstraints = {
-    video: { width: { exact: 1280 }, height: { exact: 720 }, aspectRatio: 1.77 }
-};
-
-// Screen share
-var ssConstraints = {
-    video: {
-        mandatory: {
-            chromeMediaSource: 'screen',
-            // chromeMediaSource: 'desktop',
-            maxWidth: screen.with,
-            maxHeight: screen.height
-        }
-    }
-};
+// End Of File
