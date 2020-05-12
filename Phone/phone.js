@@ -2,67 +2,108 @@
 
 ====================
  ☎️ Raspberry Phone ☎️ 
- [A fully featured browser based SIP phone for Asterisk]
+====================
+A fully featured browser based SIP phone for Asterisk
 -------------------------------------------------------------
  Copyright (c) 2020  - Conrad de Wet - All Rights Reserved.
 =============================================================
-
 File: phone.js
 License: GNU Lesser General Public License v3.0
 Version: 0.0.1
-Owner: Conrad De Wet
+Owner: Conrad de Wet
 Date: April 2020
 Git: https://github.com/InnovateAsterisk/Browser-Phone
 
 =========
 Requires:
 =========
+    ✅ Asteriks PBX (with WebRTC and Messaging)
     ✅ sip-0.11.6.js                        : WebRTC and SIP signaling library
-    ✅ jquery-3.3.1.min.js                  : Javascript tolkit
-    ✅ jquery.md5-min.js                    : Md5 Hash plugin
+    ✅ jquery-3.3.1.min.js                  : JavaScript toolkit
+    ✅ jquery.md5-min.js                    : Md5 Hash plug-in (unused)
     ✅ Chart.bundle-2.7.2.js                : Graph and Chart UI
-    ✅ dhtmlx.js                            : Layout and windowing library
+    ✅ dhtmlx.js                            : Windowing & UI Library
     ✅ fabric-2.4.6.min.js                  : Canvas Editing Library
-    ✅ moment-with-locales-2.24.0.min.js    : Date and Time libary
-    ✅ croppie.min.js                       : Profile picture crop tool
+    ✅ moment-with-locales-2.24.0.min.js    : Date & Time Libary
+    ✅ croppie.min.js                       : Profile Picture Crop Library
+Note: These Libraries get loaded automatically.
 
-===============
-Features to do:
-===============
-    ✅ Dictate Text Message
-    ✅ QOS Storage
-    ✅ Index DB
+
+==========
+TODO List:
+==========
+    ✅ Recording Styles: You | Me | You (with me pnp) | Me (with you pnp) | Side-By-Side
+    ✅ Recording Quality
+
+=============
+New Features:
+=============
     ✅ Voicemail Notification
-    ✅ Stream Row Buffering
-    ✅ Stream Search
-    ✅ Scratchpad
-    ✅ Action URLs
-    ✅ Take picture during call
-    ✅ Auto-add Buddy from inbound (and check duplicates)
-    ✅ Delete Buddy (Partial/Complete/Blacklist)
-    ✅ Blacklists / Whitelists (Inbound)
-    ✅ Personalisation: Audio, Buddy Backgrounds, Buddy Ringtones
     ✅ Group: Managment / Conference / Monitoring
-    ✅ Extended Servces: File, Image, Video, YouTube, Audio
-    ✅ Send: Image, Recording, Video, SMS, Email
-    ✅ Keyboard Shortcuts
-    ✅ Languages
+    ✅ Scratchpad Toolbar
+    ✅ QOS Storage
+    ✅ CDR Details window
+    ✅ Action URLs
     ✅ Web Speech API?
+    ✅ Personalisation: Audio, Buddy Backgrounds, Buddy Ringtones
+    ✅ Blacklists / Whitelists (Inbound)
+    ✅ Trim Buddy Stream (rather than delete)
+    ✅ Languages
+    ✅ Keyboard Shortcuts
+
+==================================
+Extensded & Non-standard Features:
+==================================
+    ✅ Extended Servces Send: Image, Recording, Video, SMS, Email
+    ✅ Preview : File, Image, Video, YouTube, Audio
+
+=========================
+Performance Improvements:
+=========================
+    ✅ IndexDB for Images
+    ✅ IndexDB for Streams
     ✅ Code Cleanup: namespace, objects, memory cleanup
- */
 
-// ========================================================
-// Global Settings:
-var userAgentStr = "Raspberry Phone (SipJS - 0.11.6)";
-var hostingPrefex = "";
-var enabledExtendedServices = false;
-var enabledGroupServices = false;
+*/
 
-// =====================================================
+// Global Settings
+// ===============
+var enabledExtendedServices = false;                    // Send: Image, Recording, Video, SMS, Email
+var enabledGroupServices = false;                       // Group calling functionality - requires Asterisks config
 
-// Local Storage
+// Rather don't fiddle with anything beyond this point
+// -------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// System variables
+// ================
 var localDB = window.localStorage;
-
 var userAgent = null;
 var CallSessions = new Array();
 var voicemailSubs = null;
@@ -83,7 +124,7 @@ var messagingCollection = null;
 // User Settings & Defaults
 // ========================
 var wssServer = localDB.getItem("wssServer");           // eg: raspberrypi.local
-var profileUserID = localDB.getItem("profileUserID");   // eg: 8D68B3EFEC8D0F5
+var profileUserID = localDB.getItem("profileUserID");   // Internal reference ID. (DON'T CHANGE THIS!)
 var profileUser = localDB.getItem("profileUser");       // eg: 100
 var profileName = localDB.getItem("profileName");       // eg: Keyla James
 var WebSocketPort = localDB.getItem("WebSocketPort");   // eg: 444 | 4443
@@ -91,19 +132,29 @@ var ServerPath = localDB.getItem("ServerPath");         // eg: /ws
 var SipUsername = localDB.getItem("SipUsername");       // eg: webrtc
 var SipPassword = localDB.getItem("SipPassword");       // eg: webrtc
 
-var AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");
-var DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");
-var CallWaitingEnabled = (getDbItem("CallWaitingEnabled", "1") == "1");
-var RecordAllCalls = (getDbItem("RecordAllCalls", "0") == "1");
+var userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (SipJS - 0.11.6)");   // Set this to whatever you want.
+var hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
 
-var AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");
-var EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");
-var NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");
-var MirrorVideo = getDbItem("VideoOrientation", "rotateY(180deg)");
-var maxFrameRate = getDbItem("FrameRate", "");
-var videoHeight = getDbItem("VideoHeight", "");
-var videoAspectRatio = getDbItem("AspectRatio", "");
+var AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
+var DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");   // Rejects any inbound call, while allowing outbound calls
+var CallWaitingEnabled = (getDbItem("CallWaitingEnabled", "1") == "1");     // Rejects any inbound call if you are on a call already.
+var RecordAllCalls = (getDbItem("RecordAllCalls", "0") == "1");             // Starts Call Recording when a call is established.
+
+var AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");       // Attempts to adjust the microphone volume to a good audio level. (OS may be better at this)
+var EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");     // Attemots to remove echo over the line.
+var NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");     // Attempts to clear the call qulity of noise.
+var MirrorVideo = getDbItem("VideoOrientation", "rotateY(180deg)");     // Displays the self-preview in normal or mirror view, to better present the preview. 
+var maxFrameRate = getDbItem("FrameRate", "");                          // Suggests a frame rate to your webcam if possible.
+var videoHeight = getDbItem("VideoHeight", "");                         // Suggests a video height (and therefor picture quality) to your webcam.
+var videoAspectRatio = getDbItem("AspectRatio", "");                    // Suggests an aspect ratio (1:1 | 4:3 | 16:9) to your webcam.
 var NotificationsActive = (getDbItem("Notifications", "0") == "1");
+
+var StreamBuffer = parseInt(getDbItem("StreamBuffer", 50));                 // The amount of rows to buffer in the Buddy Stream
+var PosterJpegQuality = parseFloat(getDbItem("PosterJpegQuality", 0.6));    // The image quality of the Video Poster images
+var VideoResampleSize = getDbItem("VideoResampleSize", "HD");               // The resample size (height) to re-render video that gets presented (sent). (SD = ???x360 | HD = ???x720 | FHD = ???x1080)
+var RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recodings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
+var RecordingVideoFps = parseInt(getDbItem("RecordingVideoFps", 12));       // The Frame Per Second of the Video Track recording
+var RecordingLayout = getDbItem("RecordingLayout", "side-by-side");             // The Layout of the Recording Video Track (side-by-side | us-pnp | them-pnp | us-only | them-only)
 
 // Utilities
 // =========
@@ -111,7 +162,7 @@ function uID(){
     return Date.now()+Math.floor(Math.random()*10000).toString(16).toUpperCase();
 }
 function utcDateNow(){
-    return moment().utc().format("YYYY-MM-DD HH:mm:ss") +" UTC";
+    return moment().utc().format("YYYY-MM-DD HH:mm:ss UTC");
 }
 function getDbItem(itemIndex, defaultValue){
     if(localDB.getItem(itemIndex) != null) return localDB.getItem(itemIndex);
@@ -186,6 +237,30 @@ function UserLocale(){
         return language;
     }
 }
+function getFilter(filter, keyword){
+    if(filter.indexOf(",", filter.indexOf(keyword +": ") + keyword.length + 2) != -1){
+        return filter.substring(filter.indexOf(keyword +": ") + keyword.length + 2, filter.indexOf(",", filter.indexOf(keyword +": ") + keyword.length + 2));
+    }
+    else {
+        return filter.substring(filter.indexOf(keyword +": ") + keyword.length + 2);
+    }
+}
+function base64toBlob(base64Data, contentType) {
+    if(base64Data.indexOf("," != -1)) base64Data = base64Data.split(",")[1]; // [data:image/png;base64] , [xxx...]
+    var byteCharacters = atob(base64Data);
+    var slicesCount = Math.ceil(byteCharacters.length / 1024);
+    var byteArrays = new Array(slicesCount);
+    for (var s = 0; s < slicesCount; ++s) {
+        var begin = s * 1024;
+        var end = Math.min(begin + 1024, byteCharacters.length);
+        var bytes = new Array(end - begin);
+        for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+            bytes[i] = byteCharacters[offset].charCodeAt(0);
+        }
+        byteArrays[s] = new Uint8Array(bytes);
+    }
+    return new Blob(byteArrays, { type: contentType });
+}
 
 // Window and Document Events
 // ==========================
@@ -201,8 +276,7 @@ $(window).on("resize", function() {
 function UpdateUI(){
     var windowWidth = $(window).outerWidth();
     if(windowWidth < 920){
-        console.log("Narrow Layout")
-
+        // Narrow Layout
         if(selectedBuddy == null) {
             // Nobody Selected
             $("#rightContent").hide();
@@ -220,8 +294,7 @@ function UpdateUI(){
         }
     }
     else {
-        console.log("Widescreen Layout")
-
+        // Wide Screen Layout
         if(selectedBuddy == null) {
             $("#leftContent").css("width", "100%");
             $("#rightContent").css("margin-left", "0px");
@@ -296,8 +369,8 @@ function AddSomeoneWindow(){
                     MemberCount: 0
                 }
             );
-            var buddy = new Buddy("contact", id, $("#AddSomeone_Name").val(), "", $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val());
-            AddBuddy(buddy, false, false);
+            var buddyObj = new Buddy("contact", id, $("#AddSomeone_Name").val(), "", $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val());
+            AddBuddy(buddyObj, false, false);
         }
         else {
             // Add Extension
@@ -321,8 +394,8 @@ function AddSomeoneWindow(){
                     MemberCount: 0
                 }
             );
-            var buddy = new Buddy("extension", id, $("#AddSomeone_Name").val(), $("#AddSomeone_Exten").val(), $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val());
-            AddBuddy(buddy, false, false);
+            var buddyObj = new Buddy("extension", id, $("#AddSomeone_Name").val(), $("#AddSomeone_Exten").val(), $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val());
+            AddBuddy(buddyObj, false, false, true);
         }
         // Update Size: 
         json.TotalRows = json.DataCollection.length;
@@ -833,7 +906,7 @@ function ConfigureExtensionWindow(){
         window.SettingsOutputStreamMeter = null;
 
         // Load Sample
-        var audioObj = new Audio(hostingPrefex + "/speech_orig.mp3"); //speech_orig.wav: this file failes to play using the Asteriks MiniServer
+        var audioObj = new Audio(hostingPrefex + "speech_orig.mp3"); //speech_orig.wav: this file failes to play using the Asteriks MiniServer
         audioObj.onplay = function(){
             var outputStream = new MediaStream();
             if (typeof audioObj.captureStream !== 'undefined') {
@@ -1254,7 +1327,8 @@ function EditBuddyWindow(buddy){
         buddyObj.ContactNumber2 = $("#AddSomeone_Num2").val();
 
         // Update Image
-        $("#ImageCanvas").croppie('result', { type: 'base64', size: 'viewport', format: 'png', quality: 1, circle: false }).then(function(base64) {
+        var constraints = { type: 'base64', size: 'viewport', format: 'png', quality: 1, circle: false }
+        $("#ImageCanvas").croppie('result', constraints).then(function(base64) {
             if(buddyObj.Type == "extension"){
                 localDB.setItem("img-"+ buddyObj.uID +"-extension", base64);
             }
@@ -1358,6 +1432,8 @@ $(document).ready(function () {
     // =======
     windowsCollection = new dhtmlXWindows("material");
     messagingCollection = new dhtmlXWindows("material");
+
+    if(enabledGroupServices == false) $("#BtnCreateGroup").hide();
 
     $("#UserDID").html(profileUser);
     $("#UserCallID").html(profileName);
@@ -1538,18 +1614,86 @@ function Unregister() {
 // Inbound Calls
 // =============
 function ReceiveCall(session) {
-    console.log("New Incoming Call!");
-
     var callerID = session.remoteIdentity.displayName;
-    var extensionNo = session.remoteIdentity.uri.user;
-    var buddyObj = FindBuddyByExtNo(extensionNo);
+    var did = session.remoteIdentity.uri.user;
+
+    console.log("New Incoming Call!", "\""+ callerID +"\" <"+ did +">");
+
     var CurrentCalls = CallSessions.length;
+
+    var buddyObj = FindBuddyByDid(did);
+    // Make new contact of its not there
+    if(buddyObj == null)
+    {
+        // Note: typically incoming numbers are long, about 10+ 
+        // but also typically extension numbers aer short, about 3 or 4
+        // making this identifyer 6, should be comfortable.
+
+        var json = JSON.parse(localDB.getItem("UserBuddiesJson"));
+        if(json == null) json = InitUserBuddies();
+
+        if(did.length > 6){
+            // Add Regular Contact
+            var id = uID();
+            var dateNow = utcDateNow();
+            json.DataCollection.push(
+                {
+                    Type: "contact", 
+                    LastActivity: dateNow,
+                    ExtensionNumber: "", 
+                    MobileNumber: "",
+                    ContactNumber1: did,
+                    ContactNumber2: "",
+                    uID: null,
+                    cID: id,
+                    gID: null,
+                    DisplayName: callerID,
+                    Position: "",
+                    Description: "",
+                    Email: "",
+                    MemberCount: 0
+                }
+            );
+            buddyObj = new Buddy("contact", id, callerID, "", "", did, "", dateNow, "", "");
+            AddBuddy(buddyObj, true, (CurrentCalls==0));
+        }
+        else {
+            // Add Extension
+            var id = uID();
+            var dateNow = utcDateNow();
+            json.DataCollection.push(
+                {
+                    Type: "extension",
+                    LastActivity: dateNow,
+                    ExtensionNumber: did,
+                    MobileNumber: "",
+                    ContactNumber1: "",
+                    ContactNumber2: "",
+                    uID: id,
+                    cID: null,
+                    gID: null,
+                    DisplayName: callerID,
+                    Position: "",
+                    Description: "", 
+                    Email: "",
+                    MemberCount: 0
+                }
+            );
+            buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "");
+            AddBuddy(buddyObj, true, (CurrentCalls==0), true);
+        }
+        // Update Size: 
+        json.TotalRows = json.DataCollection.length;
+
+        // Save To DB
+        localDB.setItem("UserBuddiesJson", JSON.stringify(json));
+    }
     var buddy = buddyObj.identity;
 
     // Time Stamp
     window.clearInterval(session.data.callTimer);
     var startTime = moment.utc();
-    session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss");
+    session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
     $("#contact-" + buddy + "-timer").show();
     session.data.callTimer = window.setInterval(function(){
         var now = moment.utc();
@@ -1565,11 +1709,6 @@ function ReceiveCall(session) {
     }
 
 
-    // Make content one of its not there
-    if(buddyObj == null)
-    {
-        // TODO        
-    }
 
     // Handle the cancel events
     session.on('terminated', function(message, cause) {
@@ -1654,7 +1793,7 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        rinnger.src = hostingPrefex + "/Tone_CallWaiting.mp3";
+        rinnger.src = hostingPrefex + "Tone_CallWaiting.mp3";
         session.data.rinngerObj = rinnger;
     } else {
         // Play Ring Tone
@@ -1675,7 +1814,7 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        rinnger.src = hostingPrefex + "/Ringtone_1.mp3";
+        rinnger.src = hostingPrefex + "Ringtone_1.mp3";
         session.data.rinngerObj = rinnger;
     }
 
@@ -1863,18 +2002,18 @@ function wireupAudioSession(session, typeStr, buddy) {
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            var soundFile = hostingPrefex + "/Tone_EarlyMedia-European.mp3";
+            var soundFile = hostingPrefex + "Tone_EarlyMedia-European.mp3";
             if(UserLocale().indexOf("us") > -1){
-                soundFile = hostingPrefex + "/Tone_EarlyMedia-US.mp3";
+                soundFile = hostingPrefex + "Tone_EarlyMedia-US.mp3";
             }
             if(UserLocale().indexOf("gb") > -1){
-                soundFile = hostingPrefex + "/Tone_EarlyMedia-UK.mp3";
+                soundFile = hostingPrefex + "Tone_EarlyMedia-UK.mp3";
             }
             if(UserLocale().indexOf("au") > -1){
-                soundFile = hostingPrefex + "/Tone_EarlyMedia-Australia.mp3";
+                soundFile = hostingPrefex + "Tone_EarlyMedia-Australia.mp3";
             }
             if(UserLocale().indexOf("jp") > -1){
-                soundFile = hostingPrefex + "/Tone_EarlyMedia-Japan.mp3";
+                soundFile = hostingPrefex + "Tone_EarlyMedia-Japan.mp3";
             }
             earlyMedia.src = soundFile;
             session.data.earlyMedia = earlyMedia;
@@ -2071,18 +2210,18 @@ function wireupVideoSession(session, typeStr, buddy) {
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            var soundFile = hostingPrefex + "/Tone_EarlyMedia-European.mp3";
+            var soundFile = hostingPrefex + "Tone_EarlyMedia-European.mp3";
             if(UserLocale().indexOf("us") > -1){
-                soundFile = hostingPrefex + "/Tone_EarlyMedia-US.mp3";
+                soundFile = hostingPrefex + "Tone_EarlyMedia-US.mp3";
             }
             if(UserLocale().indexOf("gb") > -1){
-                soundFile = hostingPrefex + "/Tone_EarlyMedia-UK.mp3";
+                soundFile = hostingPrefex + "Tone_EarlyMedia-UK.mp3";
             }
             if(UserLocale().indexOf("au") > -1){
-                soundFile = hostingPrefex + "/Tone_EarlyMedia-Australia.mp3";
+                soundFile = hostingPrefex + "Tone_EarlyMedia-Australia.mp3";
             }
             if(UserLocale().indexOf("jp") > -1){
-                soundFile = hostingPrefex + "/Tone_EarlyMedia-Japan.mp3";
+                soundFile = hostingPrefex + "Tone_EarlyMedia-Japan.mp3";
             }
             earlyMedia.src = soundFile;
             session.data.earlyMedia = earlyMedia;
@@ -2220,12 +2359,28 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
         session.data.earlyMedia.pause();
         session.data.earlyMedia = null;
     }
-    if(session.data.VideoSourcePresentation) {
-        session.data.VideoSourcePresentation.pause();
-        session.data.VideoSourcePresentation = null;
-    }
     // Stop Recording if we are
     StopRecording(buddy,true);
+
+    if($("#contact-"+ buddy +"-localVideo").get(0)){
+        $("#contact-"+ buddy +"-localVideo").get(0).pause();
+        $("#contact-"+ buddy +"-localVideo").get(0).removeAttribute('src');
+        $("#contact-"+ buddy +"-localVideo").get(0).load();
+        $("#contact-"+ buddy +"-localVideo").show();
+    }
+    if($("#contact-"+ buddy +"-remoteVideo").get(0)){
+        $("#contact-"+ buddy +"-remoteVideo").get(0).pause();
+        $("#contact-"+ buddy +"-remoteVideo").get(0).removeAttribute('src');
+        $("#contact-"+ buddy +"-remoteVideo").get(0).load();
+    }
+    if($("#contact-"+ buddy +"-sharevideo").get(0)){
+        $("#contact-"+ buddy +"-sharevideo").get(0).pause();
+        $("#contact-"+ buddy +"-sharevideo").get(0).removeAttribute('src');
+        $("#contact-"+ buddy +"-sharevideo").get(0).load();
+        $("#contact-"+ buddy +"-sharevideo").hide();
+        window.clearInterval(session.data.videoResampleInterval);
+    }
+
     //Video
     RestoreVideoArea(buddy);
     // Hold
@@ -2242,6 +2397,17 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
     $("#contact-"+ buddy +"-btn-Conference").show();
     $("#contact-"+ buddy +"-btn-CancelConference").hide();
     $("#contact-"+ buddy +"-Conference").hide();
+
+    $("#contact-"+ buddy +"-src-camera").prop("disabled", true);
+    $("#contact-"+ buddy +"-src-canvas").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-video").prop("disabled", false);
+    $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
+
+    $("#contact-" + buddy + "-scratchpad-container").hide();
+    RemoveScratchpad(buddy);
+
+    $("#contact-" + buddy + "-remoteVideo").appendTo("#contact-" + buddy + "-stage-container");
 
     // Audio Meters
     for (var a = 0; a < RemoteAudioMeters.length; a++) {
@@ -2307,9 +2473,6 @@ function teardownSession(buddy, session, reasonCode, reasonText) {
     // Remove the session
     $("#contact-" + buddy + "-sipCallId").val("");
     removeSession(session);
-
-    $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
 
     // Refresh Stream
     var buddyObj = FindBuddyByIdentity(buddy);
@@ -3004,30 +3167,27 @@ function MeterSettingsOutput(audioStream, objectId, direction, interval){
 // Presence / Subscribe
 // ====================
 function Subscribe() {
-    var myAuth = SipUsername;
-
     console.log("Subscribe to voicemail Messages...");
 
     // Voicemail notice
     var vmOptions = { expires: 300 };
-    voicemailSubs = userAgent.subscribe(myAuth + "@" + wssServer, 'message-summary', vmOptions); // message-summary = voicemail messages
+    voicemailSubs = userAgent.subscribe(SipUsername + "@" + wssServer, 'message-summary', vmOptions); // message-summary = voicemail messages
     voicemailSubs.on('notify', function (notification) {
         // $("#msg").html("You have voicemail: \n" + notification.request.body);
         console.log("You have voicemail: \n" + notification.request.body);
     });
 
+    console.log("Starting Subscribe of all ("+ Buddies.length +") Extension Buddies...");
+
     // conference, message-summary, dialog, presence, presence.winfo, xcap-diff, dialog.winfo, refer
     // dialog... var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/dialog-info+xml'] };
     var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] };
-
-    console.log("Starting Subscribe of all ("+ Buddies.length +") Extension Buddies...");
-    for(var b=0; b<Buddies.length; b++)
-    {
+    for(var b=0; b<Buddies.length; b++) {
         var buddyObj = Buddies[b];
-        if(buddyObj.type == "extension")
-        {
+        if(buddyObj.type == "extension") {
             console.log("SUBSCRIBE: "+ buddyObj.ExtNo +"@" + wssServer);
             var blfObj = userAgent.subscribe(buddyObj.ExtNo +"@" + wssServer, 'presence', dialogOptions); 
+            blfObj.data.buddyId = buddyObj.identity;
             blfObj.on('notify', function (notification) {
                 RecieveBlf(notification);
             });
@@ -3035,8 +3195,17 @@ function Subscribe() {
         }
     }
 }
-function SubscribeBuddy(buddy) {
-    //TODO
+function SubscribeBuddy(buddyObj) {
+    var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] };
+    if(buddyObj.type == "extension") {
+        console.log("SUBSCRIBE: "+ buddyObj.ExtNo +"@" + wssServer);
+        var blfObj = userAgent.subscribe(buddyObj.ExtNo +"@" + wssServer, 'presence', dialogOptions);
+        blfObj.data.buddyId = buddyObj.identity;
+        blfObj.on('notify', function (notification) {
+            RecieveBlf(notification);
+        });
+        BlfSubs.push(blfObj);
+    }
 }
 function RecieveBlf(notification) {
     if (userAgent == null || !userAgent.isRegistered()) return;
@@ -3171,11 +3340,9 @@ function UnSubscribe() {
     }
     BlfSubs = new Array();
 
-    for(var b=0; b<Buddies.length; b++)
-    {
+    for(var b=0; b<Buddies.length; b++) {
         var buddyObj = Buddies[b];
-        if(buddyObj.type == "extension")
-        {
+        if(buddyObj.type == "extension") {
             $("#contact-" + buddyObj.identity + "-devstate").prop("class", "dotOffline");
             $("#contact-" + buddyObj.identity + "-devstate-main").prop("class", "dotOffline");
             $("#contact-" + buddyObj.identity + "-presence").html("Unknown");
@@ -3183,8 +3350,22 @@ function UnSubscribe() {
         }
     }
 }
-function UnSubscribeBuddy(buddy) {
-    //TODO
+function UnSubscribeBuddy(buddyObj) {
+    if(buddyObj.type != "extension") {
+        return;
+    }
+    for (var blf = 0; blf < BlfSubs.length; blf++) {
+        var blfObj = BlfSubs[blf];
+        if(blfObj.data.buddyId == buddyObj.identity){
+        console.log("Unsubscribing:", buddyObj.identity);
+            blfObj.unsubscribe();
+            blfObj.close();
+
+            BlfSubs.splice(blf, 1);
+
+            break;
+        }
+    }
 }
 
 // Buddy: Chat / Instant Message / XMPP
@@ -3271,25 +3452,98 @@ function SendChatMessage(buddy) {
 
     // Post Add Activity
     $("#contact-" + buddy + "-ChatMessage").val("");
+    $("#contact-" + buddy + "-dictate-message").hide();
+    $("#contact-" + buddy + "-emoji-menu").hide();
+
+    if(buddyObj.recognition != null){
+        buddyObj.recognition.abort();
+        buddyObj.recognition = null;
+    }
 
     ClearChatPreview(buddy);
     UpdateBuddyActivity(buddy);
     RefreshStream(buddyObj);
 }
 function ReceiveMessage(message) {
-    console.log("New Incoming Message!");
+    var callerID = message.remoteIdentity.displayName;
+    var did = message.remoteIdentity.uri.user;
 
-    var fromSipUri = "" + message.remoteIdentity.uri; //sip:200@192.168.88.98
-    var extNo = fromSipUri.split("@")[0].split(":")[1];
-    var fromName = message.remoteIdentity.displayName;
+    console.log("New Incoming Message!", "\""+ callerID +"\" <"+ did +">");
+
+    var CurrentCalls = CallSessions.length;
+
+    var buddyObj = FindBuddyByDid(did);
+    // Make new contact of its not there
+    if(buddyObj == null)
+    {
+        // Note: typically incoming numbers are long, about 10+ 
+        // but also typically extension numbers aer short, about 3 or 4
+        // making this identifyer 6, should be comfortable.
+
+        var json = JSON.parse(localDB.getItem("UserBuddiesJson"));
+        if(json == null) json = InitUserBuddies();
+
+        if(did.length > 6){
+            // Add Regular Contact
+            var id = uID();
+            var dateNow = utcDateNow();
+            json.DataCollection.push(
+                {
+                    Type: "contact", 
+                    LastActivity: dateNow,
+                    ExtensionNumber: "", 
+                    MobileNumber: "",
+                    ContactNumber1: did,
+                    ContactNumber2: "",
+                    uID: null,
+                    cID: id,
+                    gID: null,
+                    DisplayName: callerID,
+                    Position: "",
+                    Description: "",
+                    Email: "",
+                    MemberCount: 0
+                }
+            );
+            buddyObj = new Buddy("contact", id, callerID, "", "", did, "", dateNow, "", "");
+            AddBuddy(buddyObj, true, (CurrentCalls==0));
+        }
+        else {
+            // Add Extension
+            var id = uID();
+            var dateNow = utcDateNow();
+            json.DataCollection.push(
+                {
+                    Type: "extension",
+                    LastActivity: dateNow,
+                    ExtensionNumber: did,
+                    MobileNumber: "",
+                    ContactNumber1: "",
+                    ContactNumber2: "",
+                    uID: id,
+                    cID: null,
+                    gID: null,
+                    DisplayName: callerID,
+                    Position: "",
+                    Description: "", 
+                    Email: "",
+                    MemberCount: 0
+                }
+            );
+            buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "");
+            AddBuddy(buddyObj, true, (CurrentCalls==0), true);
+        }
+        // Update Size: 
+        json.TotalRows = json.DataCollection.length;
+
+        // Save To DB
+        localDB.setItem("UserBuddiesJson", JSON.stringify(json));
+    }
+
     var origionalMessage = message.body;
-    var formattedMessage = ReformatMessage(message.body); // Check if its Json ??
-
-    var buddyObj = FindBuddyByExtNo(extNo);
-    if(buddyObj == null) return;                        // TODO: make contact because if its not found
-
+    var formattedMessage = ReformatMessage(origionalMessage); // Check if its Json ??
     var messageId = uID();
-    var DateTime = moment.utc().format("YYYY-MM-DD HH:mm:ss");
+    var DateTime = utcDateNow();
 
     // Get the actual Person sending (since all group messages come from the group)
     var ActualSender = "";
@@ -3363,7 +3617,7 @@ function ReceiveMessage(message) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        rinnger.src = hostingPrefex + "/Alert.mp3";
+        rinnger.src = hostingPrefex + "Alert.mp3";
         message.data.rinngerObj = rinnger; // Will be attached to this object until its disposed.
     } else {
         // Message window is active.
@@ -3380,13 +3634,13 @@ function AddCallMessage(buddy, session, reasonCode, reasonText) { //(buddy, sess
     var totalDuration = 0;
     var ringTime = 0;
 
-    var CallStart = moment.utc(session.data.callstart); // Actual start (both inbound and outbound)
+    var CallStart = moment.utc(session.data.callstart.replace(" UTC", "")); // Actual start (both inbound and outbound)
     var CallAnswer = null; // On Accept when inbound, Remote Side when Outbound
-    if(session.startTime){ 
-        // The time when WE answered the call (May not have been answered)
+    if(session.startTime){
+        // The time when WE answered the call (May be null - no answer)
         // or
-        // The time when THEY answered the call (May not have been answered)
-        CallAnswer = moment.utc(session.startTime);
+        // The time when THEY answered the call (May be null - no answer)
+        CallAnswer = moment.utc(session.startTime);  // Local Time gets converted to UTC 
 
         callDuration = moment.duration(CallEnd.diff(CallAnswer));
         ringTime = moment.duration(CallAnswer.diff(CallStart));
@@ -3516,7 +3770,7 @@ function SendFileDataMessage(buddy, FileDataUrl, fileName, fileSize) {
 
     // Add To Message Stream
     // =====================
-    var DateTime = moment.utc().format("YYYY-MM-DD HH:mm:ss");
+    var DateTime = utcDateNow();
 
     var showReview = false;
     var fileIcon = '<i class="fa fa-file"></i>';
@@ -3624,7 +3878,7 @@ function UpdateBuddyActivity(buddy){
 
     // Update Last Activity Time
     // =========================
-    var timeStamp = moment().utc().format("YYYY-MM-DD HH:mm:ss") +" UTC";
+    var timeStamp = utcDateNow();
     buddyObj.lastActivity = timeStamp;
     console.log("Last Activity is now: "+ timeStamp);
 
@@ -3756,7 +4010,7 @@ function VideoCall(buddy) {
 
         var startTime = moment.utc();
         session.data.calldirection = "outbound";
-        session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss");
+        session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
         session.data.callTimer = window.setInterval(function(){
             var now = moment.utc();
             var duration = moment.duration(now.diff(startTime)); 
@@ -3900,7 +4154,7 @@ function AudioCall(buddy, dialledNumber) {
 
         var startTime = moment.utc();
         session.data.calldirection = "outbound";
-        session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss");
+        session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
         session.data.callTimer = window.setInterval(function(){
             var now = moment.utc();
             var duration = moment.duration(now.diff(startTime)); 
@@ -3971,11 +4225,9 @@ function removeSession(session)
         }
     }
 
-    console.log("CallSessions("+  CallSessions.length +"): ", CallSessions);
+    console.log("Call Sessions now:", CallSessions.length);
 }
 function switchSessions(buddy) {
-    console.log("Switching Sessions to: "+ buddy);
-
     // Put all the current calls on hold
     for(var c=0; c<CallSessions.length; c++)
     {
@@ -4057,13 +4309,6 @@ function StartRecording(buddy){
                     console.log("Adding sender audio track to record:", RTCRtpSender.track.label);
                     recordStream.addTrack(RTCRtpSender.track);
                 }
-                // Don't think I need to record my self?
-                // if(session.data.withvideo){
-                //     if(RTCRtpSender.track.kind == "video") {
-                //         console.log("Adding sender video track to record:", RTCRtpSender.track.label);
-                //         recordStream.addTrack(RTCRtpSender.track);
-                //     }
-                // }
             });
             pc.getReceivers().forEach(function (RTCRtpReceiver) {
                 if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
@@ -4078,11 +4323,109 @@ function StartRecording(buddy){
                 }
             });
 
+
+            // Resample the Video Recording
+            // ==============================================
+            // RecordingLayout (side-by-side | us-pnp | them-pnp | us-only | them-only)
+
+            var recordingWidth = 640;
+            var recordingHeight = 360;
+            var pnpVideSize = 100;
+            if(RecordingVideoSize == "HD"){
+                recordingWidth = 1280;
+                recordingHeight = 720;
+                pnpVideSize = 144;
+            }
+            if(RecordingVideoSize == "FHD"){
+                recordingWidth = 1920;
+                recordingHeight = 1080;
+                pnpVideSize = 240;
+            }
+            if(RecordingLayout == "us-pnp"){
+                recordingWidth = (recordingWidth * 2) + 5;
+            }
+            // them-pnp
+            var pnpVideo = $("#contact-" + buddy + "-localVideo").get(0);
+            var mainVideo = $("#contact-" + buddy + "-remoteVideo").get(0);
+            if(RecordingLayout == "us-pnp"){
+                pnpVideo = $("#contact-" + buddy + "-remoteVideo").get(0);
+                mainVideo = $("#contact-" + buddy + "-localVideo").get(0);
+            }
+            var recordingCanvas = $('<canvas/>').get(0);
+            recordingCanvas.width = recordingWidth;
+            recordingCanvas.height = recordingHeight;
+            var recordingContext = recordingCanvas.getContext("2d");
+
+            window.clearInterval(session.data.recordingRedrawInterval);
+            session.data.recordingRedrawInterval = window.setInterval(function(){
+
+                // Main Video
+                var videoWidth = (mainVideo.videoWidth > 0)? mainVideo.videoWidth : recordingWidth ;
+                var videoHeight = (mainVideo.videoHeight > 0)? mainVideo.videoHeight : recordingHeight ;
+
+                if(videoWidth >= videoHeight){
+                    // Landscape / Square
+                    var scale = recordingWidth / videoWidth;
+                    videoWidth = recordingWidth;
+                    videoHeight = videoHeight * scale;
+                    if(videoHeight > recordingHeight){
+                        var scale = recordingHeight / videoHeight;
+                        videoHeight = recordingHeight;
+                        videoWidth = videoWidth * scale;
+                    }
+                } 
+                else {
+                    // Portrait
+                    var scale = recordingHeight / videoHeight;
+                    videoHeight = recordingHeight;
+                    videoWidth = videoWidth * scale;
+                }
+                var offsetX = (videoWidth < recordingWidth)? (recordingWidth - videoWidth) / 2 : 0;
+                var offsetY = (videoHeight < recordingHeight)? (recordingHeight - videoHeight) / 2 : 0;
+                if(RecordingLayout == "side-by-side") offsetX = offsetX + videoWidth + 5;
+
+                // Picture-in-Picture Video
+                var pnpVideoHeight = 0;
+                var pnpVideoWidth = 0;
+                if(pnpVideo.videoHeight > 0){
+                    if(pnpVideo.videoWidth >= pnpVideo.videoHeight){
+                        var p = pnpVideSize / pnpVideo.videoHeight;
+                        pnpVideoHeight = pnpVideSize;
+                        pnpVideoWidth = pnpVideo.videoWidth * p;
+                    } 
+                    else{
+                        var p = pnpVideSize / pnpVideo.videoWidth;
+                        pnpVideoWidth = pnpVideSize;
+                        pnpVideoHeight = pnpVideo.videoHeight * p;
+                    }
+                }
+                var pnpOffsetX = 10;
+                var pnpOffsetY = 10;
+                if(RecordingLayout == "side-by-side"){
+                    pnpVideoWidth = videoWidth;
+                    pnpVideoHeight = videoHeight;
+                    pnpOffsetX = 0;
+                    pnpOffsetY = 0;
+                }
+
+                // Draw Elements
+                recordingContext.fillRect(0, 0, recordingWidth, recordingHeight);
+                if(mainVideo.videoHeight > 0){
+                    recordingContext.drawImage(mainVideo, offsetX, offsetY, videoWidth, videoHeight);
+                }
+                if(pnpVideo.videoHeight > 0 && (RecordingLayout == "side-by-side" || RecordingLayout == "us-pnp" || RecordingLayout == "them-pnp")){
+                    // Only Draw the Pnp Video when needed
+                    recordingContext.drawImage(pnpVideo, pnpOffsetX, pnpOffsetY, pnpVideoWidth, pnpVideoHeight);
+                }
+            }, Math.floor(1000/RecordingVideoFps));
+            var recordingVideoMediaStream = recordingCanvas.captureStream(RecordingVideoFps);
+            // ===============================================
+
             var mixedAudioVideoRecordStream = new MediaStream();
-            mixedAudioVideoRecordStream.addTrack(MixAudioStreams(recordStream).getAudioTracks()[0]); // Add Audio Track
+            mixedAudioVideoRecordStream.addTrack(MixAudioStreams(recordStream).getAudioTracks()[0]);
             if(session.data.withvideo){
-                // Maybe look at Video Merge / Overlay??
-                mixedAudioVideoRecordStream.addTrack(recordStream.getVideoTracks()[0]); // Add Video Track
+                // mixedAudioVideoRecordStream.addTrack(recordStream.getVideoTracks()[0]);
+                mixedAudioVideoRecordStream.addTrack(recordingVideoMediaStream.getVideoTracks()[0]);
             }
 
             var mediaType = "audio/webm";
@@ -4195,6 +4538,7 @@ function StopRecording(buddy, noConfirm){
                 console.log("Stopping Call Recording");
                 session.data.mediaRecorder.stop();
                 session.data.recordings[session.data.recordings.length-1].stopTime = utcDateNow();
+                window.clearInterval(session.data.recordingRedrawInterval);
 
                 $("#contact-" + buddy + "-msg").html("Call Recording Stopped");
             } 
@@ -4214,6 +4558,7 @@ function StopRecording(buddy, noConfirm){
                     console.log("Stopping Call Recording");
                     session.data.mediaRecorder.stop();
                     session.data.recordings[session.data.recordings.length-1].stopTime = utcDateNow();
+                    window.clearInterval(session.data.recordingRedrawInterval);
 
                     $("#contact-" + buddy + "-msg").html("Call Recording Stopped");
                 }
@@ -4353,14 +4698,32 @@ function PlayVideoCallRecording(obj, cdrId, uID, buddy){
                 if(buddy){
                     window.setTimeout(function(){
                         var canvas = $("<canvas>").get(0);
-                        canvas.width = videoObj.videoWidth;
-                        canvas.height = videoObj.videoHeight;
-                        canvas.getContext('2d').drawImage(videoObj, 0, 0, videoObj.videoWidth, videoObj.videoHeight);  
+                        var videoWidth = videoObj.videoWidth;
+                        var videoHeight = videoObj.videoHeight;
+                        if(videoWidth > videoHeight){
+                            // Landscape
+                            if(videoHeight > 225){
+                                var p = 225 / videoHeight;
+                                videoHeight = 225;
+                                videoWidth = videoWidth * p;
+                            }
+                        }
+                        else {
+                            // Portrait
+                            if(videoHeight > 225){
+                                var p = 225 / videoWidth;
+                                videoWidth = 225;
+                                videoHeight = videoHeight * p;                
+                            }
+                        }
+                        canvas.width = videoWidth;
+                        canvas.height = videoHeight;
+                        canvas.getContext('2d').drawImage(videoObj, 0, 0, videoWidth, videoHeight);  
                         canvas.toBlob(function(blob) {
                             var reader = new FileReader();
                             reader.readAsDataURL(blob);
                             reader.onloadend = function() {
-                                var Poster = { width: videoObj.videoWidth, height: videoObj.videoHeight, posterBase64: reader.result }
+                                var Poster = { width: videoWidth, height: videoHeight, posterBase64: reader.result }
                                 console.log(Poster);
     
                                 // Update DB
@@ -4380,7 +4743,7 @@ function PlayVideoCallRecording(obj, cdrId, uID, buddy){
                                     localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
                                 }
                             }
-                        }, 'image/jpeg', 0.95);
+                        }, 'image/jpeg', PosterJpegQuality);
                     }, 1000);
                 }
             }
@@ -5163,10 +5526,6 @@ function switchVideoSource(buddy, srcId){
 
     $("#contact-" + buddy + "-msg").html("Switching video source");
 
-    // If you are switching back from Scratchpad
-    $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
-
     var constraints = { 
         audio: false,
         video: {
@@ -5195,8 +5554,8 @@ function switchVideoSource(buddy, srcId){
                 localStream.addTrack(newMediaTrack);
             }
         });
-    }).catch(function(){
-        console.error("Error on getUserMedia");
+    }).catch(function(e){
+        console.error("Error on getUserMedia", e, constraints);
     });
 
     // Restore Audio Stream is it was changed
@@ -5216,7 +5575,6 @@ function switchVideoSource(buddy, srcId){
     }
 
     // Set Preview
-    // ===========
     console.log("Showing as preview...");
     var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
     localVideo.srcObject = localStream;
@@ -5234,27 +5592,19 @@ function SendCanvas(buddy){
     $("#contact-" + buddy + "-msg").html("Switching to canvas");
 
     // Create scratch Pad
-    var scratchpad = GetCanvas("contact-" + buddy + "-scratchpad");
-    if(scratchpad != null)
-    {
-        window.clearInterval(scratchpad.redrawIntrtval);
-
-        RemoveCanvas("contact-" + buddy + "-scratchpad");
-        $("#contact-" + buddy + "-scratchpad-container").empty();
-
-        scratchpad = null;
-    }
+    RemoveScratchpad(buddy);
 
     var newCanvas = $('<canvas/>');
     newCanvas.prop("id", "contact-" + buddy + "-scratchpad");
-    newCanvas.css("border", "1px solid #CCCCCC");
     $("#contact-" + buddy + "-scratchpad-container").append(newCanvas);
+    $("#contact-" + buddy + "-scratchpad").css("display", "inline-block");
+    $("#contact-" + buddy + "-scratchpad").css("width", "640px"); // SD
+    $("#contact-" + buddy + "-scratchpad").css("height", "360px"); // SD
+    $("#contact-" + buddy + "-scratchpad").prop("width", 640); // SD
+    $("#contact-" + buddy + "-scratchpad").prop("height", 360); // SD
     $("#contact-" + buddy + "-scratchpad-container").show();
 
     console.log("Canvas for Scratchpad created...");
-    $("#contact-" + buddy + "-scratchpad").prop("width", 640); // SD
-    $("#contact-" + buddy + "-scratchpad").prop("height", 360); // SD
-
 
     scratchpad = new fabric.Canvas("contact-" + buddy + "-scratchpad");
     scratchpad.id = "contact-" + buddy + "-scratchpad";
@@ -5266,8 +5616,6 @@ function SendCanvas(buddy){
     }, 1000);
 
     CanvasCollection.push(scratchpad);
-
-    session.data.VideoSourceDevice = "scratchpad";
 
     // Get The Canvas Stream
     var canvasMediaStream = $("#contact-"+ buddy +"-scratchpad").get(0).captureStream(25);
@@ -5309,69 +5657,60 @@ function SendCanvas(buddy){
     }
 }
 function SendVideo(buddy, src){
+    var session = getSession(buddy);
+    if (session == null) {
+        console.log("Session is Null, probably not in a call yet");
+        return;
+    }
+
     $("#contact-"+ buddy +"-src-camera").prop("disabled", false);
     $("#contact-"+ buddy +"-src-canvas").prop("disabled", false);
     $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
     $("#contact-"+ buddy +"-src-video").prop("disabled", true);
     $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
 
-    var session = getSession(buddy);
-    if (session == null) {
-        console.log("Session is Null, probably not in a call yet");
-        return;
-    }       
-
     $("#contact-" + buddy + "-msg").html("Switching to Shared Video");
 
     $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").empty();
+    RemoveScratchpad(buddy);
+    $("#contact-"+ buddy +"-sharevideo").hide();
+    $("#contact-"+ buddy +"-sharevideo").get(0).pause();
+    $("#contact-"+ buddy +"-sharevideo").get(0).removeAttribute('src');
+    $("#contact-"+ buddy +"-sharevideo").get(0).load();
 
-    session.data.VideoSourceDevice = "video";
-
-    if(session.data.VideoSourcePresentation) {
-        session.data.VideoSourcePresentation.pause();
-        session.data.VideoSourcePresentation = null;
-    }
-
-    // TODO: While a Webcam can only send a video up to the max suppored by the devices.
-    // sending a video will result in the origional size video being sent, but compressed.
-    // This may not have the best results. 
-    // Resize the video with max height 720p
+    $("#contact-" + buddy + "-localVideo").hide();
+    $("#contact-" + buddy + "-remoteVideo").appendTo("#contact-" + buddy + "-preview-container");
 
     // Create Video Object
-    var newVideo = $('<video/>');
-    newVideo.prop("id", "contact-" + buddy + "-sharevideo");
-    newVideo.prop("controls",true);
-    newVideo.css("max-width", "640px");
-    newVideo.css("max-height", "360x");
+    var newVideo = $("#contact-" + buddy + "-sharevideo");
     newVideo.prop("src", src);
+    newVideo.off("loadedmetadata");
     newVideo.on("loadedmetadata", function () {
         console.log("Video can play now... ");
 
-        // Mute the video to avoid echo
-        newVideo.get(0).muted = true;
-
         // Resample Video
+        var ResampleSize = 360;
+        if(VideoResampleSize == "HD") ResampleSize = 720;
+        if(VideoResampleSize == "FHD") ResampleSize = 1080;
+
         var videoObj = newVideo.get(0);
         var resampleCanvas = $('<canvas/>').get(0);
+
         var videoWidth = videoObj.videoWidth;
         var videoHeight = videoObj.videoHeight;
-        if(videoWidth > videoHeight){
-            // Landscape
-            if(videoHeight > 720){
-                // Resample
-                var p = 720 / videoHeight;
-                videoHeight = 720;
+        if(videoWidth >= videoHeight){
+            // Landscape / Square
+            if(videoHeight > ResampleSize){
+                var p = ResampleSize / videoHeight;
+                videoHeight = ResampleSize;
                 videoWidth = videoWidth * p;
             }
         }
         else {
             // Portrate... (phone turned on its side)
-            if(videoWidth > 720){
-                // Resample
-                var p = 720 / videoWidth;
-                videoWidth = 720;
+            if(videoWidth > ResampleSize){
+                var p = ResampleSize / videoWidth;
+                videoWidth = ResampleSize;
                 videoHeight = videoHeight * p;
             }
         }
@@ -5380,8 +5719,8 @@ function SendVideo(buddy, src){
         resampleCanvas.height = videoHeight;
         var resampleContext = resampleCanvas.getContext("2d");
 
-        window.clearInterval(resampleRedraw);
-        var resampleRedraw = window.setInterval(function(){
+        window.clearInterval(session.data.videoResampleInterval);
+        session.data.videoResampleInterval = window.setInterval(function(){
             resampleContext.drawImage(videoObj, 0, 0, videoWidth, videoHeight);
         }, 40); // 25frames per second
 
@@ -5430,14 +5769,8 @@ function SendVideo(buddy, src){
         $("#contact-"+ buddy +"-sharevideo").get(0).play();
     });
 
-    session.data.VideoSourcePresentation = newVideo.get(0);;
-
-    $("#contact-" + buddy + "-sharevideo-contaner").append(newVideo);
-
-    $("#contact-" + buddy + "-sharevideo-contaner").show();
-
+    $("#contact-"+ buddy +"-sharevideo").show();
     console.log("Video for Sharing created...");
-
 }
 function ShareScreen(buddy){
     var session = getSession(buddy);
@@ -5447,8 +5780,6 @@ function ShareScreen(buddy){
     }
 
     $("#contact-" + buddy + "-msg").html("Switching to Shared Screen");
-
-    session.data.VideoSourceDevice = "screen";
 
     var localStream = new MediaStream();
     var pc = session.sessionDescriptionHandler.peerConnection;
@@ -5582,10 +5913,9 @@ function DisableVideoStream(buddy){
     // Set Preview
     console.log("Showing as preview...");
     var localVideo = $("#contact-" + buddy + "-localVideo").get(0);
-    localVideo.src = null;
     localVideo.pause();
-
-    session.data.VideoSourceDevice = "blank";
+    localVideo.removeAttribute('src');
+    localVideo.load();
 
     $("#contact-" + buddy + "-msg").html("Video Disabled");
 
@@ -5615,14 +5945,12 @@ function InitUserBuddies(){
     localDB.setItem("UserBuddiesJson", JSON.stringify(template));
     return JSON.parse(localDB.getItem("UserBuddiesJson"));
 }
-function AddBuddy(buddyObj, update, focus){
-
+function AddBuddy(buddyObj, update, focus, subscribe){
     Buddies.push(buddyObj);
-    if(update) UpdateBuddyList();
-
+    if(update == true) UpdateBuddyList();
     AddBuddyMessageStream(buddyObj);
-
-    if(focus) SelectBuddy(buddyObj.identity);
+    if(subscribe == true) SubscribeBuddy(buddyObj);
+    if(focus == true) SelectBuddy(buddyObj.identity);
 }
 function PopulateBuddyList()
 {
@@ -5664,7 +5992,6 @@ function UpdateBuddyList(filter){
         var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
         var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
         if (aMo.isSameOrAfter(bMo, "second")) {
-            // console.log(aMo.format("YYYY-MM-DD HH:mm:ss") + " isSameOrAfter "+ bMo.format("YYYY-MM-DD HH:mm:ss"));
             return -1;
         } else return 1;
         return 0;
@@ -5798,13 +6125,6 @@ function AddBuddyMessageStream(buddyObj) {
     // Separator --------------------------------------------------------------------------
     html += "<div style=\"clear:both; height:0px\"></div>"
 
-    // ScratchPad
-    html += "<div id=\"contact-"+ buddyObj.identity +"-scratchpad-container\" style=\"display:none\"></div>";
-    // Video Source
-    html += "<div id=\"contact-"+ buddyObj.identity +"-sharevideo-contaner\" style=\"display:none\"></div>";
-    // Conference
-    html += "<div id=\"contact-"+ buddyObj.identity +"-conference\" style=\"display:none\"></div>";
-
     // Calling UI --------------------------------------------------------------------------
     html += "<div id=\"contact-"+ buddyObj.identity +"-calling\">";
 
@@ -5834,23 +6154,36 @@ function AddBuddyMessageStream(buddyObj) {
     // Active Call UI
     html += "<div id=\"contact-"+ buddyObj.identity +"-ActiveCall\" style=\"display:none; margin-top: 10px;\">";
 
+    // Group Call
+    html += "<div id=\"contact-"+ buddyObj.identity +"-conference\" style=\"display:none\"></div>";
+
     // Video Call
     if(buddyObj.type == "extension") {
         html += "<div id=\"contact-"+ buddyObj.identity +"-VideoCall\" class=videoCall style=\"display:none\">";
         
+        // Presentation
         html += "<div style=\"height:35px; line-height:35px; text-align: right\">Present: ";
         html += "<div class=pill-nav style=\"border-color:#333333\">";
-        html += "<button id=\"contact-"+ buddyObj.identity +"-src-camera\" onclick=\"PresentCamera('"+ buddyObj.identity +"')\" disabled><i class=\"fa fa-video-camera\"></i> Camera</button>";
-        html += "<button id=\"contact-"+ buddyObj.identity +"-src-canvas\" onclick=\"PresentScratchpad('"+ buddyObj.identity +"')\"><i class=\"fa fa-pencil-square\"></i> Scratchpad</button>";
-        html += "<button id=\"contact-"+ buddyObj.identity +"-src-desktop\" onclick=\"PresentScreen('"+ buddyObj.identity +"')\"><i class=\"fa fa-desktop\"></i> Screen</button>";
-        html += "<button id=\"contact-"+ buddyObj.identity +"-src-video\" onclick=\"PresentVideo('"+ buddyObj.identity +"')\"><i class=\"fa fa-file-video-o\"></i> Video</button>";
-        html += "<button id=\"contact-"+ buddyObj.identity +"-src-blank\" onclick=\"PresentBlank('"+ buddyObj.identity +"')\"><i class=\"fa fa-ban\"></i> Blank</button>";
+        html += "<button id=\"contact-"+ buddyObj.identity +"-src-camera\" onclick=\"PresentCamera('"+ buddyObj.identity +"')\" title=\"Camera\" disabled><i class=\"fa fa-video-camera\"></i></button>";
+        html += "<button id=\"contact-"+ buddyObj.identity +"-src-canvas\" onclick=\"PresentScratchpad('"+ buddyObj.identity +"')\" title=\"Scratchpad\"><i class=\"fa fa-pencil-square\"></i></button>";
+        html += "<button id=\"contact-"+ buddyObj.identity +"-src-desktop\" onclick=\"PresentScreen('"+ buddyObj.identity +"')\" title=\"Screen\"><i class=\"fa fa-desktop\"></i></button>";
+        html += "<button id=\"contact-"+ buddyObj.identity +"-src-video\" onclick=\"PresentVideo('"+ buddyObj.identity +"')\" title=\"Video\"><i class=\"fa fa-file-video-o\"></i></button>";
+        html += "<button id=\"contact-"+ buddyObj.identity +"-src-blank\" onclick=\"PresentBlank('"+ buddyObj.identity +"')\" title=\"Blank\"><i class=\"fa fa-ban\"></i></button>";
         html += "</div>";
         html += "&nbsp;<button id=\"contact-"+ buddyObj.identity +"-expand\" onclick=\"ExpandVideoArea('"+ buddyObj.identity +"')\"><i class=\"fa fa-expand\"></i></button><button id=\"contact-"+ buddyObj.identity +"-restore\" onclick=\"RestoreVideoArea('"+ buddyObj.identity +"')\" style=\"display:none\"><i class=\"fa fa-compress\"></i></button>";
         html += "</div>";
-     
-        html += "<video id=\"contact-"+ buddyObj.identity +"-remoteVideo\" muted class=remoteVideo style=\"width:100%; height:360px\"></video>";  // poster=\"/img/extension/"+ buddyObj.identity +".png\"
-        html += "<video id=\"contact-"+ buddyObj.identity +"-localVideo\" muted class=localVideo></video>";
+
+        // Preview
+        html += "<div id=\"contact-"+ buddyObj.identity +"-preview-container\" class=PreviewContainer>";
+        html += "<video id=\"contact-"+ buddyObj.identity +"-localVideo\" muted></video>"; // Default Display
+        html += "</div>";
+
+        // Stage
+        html += "<div id=\"contact-"+ buddyObj.identity +"-stage-container\" class=StageContainer>";
+        html += "<video id=\"contact-"+ buddyObj.identity +"-remoteVideo\" muted></video>"; // Default Display
+        html += "<div id=\"contact-"+ buddyObj.identity +"-scratchpad-container\" style=\"display:none\"></div>";
+        html += "<video id=\"contact-"+ buddyObj.identity +"-sharevideo\" controls muted style=\"display:none\"></video>";
+        html += "</div>";
 
         html += "</div>";
     }
@@ -5881,7 +6214,7 @@ function AddBuddyMessageStream(buddyObj) {
     // Call Transfer
     html += "<div id=\"contact-"+ buddyObj.identity +"-Transfer\" style=\"display:none\">";
     html += "<div style=\"margin-top:10px\">";
-    html += "<span class=searchClean><input id=\"contact-"+ buddyObj.identity +"-txt-FindTransferBuddy\" oninput=\"QuickFindBuddy(this,'"+ buddyObj.identity +"')\" type=text autocomplete=none style=\"width:150px;\" placeholder=\"Search or enter number\"></span>";
+    html += "<span class=searchClean><input id=\"contact-"+ buddyObj.identity +"-txt-FindTransferBuddy\" oninput=\"QuickFindBuddy(this,'"+ buddyObj.identity +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\"Search or enter number\"></span>";
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-blind-transfer\" onclick=\"BlindTransfer('"+ buddyObj.identity +"')\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i> Blind Transfer</button>"
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-attended-transfer\" onclick=\"AttendedTransfer('"+ buddyObj.identity +"')\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> Attended Transfer</button>";
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-complete-attended-transfer\" style=\"display:none\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> Complete Transfer</buuton>";
@@ -5894,7 +6227,7 @@ function AddBuddyMessageStream(buddyObj) {
     // Call Conference
     html += "<div id=\"contact-"+ buddyObj.identity +"-Conference\" style=\"display:none\">";
     html += "<div style=\"margin-top:10px\">";
-    html += "<span class=searchClean><input id=\"contact-"+ buddyObj.identity +"-txt-FindConferenceBuddy\" oninput=\"QuickFindBuddy(this,'"+ buddyObj.identity +"')\" type=text autocomplete=none style=\"width:150px;\" placeholder=\"Search or enter number\"></span>";
+    html += "<span class=searchClean><input id=\"contact-"+ buddyObj.identity +"-txt-FindConferenceBuddy\" oninput=\"QuickFindBuddy(this,'"+ buddyObj.identity +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\"Search or enter number\"></span>";
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-conference-dial\" onclick=\"ConferenceDail('"+ buddyObj.identity +"')\"><i class=\"fa fa-phone\"></i> Call</button>";
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-cancel-conference-dial\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> Cancel Call</buuton>";
     html += " <button id=\"contact-"+ buddyObj.identity +"-btn-join-conference-call\" style=\"display:none\"><i class=\"fa fa-users\"></i> Join Conference Call</buuton>";
@@ -5941,13 +6274,12 @@ function AddBuddyMessageStream(buddyObj) {
 
     // Search & Related Elements
     html += "<div id=\"contact-"+ buddyObj.identity +"-search\" style=\"margin-top:6px; display:none\">";
-    html += "<span class=searchClean><input type=text style=\"width:90%\" placeholder=\"Find something in the message stream...\">";
-    html += "<button class=clearsearchTextBtn style=\"display:none\"></BUTTON></span>";
+    html += "<span class=searchClean style=\"width:100%\"><input type=text style=\"width:90%\" autocomplete=none oninput=SearchStream(this,'"+ buddyObj.identity +"') placeholder=\"Find something in the message stream...\"></span>";
     html += "</div>";
 
     html += "</td></tr>";
     // Message Stream
-    html += "<tr><td class=\"streamSection streamSectionBackground\" style=\"background-image:url('"+ hostingPrefex +"/wp_1.png')\">";
+    html += "<tr><td class=\"streamSection streamSectionBackground\" style=\"background-image:url('"+ hostingPrefex +"wp_1.png')\">";
 
     html += "<div id=\"contact-"+ buddyObj.identity +"-ChatHistory\" class=\"chatHistory cleanScroller\" ondragenter=\"setupDragDrop(event, '"+ buddyObj.identity +"')\" ondragover=\"setupDragDrop(event, '"+ buddyObj.identity +"')\" ondragleave=\"cancelDragDrop(event, '"+ buddyObj.identity +"')\" ondrop=\"onFileDragDrop(event, '"+ buddyObj.identity +"')\">";
     // Previous Chat messages
@@ -5959,25 +6291,30 @@ function AddBuddyMessageStream(buddyObj) {
 
         // Send Paste Image
         html += "<div id=\"contact-"+ buddyObj.identity +"-imagePastePreview\" class=sendImagePreview style=\"display:none\" tabindex=0></div>";
-
-        // Send File
-        html += "<div id=\"contact-"+ buddyObj.identity +"-fileShare\" style=\"display:none\">";
-        html += "<input type=file multiple onchange=\"console.log(this)\" />";
-        html += "</div>";
-
-        // Send Audio Recordong
-        html += "<div id=\"contact-"+ buddyObj.identity +"-audio-recording\" style=\"display:none\"></div>";
-
-        // Send Video Recording
-        html += "<div id=\"contact-"+ buddyObj.identity +"-video-recording\" style=\"display:none\"></div>";
-
-        // Send Text
+        // Preview
         html += "<div id=\"contact-"+ buddyObj.identity +"-msgPreview\" class=sendMessagePreview style=\"display:none\">"
         html += "<table class=sendMessagePreviewContainer cellpadding=0 cellspacing=0><tr>";
         html += "<td style=\"text-align:right\"><div id=\"contact-"+ buddyObj.identity +"-msgPreviewhtml\" class=\"sendMessagePreviewHtml cleanScroller\"></div></td>"
         html += "<td style=\"width:40px\"><button onclick=\"SendChatMessage('"+ buddyObj.identity +"')\" class=\"roundButtons\" title=\"Send\"><i class=\"fa fa-paper-plane\"></i></button></td>"
         html += "</tr></table>";
         html += "</div>";
+
+        // Send File
+        html += "<div id=\"contact-"+ buddyObj.identity +"-fileShare\" style=\"display:none\">";
+        html += "<input type=file multiple onchange=\"console.log(this)\" />";
+        html += "</div>";
+
+        // Send Audio Recording
+        html += "<div id=\"contact-"+ buddyObj.identity +"-audio-recording\" style=\"display:none\"></div>";
+
+        // Send Video Recording
+        html += "<div id=\"contact-"+ buddyObj.identity +"-video-recording\" style=\"display:none\"></div>";
+
+        // Dictate Message
+        html += "<div id=\"contact-"+ buddyObj.identity +"-dictate-message\" style=\"display:none\"></div>";
+
+        // Emoji Menu Bar
+        html += "<div id=\"contact-"+ buddyObj.identity +"-emoji-menu\" style=\"display:none\"></div>";
 
         // =====================================
         // Type Area
@@ -5993,9 +6330,31 @@ function AddBuddyMessageStream(buddyObj) {
     $("#rightContent").append(html);
 }
 function RemoveBuddyMessageStream(buddyObj){
+    CloseBuddy(buddyObj.identity);
+
+    UpdateBuddyList();
+
+    // Remove Stream
     $("#stream-"+ buddyObj.identity).remove();
 
-    // Clean up
+    localDB.removeItem(buddyObj.identity + "-stream");
+
+    var json = JSON.parse(localDB.getItem("UserBuddiesJson"));
+    var x = 0;
+    $.each(json.DataCollection, function (i, item) {
+        if(item.uID == buddyObj.identity || item.cID == buddyObj.identity || item.gID == buddyObj.identity){
+            x = i;
+            return false;
+        }
+    });
+    json.DataCollection.splice(x,1);
+    json.TotalRows = json.DataCollection.length;
+    localDB.setItem("UserBuddiesJson", JSON.stringify(json));
+
+    localDB.removeItem("img-"+ buddyObj.identity +"-extension");
+    localDB.removeItem("img-"+ buddyObj.identity +"-contact");
+    localDB.removeItem("img-"+ buddyObj.identity +"-group");
+
 }
 function SelectBuddy(buddy, typeStr) {
     var buddyObj = FindBuddyByIdentity(buddy);
@@ -6004,12 +6363,12 @@ function SelectBuddy(buddy, typeStr) {
     for(var b = 0; b < Buddies.length; b++)
     {
         if(Buddies[b].IsSelected == true && Buddies[b].identity == buddy){
-            console.log("Nothing to do, you re-selected the same buddy.");
+            // Nothing to do, you re-selected the same buddy;
             return;
         }
     }
 
-    console.log("Switching to: "+ buddy);
+    console.log("Selecting: "+ buddy);
 
     selectedBuddy = buddyObj;
 
@@ -6073,17 +6432,27 @@ function CloseBuddy(buddy){
 }
 function RemoveBuddy(buddy){
     // Check if you are on the phone etc
-    Confirm("This person will be removed from your list, but can be added again at any time. No data will be deleted. Confrim remove?", "Confirm remove", function(){
+    Confirm("This person will be removed from your list. Confrim remove?", "Confirm remove", function(){
         for(var b = 0; b < Buddies.length; b++)
         {
             if(Buddies[b].identity == buddy) {
                 RemoveBuddyMessageStream(Buddies[b]);
+                UnSubscribeBuddy(Buddies[b])
                 Buddies.splice(b, 1);
                 break;
             }
         }
         UpdateBuddyList();
     });
+}
+function FindBuddyByDid(did){
+    // Used only in Inboud
+    for(var b = 0; b < Buddies.length; b++){
+        if(Buddies[b].ExtNo == did || Buddies[b].MobileNumber == did || Buddies[b].ContactNumber1 == did || Buddies[b].ContactNumber2 == did) {
+            return Buddies[b];
+        }
+    }
+    return null;
 }
 function FindBuddyByExtNo(ExtNo){
     for(var b = 0; b < Buddies.length; b++){
@@ -6107,13 +6476,25 @@ function FindBuddyByIdentity(identity){
     }
     return null;
 }
-function RefreshStream(buddyObj) {
+function SearchStream(obj, buddy){
+    var q = obj.value;
+
+    var buddyObj = FindBuddyByIdentity(buddy);
+    if(q == ""){
+        console.log("Restore Stream");
+        RefreshStream(buddyObj);
+    }
+    else{
+        RefreshStream(buddyObj, q);
+    }
+}
+function RefreshStream(buddyObj, filter) {
     var json = JSON.parse(localDB.getItem(buddyObj.identity +"-stream"));
 
     $("#contact-" + buddyObj.identity + "-ChatHistory").empty();
     if(json == null || json.DataCollection == null) return;
 
-    // Sort DataCollection
+    // Sort DataCollection (Newest items first)
     json.DataCollection.sort(function(a, b){
         var aMo = moment.utc(a.ItemDate.replace(" UTC", ""));
         var bMo = moment.utc(b.ItemDate.replace(" UTC", ""));
@@ -6122,6 +6503,55 @@ function RefreshStream(buddyObj) {
         } else return 1;
         return 0;
     });
+
+    // Filter
+    if(filter && filter != ""){
+        // TODO: Maybe some room for improvement here
+        console.log("Rows: ", json.DataCollection.length);
+        json.DataCollection = json.DataCollection.filter(function(item){
+            if(filter.indexOf("date : ") != -1){
+                // Apply Date Filter
+                var dateFilter = getFilter(filter, "date");
+                if(dateFilter != "" && item.ItemDate.indexOf(dateFilter) != -1) return true;
+            }
+            if(item.MessageData && item.MessageData.length > 1){
+                if(item.MessageData.toLowerCase().indexOf(filter.toLowerCase()) != -1) return true;
+                if(filter.toLowerCase().indexOf(item.MessageData.toLowerCase()) != -1) return true;
+            }            
+            if (item.ItemType == "MSG") {
+                // Special search??
+            } 
+            else if (item.ItemType == "CDR") {
+                // Tag Search
+                if(item.Tags && item.Tags.length > 1){
+                    var tagFilter = getFilter(filter, "tag");
+                    if(tagFilter != "") {
+                        if(item.Tags.some(function(i){
+                            if(tagFilter.toLowerCase().indexOf(i.value.toLowerCase()) != -1) return true;
+                            if(i.value.toLowerCase().indexOf(tagFilter.toLowerCase()) != -1) return true;
+                            return false;
+                        }) == true) return true;
+                    }
+                }
+            }
+            else if(item.ItemType == "FILE"){
+                // Not yest implemented
+            } 
+            else if(item.ItemType == "SMS"){
+                // Not yest implemented
+            }
+            // return true to keep;
+            return false;
+        });
+        console.log("Rows After Filter: ", json.DataCollection.length);
+    }
+
+    // Create Buffer
+    if(json.DataCollection.length > StreamBuffer){
+        console.log("Rows:", json.DataCollection.length, " (will be trimed to "+ StreamBuffer +")");
+        // Always limit the Stream to {StreamBuffer}, users much search for messages further back
+        json.DataCollection.splice(StreamBuffer);
+    }
 
     $.each(json.DataCollection, function (i, item) {
 
@@ -6156,14 +6586,15 @@ function RefreshStream(buddyObj) {
                 var messageString = "<table class=ourChatMessage cellspacing=0 cellpadding=0><tr>"
                 messageString += "<td class=ourChatMessageText onmouseenter=\"ShowChatMenu(this)\" onmouseleave=\"HideChatMenu(this)\">"
                 messageString += "<span onclick=\"ShowMessgeMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
-                messageString += "<div id=msg-text-"+  item.ItemId +" style=\""+ ((longMessage)? "max-height:190px; overflow:hidden" : "") +"\">" + formattedMessage + "</div>"
+                messageString += "<div id=msg-text-"+ item.ItemId +" class=messageText style=\""+ ((longMessage)? "max-height:190px; overflow:hidden" : "") +"\">" + formattedMessage + "</div>"
                 if(longMessage){
                     messageString += "<div id=msg-readmore-"+  item.ItemId +" class=messageReadMore><span onclick=\"ExpandMessage(this,'"+ item.ItemId +"', '"+ buddyObj.identity +"')\">Read More</span></div>"
                 }
                 messageString += "<div class=messageDate>" + DateTime + " " + deliveryStatus +"</div>"
                 messageString += "</td>"
                 messageString += "</tr></table>";
-            } else {
+            } 
+            else {
                 // You are the destination (receiving)
                 var ActualSender = ""; //TODO
                 var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr>"
@@ -6172,13 +6603,17 @@ function RefreshStream(buddyObj) {
                 if(buddyObj.type == "group"){
                     messageString += "<div class=messageDate>" + ActualSender + "</div>";
                 }
-                messageString += "<div style=\"text-align:left\">" + formattedMessage + "</div>";
+                messageString += "<div id=msg-text-"+ item.ItemId +" class=messageText style=\""+ ((longMessage)? "max-height:190px; overflow:hidden" : "") +"\">" + formattedMessage + "</div>";
+                if(longMessage){
+                    messageString += "<div id=msg-readmore-"+  item.ItemId +" class=messageReadMore><span onclick=\"ExpandMessage(this,'"+ item.ItemId +"', '"+ buddyObj.identity +"')\">Read More</span></div>"
+                }
                 messageString += "<div class=messageDate>"+ DateTime + "</div>";
                 messageString += "</td>";
                 messageString += "</tr></table>";
             }
             $("#contact-" + buddyObj.identity + "-ChatHistory").prepend(messageString);
-        } else if (item.ItemType == "CDR") {
+        } 
+        else if (item.ItemType == "CDR") {
             // Add CDR 
             // =======
 
@@ -6281,7 +6716,8 @@ function RefreshStream(buddyObj) {
                 messageString += "<div class=messageDate>" + DateTime  + "</div>";
                 messageString += "</td>"
                 messageString += "</tr></table>";
-            } else {
+            } 
+            else {
                 // (Inbound) you(profileUserID) received a call
                 if(item.Billsec == "0"){
                     formattedMessage += " You missed a call.";
@@ -6301,10 +6737,13 @@ function RefreshStream(buddyObj) {
                 messageString += "</tr></table>";
             }
 
+            // Messges are repended here, and appended when logging
             $("#contact-" + buddyObj.identity + "-ChatHistory").prepend(messageString);
-        } else if(item.ItemType == "FILE"){
+        } 
+        else if(item.ItemType == "FILE"){
 
-        } else if(item.ItemType == "SMS"){
+        } 
+        else if(item.ItemType == "SMS"){
 
         }
     });
@@ -6327,7 +6766,10 @@ function ExpandVideoArea(buddy){
     $("#contact-" + buddy + "-ActiveCall").prop("class","FullScreenVideo");
     $("#contact-" + buddy + "-VideoCall").css("height", "calc(100% - 100px)");
     $("#contact-" + buddy + "-VideoCall").css("margin-top", "0px");
-    $("#contact-" + buddy + "-remoteVideo").css("height", "calc(100% - 35px)");
+
+    $("#contact-" + buddy + "-preview-container").prop("class","PreviewContainer PreviewContainer_FS");
+    $("#contact-" + buddy + "-stage-container").prop("class","StageContainer StageContainer_FS");
+
     $("#contact-" + buddy + "-restore").show();
     $("#contact-" + buddy + "-expand").hide();
 }
@@ -6335,7 +6777,10 @@ function RestoreVideoArea(buddy){
     $("#contact-" + buddy + "-ActiveCall").prop("class","");
     $("#contact-" + buddy + "-VideoCall").css("height", "");
     $("#contact-" + buddy + "-VideoCall").css("margin-top", "10px");
-    $("#contact-" + buddy + "-remoteVideo").css("height", "360px");
+
+    $("#contact-" + buddy + "-preview-container").prop("class","PreviewContainer");
+    $("#contact-" + buddy + "-stage-container").prop("class","StageContainer");
+
     $("#contact-" + buddy + "-restore").hide();
     $("#contact-" + buddy + "-expand").show();
 }
@@ -6441,15 +6886,17 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
             // { id: 1, name: "<i class=\"fa fa-external-link\"></i> Show Call Detail Record" },
             { id: 2, name: "<i class=\"fa fa-tags\"></i> Tag Call" },
             { id: 3, name: "<i class=\"fa fa-flag\"></i> "+ TagText },
-            { id: 4, name: "<i class=\"fa fa-quote-left\"></i> Edit Comment" }
+            { id: 4, name: "<i class=\"fa fa-quote-left\"></i> Edit Comment" },
         ];
+        // menu.push({ id: 20, name: "Delete CDR" });
+        // menu.push({ id: 21, name: "Remove Poster Images" });
     }
     // 
     if (typeStr == "MSG") {
         menu = [
             { id: 10, name: "<i class=\"fa fa-clipboard\"></i> Copy Message" },
-            { id: 11, name: "<i class=\"fa fa-pencil\"></i> Edit Message" },
-            { id: 12, name: "<i class=\"fa fa-quote-left\"></i> Quote Message" }
+            // { id: 11, name: "<i class=\"fa fa-pencil\"></i> Edit Message" },
+            { id: 12, name: "<i class=\"fa fa-quote-left\"></i> Quote Message" },
         ];
     }
 
@@ -6458,7 +6905,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
         HidePopup();
 
         if(id == 1){
-            // parent.AddTab("CDR Details", "/Page.aspx?PageType=Tab&PageId=exten-cdr-details&id=" + itemId, true);
+            // Open CDR Details Window
         }
         if(id == 2){
             $("#cdr-tags-"+ cdrId).show();
@@ -6537,13 +6984,25 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
 
         // Text Messages
         if(id == 10){
-
+            var msgtext = $("#msg-text-"+ cdrId).text();
+            navigator.clipboard.writeText(msgtext).then(function(){
+                console.log("Text coppied to the clipboard:", msgtext);
+            }).catch(function(){
+                console.error("Error writing to the clipboard:", e);
+            });
         }
         if(id == 11){
-
+            // TODO... 
+            // Involves sharing a message ID, then on change, sent update request
+            // So that both parties share the same update.
         }
         if(id == 12){
-
+            var msgtext = $("#msg-text-"+ cdrId).text();
+            msgtext = "\""+ msgtext + "\"";
+            var textarea = $("#contact-"+ buddy +"-ChatMessage");
+            console.log("Quote Message:", msgtext);
+            textarea.val(msgtext +"\n" + textarea.val());
+            RefreshChatPreview(null, textarea.val(), buddy);
         }
 
         // Delete CDR
@@ -6561,6 +7020,28 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                 RefreshStream(FindBuddyByIdentity(buddy));
             }
         }
+        // Delete Poster Image
+        if(id == 21){
+            var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
+            if(currentStream != null || currentStream.DataCollection != null){
+                $.each(currentStream.DataCollection, function (i, item) {
+                    if (item.ItemType == "CDR" && item.CdrId == cdrId) {
+                        // Found
+                        if(item.Recordings && item.Recordings.length >= 1){
+                            $.each(item.Recordings, function(r, recording) {
+                                recording.Poster = null;
+                            });
+                        }
+                        console.log("Poster Imagers Deleted");
+                        return false;
+                    }
+                });
+                localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
+                RefreshStream(FindBuddyByIdentity(buddy));
+            }
+        }
+
+
     });
     dhtmlxPopup.show(x, y, w, h);
 }
@@ -6663,12 +7144,114 @@ function AddMenu(obj, buddy){
         dhtmlxPopup.unload();
         dhtmlxPopup = null;
 
+        // Emoji Bar
+        if(id == "1"){
+            ShowEmojiBar(buddy);
+        }
+        // Disctate Message
+        if(id == "2"){
+            ShowDictate(buddy);
+        }
+        // 
 
 
     });
     dhtmlxPopup.show(x, y, w, h);
 }
+function ShowEmojiBar(buddy){
+    var messageContainer = $("#contact-"+ buddy +"-emoji-menu");
+    var textarea = $("#contact-"+ buddy +"-ChatMessage");
 
+    var menuBar = $("<div>");
+    menuBar.prop("class", "emojiButton")
+    var emojis = ["😀","😁","😂","😃","😄","😅","😆","😇","😈","😉","😊","😋","😌","😍","😎","😏","😐","😑","😒","😓","😔","😕","😖","😗","😘","😙","😚","😛","😜","😝","😞","😟","😠","😡","😢","😣","😤","😥","😦","😧","😨","😩","😪","😫","😬","😭","😮","😯","😰","😱","😲","😳","😴","😵","😶","😷","🙁","🙂","🙃","🙄","🤐","🤑","🤒","🤓","🤔","🤕","🤠","🤡","🤢","🤣","🤤","🤥","🤧","🤨","🤩","🤪","🤫","🤬","🤭","🤮","🤯","🧐"];
+    $.each(emojis, function(i,e){
+        var emoji = $("<button>");
+        emoji.html(e);
+        emoji.on('click', function(){
+            var i = textarea.prop('selectionStart');
+            var v = textarea.val();
+            textarea.val(v.substring(0, i) + $(this).html() + v.substring(i, v.length));
+            RefreshChatPreview(null, textarea.val(), buddy);
+            messageContainer.hide();
+        });
+        menuBar.append(emoji);
+    });
+
+    messageContainer.empty();
+    messageContainer.append(menuBar);
+    messageContainer.show();
+}
+
+function ShowDictate(buddy){
+    var buddyObj = FindBuddyByIdentity(buddy);
+    if(buddyObj == null){
+        return;
+    }
+
+    if(buddyObj.recognition != null){
+        buddyObj.recognition.abort();
+        buddyObj.recognition = null;
+    }
+    try {
+        // Limitation: This opbject can only be made once on the page
+        // Generally this is fine, as you can only really dictate one message at a time.
+        // It will use the most recently created object.
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        buddyObj.recognition = new SpeechRecognition();
+    }
+    catch(e) {
+        console.error(e);
+        Alert("you browser does not support this function, sorry", "Speech Recognition");
+        return;
+    }
+
+    var instructions = $("<div>");
+    var messageContainer = $("#contact-"+ buddy +"-dictate-message");
+    var textarea = $("#contact-"+ buddy +"-ChatMessage");
+
+    buddyObj.recognition.continuous = true;
+    buddyObj.recognition.onstart = function() { 
+        instructions.html("<i class=\"fa fa-microphone\" style=\"font-size: 21px\"></i><i class=\"fa fa-cog fa-spin\" style=\"font-size:10px; vertical-align:text-bottom; margin-left:2px\"></i> I'm listening...");
+    }
+    buddyObj.recognition.onspeechend = function() {
+        instructions.html('You were quiet for a while so voice recognition turned itself off.');
+        window.setTimeout(function(){
+            messageContainer.hide();
+        }, 1000);
+    }
+    buddyObj.recognition.onerror = function(event) {
+        if(event.error == 'no-speech') {
+            instructions.html('No speech was detected. Try again.');  
+        }
+        else {
+            console.warn("SpeechRecognition Error: ", event);
+            buddyObj.recognition.abort();
+            buddyObj.recognition = null;
+        }
+        window.setTimeout(function(){
+            messageContainer.hide();
+        }, 1000);
+    }
+    buddyObj.recognition.onresult = function(event) {
+        var transcript = event.results[event.resultIndex][0].transcript;
+        if((event.resultIndex == 1 && transcript == event.results[0][0].transcript) == false) {
+            if($.trim(textarea.val()).endsWith(".") || $.trim(textarea.val()) == "") {
+                transcript = $.trim(transcript);
+                transcript = transcript.replace(/^./, " "+ transcript[0].toUpperCase());
+            }
+            console.log("Dictate:", transcript);
+            textarea.val(textarea.val() + transcript);
+            RefreshChatPreview(null, textarea.val(), buddy);
+        }
+    }
+
+    messageContainer.empty();
+    messageContainer.append(instructions);
+    messageContainer.show();
+
+    buddyObj.recognition.start();
+}
 
 
 // My Profile
@@ -6681,19 +7264,21 @@ function ShowMyProfileMenu(obj){
 
     HidePopup();
     dhtmlxPopup = new dhtmlXPopup();
-    dhtmlxPopup.attachList("name,enabled", [
-						{id: 2, name: "<i class=\"fa fa-refresh\"></i> Refresh Registration", enabled: ""},
-                        {id: 3, name: "<i class=\"fa fa-wrench\"></i> Configure Extension", enabled: ""},
-                        // Register Automatically, Ring Tone, Ring Device, Volume, Onscreen Notification, CRM Hooks
-						dhtmlxPopup.separator,
-						{id: 4, name: "<i class=\"fa fa-user-plus\"></i> Add Someone", enabled: ""},
-						{id: 5, name: "<i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i> Create Group", enabled: ""},
-						dhtmlxPopup.separator,
-						{id: 6, name: "<i class=\"fa fa-phone\"></i> Auto Answer", enabled: AutoAnswerEnabled? "<i class=\"fa fa-check\"></i>" : "" },
-						{id: 7, name: "<i class=\"fa fa-ban\"></i> Do No Disturb", enabled: DoNotDisturbEnabled? "<i class=\"fa fa-check\"></i>" : "" },
-						{id: 8, name: "<i class=\"fa fa-volume-control-phone\"></i> Call Waiting", enabled: CallWaitingEnabled? "<i class=\"fa fa-check\"></i>" : ""},
-						{id: 9, name: "<i class=\"fa fa-dot-circle-o\"></i> Record All Calls", enabled: RecordAllCalls? "<i class=\"fa fa-check\"></i>" : "" },
-    ]);
+    var menu = [
+        {id: 2, name: "<i class=\"fa fa-refresh\"></i> Refresh Registration", enabled: ""},
+        {id: 3, name: "<i class=\"fa fa-wrench\"></i> Configure Extension", enabled: ""},
+        // Register Automatically, Ring Tone, Ring Device, Volume, Onscreen Notification, CRM Hooks
+        dhtmlxPopup.separator,
+        {id: 4, name: "<i class=\"fa fa-user-plus\"></i> Add Someone", enabled: ""},
+        {id: 5, name: "<i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i> Create Group", enabled: ""},
+        dhtmlxPopup.separator,
+        {id: 6, name: "<i class=\"fa fa-phone\"></i> Auto Answer", enabled: AutoAnswerEnabled? "<i class=\"fa fa-check\"></i>" : "" },
+        {id: 7, name: "<i class=\"fa fa-ban\"></i> Do No Disturb", enabled: DoNotDisturbEnabled? "<i class=\"fa fa-check\"></i>" : "" },
+        {id: 8, name: "<i class=\"fa fa-volume-control-phone\"></i> Call Waiting", enabled: CallWaitingEnabled? "<i class=\"fa fa-check\"></i>" : ""},
+        {id: 9, name: "<i class=\"fa fa-dot-circle-o\"></i> Record All Calls", enabled: RecordAllCalls? "<i class=\"fa fa-check\"></i>" : "" },
+    ];
+    if(enabledGroupServices == false) menu.splice(4, 1);
+    dhtmlxPopup.attachList("name,enabled", menu);
     dhtmlxPopup.attachEvent("onClick", function(id){
         HidePopup();
 
@@ -7059,10 +7644,17 @@ function PresentCamera(buddy){
     $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
 
     $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").empty();
+    RemoveScratchpad(buddy);
+    $("#contact-"+ buddy +"-sharevideo").hide();
+    $("#contact-"+ buddy +"-sharevideo").get(0).pause();
+    $("#contact-"+ buddy +"-sharevideo").get(0).removeAttribute('src');
+    $("#contact-"+ buddy +"-sharevideo").get(0).load();
+    window.clearInterval(session.data.videoResampleInterval);
 
-    switchVideoSource(buddy, getVideoSrcID());
+    $("#contact-" + buddy + "-localVideo").show();
+    $("#contact-" + buddy + "-remoteVideo").appendTo("#contact-" + buddy + "-stage-container");
+
+    switchVideoSource(buddy, session.data.VideoSourceDevice);
 }
 
 function PresentScreen(buddy){
@@ -7079,13 +7671,26 @@ function PresentScreen(buddy){
     $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
 
     $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").empty();
+    RemoveScratchpad(buddy);
+    $("#contact-"+ buddy +"-sharevideo").hide();
+    $("#contact-"+ buddy +"-sharevideo").get(0).pause();
+    $("#contact-"+ buddy +"-sharevideo").get(0).removeAttribute('src');
+    $("#contact-"+ buddy +"-sharevideo").get(0).load();
+    window.clearInterval(session.data.videoResampleInterval);
+
+    $("#contact-" + buddy + "-localVideo").hide();
+    $("#contact-" + buddy + "-remoteVideo").appendTo("#contact-" + buddy + "-stage-container");
 
     ShareScreen(buddy);
 }
 
 function PresentScratchpad(buddy){
+    var session = getSession(buddy);
+    if(session == null){
+        console.log("Session is Null, probably not in a call yet.");
+        return;
+    }
+
     $("#contact-"+ buddy +"-src-camera").prop("disabled", false);
     $("#contact-"+ buddy +"-src-canvas").prop("disabled", true);
     $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
@@ -7093,14 +7698,15 @@ function PresentScratchpad(buddy){
     $("#contact-"+ buddy +"-src-blank").prop("disabled", false);
 
     $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").empty();
+    RemoveScratchpad(buddy);
+    $("#contact-"+ buddy +"-sharevideo").hide();
+    $("#contact-"+ buddy +"-sharevideo").get(0).pause();
+    $("#contact-"+ buddy +"-sharevideo").get(0).removeAttribute('src');
+    $("#contact-"+ buddy +"-sharevideo").get(0).load();
+    window.clearInterval(session.data.videoResampleInterval);
 
-    var session = getSession(buddy);
-    if(session == null){
-        console.log("Session is Null, probably not in a call yet.");
-        return;
-    }
+    $("#contact-" + buddy + "-localVideo").hide();
+    $("#contact-" + buddy + "-remoteVideo").appendTo("#contact-" + buddy + "-preview-container");
 
     SendCanvas(buddy);
 }
@@ -7132,6 +7738,12 @@ function PresentVideo(buddy){
     }, null);
 }
 function PresentBlank(buddy){
+    var session = getSession(buddy);
+    if(session == null){
+        console.log("Session is Null, probably not in a call yet.");
+        return;
+    }
+
     $("#contact-"+ buddy +"-src-camera").prop("disabled", false);
     $("#contact-"+ buddy +"-src-canvas").prop("disabled", false);
     $("#contact-"+ buddy +"-src-desktop").prop("disabled", false);
@@ -7139,16 +7751,31 @@ function PresentBlank(buddy){
     $("#contact-"+ buddy +"-src-blank").prop("disabled", true);
     
     $("#contact-" + buddy + "-scratchpad-container").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").hide();
-    $("#contact-" + buddy + "-sharevideo-contaner").empty();
+    RemoveScratchpad(buddy);
+    $("#contact-"+ buddy +"-sharevideo").hide();
+    $("#contact-"+ buddy +"-sharevideo").get(0).pause();
+    $("#contact-"+ buddy +"-sharevideo").get(0).removeAttribute('src');
+    $("#contact-"+ buddy +"-sharevideo").get(0).load();
+    window.clearInterval(session.data.videoResampleInterval);
 
-    var session = getSession(buddy);
-    if(session == null){
-        console.log("Session is Null, probably not in a call yet.");
-        return;
-    }
+    $("#contact-" + buddy + "-localVideo").hide();
+    $("#contact-" + buddy + "-remoteVideo").appendTo("#contact-" + buddy + "-stage-container");
+
     DisableVideoStream(buddy);
 }
+
+function RemoveScratchpad(buddy){
+    var scratchpad = GetCanvas("contact-" + buddy + "-scratchpad");
+    if(scratchpad != null){
+        window.clearInterval(scratchpad.redrawIntrtval);
+
+        RemoveCanvas("contact-" + buddy + "-scratchpad");
+        $("#contact-" + buddy + "-scratchpad-container").empty();
+
+        scratchpad = null;
+    }
+}
+
 
 function ShowCallStats(buddy, obj){
     console.log("Show Call Stats");
@@ -7283,13 +7910,17 @@ function getPicture(buddyId, typestr){
     var dbImg;
     if(buddyId == "profilePicture"){
         dbImg = localDB.getItem("profilePicture");
-    } else {
+    }
+    else {
         dbImg = localDB.getItem("img-"+ buddyId +"-"+ typestr);
     }
     if(dbImg == null || dbImg == "null" || dbImg == "") return hostingPrefex + "default.png";
-    // if(dbImg == hostingPrefex +"default.png") return dbImg;
+
+    // return URL.createObjectURL(base64toBlob(dbImg, 'image/png'));
+
     return dbImg;
 }
+
 
 // Image Editor
 // ============
@@ -7734,8 +8365,7 @@ var ImageEditor_Cancel = function (buddy){
     $("#contact-" + buddy + "-imagePastePreview").hide();
 }
 
-var ImageEditor_Send = function (buddy)
-{
+var ImageEditor_Send = function (buddy){
     var canvas = GetCanvas("contact-" + buddy + "-imageCanvas");
     if(canvas != null)
     {
@@ -7750,6 +8380,9 @@ var ImageEditor_Send = function (buddy)
 // ====================================
 function FindSomething(buddy) {
     $("#contact-" + buddy + "-search").toggle();
+    if($("#contact-" + buddy + "-search").is(":visible") == false){
+        RefreshStream(FindBuddyByIdentity(buddy));
+    } 
 }
 
 // FileShare an Upload
@@ -7800,8 +8433,7 @@ function setupDragDrop(e, buddy){
     $("#contact-"+ buddy +"-ChatHistory").css("outline", "2px dashed #184369");
     preventDefault(e);
 }
-function preventDefault(e)
-{
+function preventDefault(e){
     e.preventDefault();
     e.stopPropagation();
 }
