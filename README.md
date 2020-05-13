@@ -32,6 +32,7 @@ This web application designed to work with Asterisk PBX (supported versions unkn
 - fabric-2.4.6.min.js                  : Canvas Editing Library
 - moment-with-locales-2.24.0.min.js    : Date & Time Libary
 - croppie.min.js                       : Profile Picture Crop Library
+
 Note: These libraries will load automatically from CDN.
 
 ## Screenshots
