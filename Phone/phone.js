@@ -3,7 +3,7 @@
 ====================
  ☎️ Raspberry Phone ☎️ 
 ====================
-A fully featured browser based SIP phone for Asterisk
+A fully featured browser based WebRTC SIP phone for Asterisk
 -------------------------------------------------------------
  Copyright (c) 2020  - Conrad de Wet - All Rights Reserved.
 =============================================================
@@ -14,20 +14,19 @@ Owner: Conrad de Wet
 Date: April 2020
 Git: https://github.com/InnovateAsterisk/Browser-Phone
 
-=========
-Requires:
-=========
-    ✅ Asteriks PBX (with WebRTC and Messaging)
-    ✅ sip-0.11.6.js                        : WebRTC and SIP signaling library
+=============
+Dependencies:
+=============
+    ✅ Asterisk PBX (with WebRTC and Messaging)
+    ✅ sip-0.11.6.js                        : WebRTC and SIP signalling library
     ✅ jquery-3.3.1.min.js                  : JavaScript toolkit
     ✅ jquery.md5-min.js                    : Md5 Hash plug-in (unused)
     ✅ Chart.bundle-2.7.2.js                : Graph and Chart UI
     ✅ dhtmlx.js                            : Windowing & UI Library
     ✅ fabric-2.4.6.min.js                  : Canvas Editing Library
-    ✅ moment-with-locales-2.24.0.min.js    : Date & Time Libary
+    ✅ moment-with-locales-2.24.0.min.js    : Date & Time Library
     ✅ croppie.min.js                       : Profile Picture Crop Library
 Note: These Libraries get loaded automatically.
-
 
 ==========
 TODO List:
