@@ -11,7 +11,7 @@ This web application designed to work with Asterisk PBX (supported versions unkn
 - SIP Video Calling
 - Call Transfer (Both Blind & Attended)
 - 3rd Party Conference Call
-- CDR Records
+- Call Detail Records
 - Call Recording (Audio & Video)
 - Screen Share during Video Call
 - Scratchpad Share during Video Call
@@ -22,7 +22,6 @@ This web application designed to work with Asterisk PBX (supported versions unkn
 - Useful debug messages sent to console.
 
 ## Dependencies
-These libraries will load automatically from CDN.
 - Asterisk PBX (with WebRTC and Messaging)
 - sip-0.11.6.js                        : WebRTC and SIP signaling library
 - jquery-3.3.1.min.js                  : JavaScript toolkit
@@ -32,6 +31,7 @@ These libraries will load automatically from CDN.
 - fabric-2.4.6.min.js                  : Canvas Editing Library
 - moment-with-locales-2.24.0.min.js    : Date & Time Libary
 - croppie.min.js                       : Profile Picture Crop Library
+Note: These libraries will load automatically from CDN.
 
 ## Screenshots
 
