@@ -50,6 +50,7 @@ New Features:
     ✅ Disk Storage Analysis
     ✅ Languages
     ✅ Busy Tone
+    ✅ XMPP support
 
 =========================
 Performance Improvements:
@@ -3382,7 +3383,14 @@ function SendChatMessage(buddy) {
 
     var message = $("#contact-" + buddy + "-ChatMessage").val();
     message = $.trim(message);
-    if (message == "") return;
+    if(message == "") {
+        Alert("Please enter something into the text box provided and click send", "No Message");
+        return;
+    }
+    if(message.length > 755){
+        Alert("Asterisk has a limit on the message size (755). This message is too long, and connot be delivered.", "Message Too Long");
+        return;
+    }
 
     var messageId = uID();
     var buddyObj = FindBuddyByIdentity(buddy);
@@ -4324,118 +4332,115 @@ function StartRecording(buddy){
                 }
             });
 
-
             // Resample the Video Recording
-            // ==============================================
-            // RecordingLayout (side-by-side | us-pnp | them-pnp | us-only | them-only)
-
-            var recordingWidth = 640;
-            var recordingHeight = 360;
-            var pnpVideSize = 100;
-            if(RecordingVideoSize == "HD"){
-                recordingWidth = 1280;
-                recordingHeight = 720;
-                pnpVideSize = 144;
-            }
-            if(RecordingVideoSize == "FHD"){
-                recordingWidth = 1920;
-                recordingHeight = 1080;
-                pnpVideSize = 240;
-            }
-
-            // them-pnp
-            var pnpVideo = $("#contact-" + buddy + "-localVideo").get(0);
-            var mainVideo = $("#contact-" + buddy + "-remoteVideo").get(0);
-            if(RecordingLayout == "us-pnp"){
-                pnpVideo = $("#contact-" + buddy + "-remoteVideo").get(0);
-                mainVideo = $("#contact-" + buddy + "-localVideo").get(0);
-            }
-            var recordingCanvas = $('<canvas/>').get(0);
-            recordingCanvas.width = (RecordingLayout == "side-by-side")? (recordingWidth * 2) + 5: recordingWidth;
-            recordingCanvas.height = recordingHeight;
-            var recordingContext = recordingCanvas.getContext("2d");
-
-            window.clearInterval(session.data.recordingRedrawInterval);
-            session.data.recordingRedrawInterval = window.setInterval(function(){
-
-                // Main Video
-                var videoWidth = (mainVideo.videoWidth > 0)? mainVideo.videoWidth : recordingWidth ;
-                var videoHeight = (mainVideo.videoHeight > 0)? mainVideo.videoHeight : recordingHeight ;
-
-                if(videoWidth >= videoHeight){
-                    // Landscape / Square
-                    var scale = recordingWidth / videoWidth;
-                    videoWidth = recordingWidth;
-                    videoHeight = videoHeight * scale;
-                    if(videoHeight > recordingHeight){
-                        var scale = recordingHeight / videoHeight;
-                        videoHeight = recordingHeight;
-                        videoWidth = videoWidth * scale;
-                    }
-                } 
-                else {
-                    // Portrait
-                    var scale = recordingHeight / videoHeight;
-                    videoHeight = recordingHeight;
-                    videoWidth = videoWidth * scale;
+            if(session.data.withvideo){
+                var recordingWidth = 640;
+                var recordingHeight = 360;
+                var pnpVideSize = 100;
+                if(RecordingVideoSize == "HD"){
+                    recordingWidth = 1280;
+                    recordingHeight = 720;
+                    pnpVideSize = 144;
                 }
-                var offsetX = (videoWidth < recordingWidth)? (recordingWidth - videoWidth) / 2 : 0;
-                var offsetY = (videoHeight < recordingHeight)? (recordingHeight - videoHeight) / 2 : 0;
-                if(RecordingLayout == "side-by-side") offsetX = recordingWidth + 5 + offsetX;
-
-                // Picture-in-Picture Video
-                var pnpVideoHeight = pnpVideo.videoHeight;
-                var pnpVideoWidth = pnpVideo.videoWidth;
-                if(pnpVideoHeight > 0){
-                    if(pnpVideoWidth >= pnpVideoHeight){
-                        var scale = pnpVideSize / pnpVideoHeight;
-                        pnpVideoHeight = pnpVideSize;
-                        pnpVideoWidth = pnpVideoWidth * scale;
-                    } 
-                    else{
-                        var scale = pnpVideSize / pnpVideoWidth;
-                        pnpVideoWidth = pnpVideSize;
-                        pnpVideoHeight = pnpVideoHeight * scale;
-                    }
+                if(RecordingVideoSize == "FHD"){
+                    recordingWidth = 1920;
+                    recordingHeight = 1080;
+                    pnpVideSize = 240;
                 }
-                var pnpOffsetX = 10;
-                var pnpOffsetY = 10;
-                if(RecordingLayout == "side-by-side"){
-                    pnpVideoWidth = pnpVideo.videoWidth;
-                    pnpVideoHeight = pnpVideo.videoHeight;
-                    if(pnpVideoWidth >= pnpVideoHeight){
+    
+                // them-pnp
+                var pnpVideo = $("#contact-" + buddy + "-localVideo").get(0);
+                var mainVideo = $("#contact-" + buddy + "-remoteVideo").get(0);
+                if(RecordingLayout == "us-pnp"){
+                    pnpVideo = $("#contact-" + buddy + "-remoteVideo").get(0);
+                    mainVideo = $("#contact-" + buddy + "-localVideo").get(0);
+                }
+                var recordingCanvas = $('<canvas/>').get(0);
+                recordingCanvas.width = (RecordingLayout == "side-by-side")? (recordingWidth * 2) + 5: recordingWidth;
+                recordingCanvas.height = recordingHeight;
+                var recordingContext = recordingCanvas.getContext("2d");
+    
+                window.clearInterval(session.data.recordingRedrawInterval);
+                session.data.recordingRedrawInterval = window.setInterval(function(){
+    
+                    // Main Video
+                    var videoWidth = (mainVideo.videoWidth > 0)? mainVideo.videoWidth : recordingWidth ;
+                    var videoHeight = (mainVideo.videoHeight > 0)? mainVideo.videoHeight : recordingHeight ;
+    
+                    if(videoWidth >= videoHeight){
                         // Landscape / Square
-                        var scale = recordingWidth / pnpVideoWidth;
-                        pnpVideoWidth = recordingWidth;
-                        pnpVideoHeight = pnpVideoHeight * scale;
-                        if(pnpVideoHeight > recordingHeight){
-                            var scale = recordingHeight / pnpVideoHeight;
-                            pnpVideoHeight = recordingHeight;
-                            pnpVideoWidth = pnpVideoWidth * scale;
+                        var scale = recordingWidth / videoWidth;
+                        videoWidth = recordingWidth;
+                        videoHeight = videoHeight * scale;
+                        if(videoHeight > recordingHeight){
+                            var scale = recordingHeight / videoHeight;
+                            videoHeight = recordingHeight;
+                            videoWidth = videoWidth * scale;
                         }
                     } 
                     else {
                         // Portrait
-                        var scale = recordingHeight / pnpVideoHeight;
-                        pnpVideoHeight = recordingHeight;
-                        pnpVideoWidth = pnpVideoWidth * scale;
+                        var scale = recordingHeight / videoHeight;
+                        videoHeight = recordingHeight;
+                        videoWidth = videoWidth * scale;
                     }
-                    pnpOffsetX = (pnpVideoWidth < recordingWidth)? (recordingWidth - pnpVideoWidth) / 2 : 0;
-                    pnpOffsetY = (pnpVideoHeight < recordingHeight)? (recordingHeight - pnpVideoHeight) / 2 : 0;
-                }
-
-                // Draw Elements
-                recordingContext.fillRect(0, 0, recordingCanvas.width, recordingCanvas.height);
-                if(mainVideo.videoHeight > 0){
-                    recordingContext.drawImage(mainVideo, offsetX, offsetY, videoWidth, videoHeight);
-                }
-                if(pnpVideo.videoHeight > 0 && (RecordingLayout == "side-by-side" || RecordingLayout == "us-pnp" || RecordingLayout == "them-pnp")){
-                    // Only Draw the Pnp Video when needed
-                    recordingContext.drawImage(pnpVideo, pnpOffsetX, pnpOffsetY, pnpVideoWidth, pnpVideoHeight);
-                }
-            }, Math.floor(1000/RecordingVideoFps));
-            var recordingVideoMediaStream = recordingCanvas.captureStream(RecordingVideoFps);
-            // ===============================================
+                    var offsetX = (videoWidth < recordingWidth)? (recordingWidth - videoWidth) / 2 : 0;
+                    var offsetY = (videoHeight < recordingHeight)? (recordingHeight - videoHeight) / 2 : 0;
+                    if(RecordingLayout == "side-by-side") offsetX = recordingWidth + 5 + offsetX;
+    
+                    // Picture-in-Picture Video
+                    var pnpVideoHeight = pnpVideo.videoHeight;
+                    var pnpVideoWidth = pnpVideo.videoWidth;
+                    if(pnpVideoHeight > 0){
+                        if(pnpVideoWidth >= pnpVideoHeight){
+                            var scale = pnpVideSize / pnpVideoHeight;
+                            pnpVideoHeight = pnpVideSize;
+                            pnpVideoWidth = pnpVideoWidth * scale;
+                        } 
+                        else{
+                            var scale = pnpVideSize / pnpVideoWidth;
+                            pnpVideoWidth = pnpVideSize;
+                            pnpVideoHeight = pnpVideoHeight * scale;
+                        }
+                    }
+                    var pnpOffsetX = 10;
+                    var pnpOffsetY = 10;
+                    if(RecordingLayout == "side-by-side"){
+                        pnpVideoWidth = pnpVideo.videoWidth;
+                        pnpVideoHeight = pnpVideo.videoHeight;
+                        if(pnpVideoWidth >= pnpVideoHeight){
+                            // Landscape / Square
+                            var scale = recordingWidth / pnpVideoWidth;
+                            pnpVideoWidth = recordingWidth;
+                            pnpVideoHeight = pnpVideoHeight * scale;
+                            if(pnpVideoHeight > recordingHeight){
+                                var scale = recordingHeight / pnpVideoHeight;
+                                pnpVideoHeight = recordingHeight;
+                                pnpVideoWidth = pnpVideoWidth * scale;
+                            }
+                        } 
+                        else {
+                            // Portrait
+                            var scale = recordingHeight / pnpVideoHeight;
+                            pnpVideoHeight = recordingHeight;
+                            pnpVideoWidth = pnpVideoWidth * scale;
+                        }
+                        pnpOffsetX = (pnpVideoWidth < recordingWidth)? (recordingWidth - pnpVideoWidth) / 2 : 0;
+                        pnpOffsetY = (pnpVideoHeight < recordingHeight)? (recordingHeight - pnpVideoHeight) / 2 : 0;
+                    }
+    
+                    // Draw Elements
+                    recordingContext.fillRect(0, 0, recordingCanvas.width, recordingCanvas.height);
+                    if(mainVideo.videoHeight > 0){
+                        recordingContext.drawImage(mainVideo, offsetX, offsetY, videoWidth, videoHeight);
+                    }
+                    if(pnpVideo.videoHeight > 0 && (RecordingLayout == "side-by-side" || RecordingLayout == "us-pnp" || RecordingLayout == "them-pnp")){
+                        // Only Draw the Pnp Video when needed
+                        recordingContext.drawImage(pnpVideo, pnpOffsetX, pnpOffsetY, pnpVideoWidth, pnpVideoHeight);
+                    }
+                }, Math.floor(1000/RecordingVideoFps));
+                var recordingVideoMediaStream = recordingCanvas.captureStream(RecordingVideoFps);
+            }
 
             var mixedAudioVideoRecordStream = new MediaStream();
             mixedAudioVideoRecordStream.addTrack(MixAudioStreams(recordStream).getAudioTracks()[0]);
