@@ -20,6 +20,7 @@ This web application designed to work with Asterisk PBX (supported versions unkn
 - SIP Message Accept Notification (not delivery)
 - Buddy (Contact) Management
 - Useful debug messages sent to console.
+- Works on: Chrome (all features work), Edge (same as Chrome), Opera (same as Chrome), Firefox (Most features work), Safari (Most feature work)
 
 ## Dependencies
 - Asterisk PBX (with WebRTC and Messaging)
