@@ -30,25 +30,25 @@ This web application designed to work with Asterisk PBX (supported versions unkn
 - Chart.bundle-2.7.2.js                : Graph and Chart UI
 - dhtmlx.js                            : Windowing & UI Library
 - fabric-2.4.6.min.js                  : Canvas Editing Library
-- moment-with-locales-2.24.0.min.js    : Date & Time Libary
+- moment-with-locales-2.24.0.min.js    : Date & Time Library
 - croppie.min.js                       : Profile Picture Crop Library
 
 Note: These libraries will load automatically from CDN.
 
 ## Step-by-step Guide
 
-You can follwo the How-to video to achieve the outcome for this project: 
+You can follow the How-to video to achieve the outcome for this project: 
 
 Or follow these steps.
 
-#### Preparing the SD Card with Rasbian
+#### Preparing the SD Card with Raspbian
 Flash the you SD card using the Raspberry Pi Imager from https://www.raspberrypi.org/downloads/.
 
-Wtrite a blank text file named ssh (no extension) to the boot directory of the SD card. On MAc use:
+Write a blank text file named ssh (no extension) to the boot directory of the SD card. On Mac use:
 ```
 sudo nano /Voumes/boot/ssh
 ```
-and on windows, you can just use naotepad and save it as: `D:/ssh`
+and on Windows, you can just use Notepad and save it as: `D:/ssh`
 
 Insert the SD Card into your Raspberry Pi, connect a Network Cable and boot up. 
 
@@ -63,7 +63,7 @@ Issue and update:
 ```
 # apt-get update
 ```
-Install a few essensial applicaitons
+Install a few essential applications:
 ```
 # apt-get instal samba ntp git
 ```
@@ -111,7 +111,7 @@ Create a Root CA Key:
 ```
 $ openssl genrsa -des3 -out /home/pi/ca/InnovateAsterisk-Root-CA.key 4096
 ```
-(Remeber the password you used)
+(Remember the password you used)
 Create Root Certificate Authority Certificate:
 ```
 $ openssl req -x509 -new -nodes -key /home/pi/ca/InnovateAsterisk-Root-CA.key -sha256 -days 3650 -out /home/pi/ca/InnovateAsterisk-Root-CA.crt
@@ -184,7 +184,7 @@ Going to install afain, so go back to root:
 ```
 $ sudo su
 ```
-Install the prerequisits:
+Install the prerequisites:
 ```
 # contrib/scripts/install_prereq install
 ```
@@ -218,7 +218,7 @@ Exit root:
 ```
 # exit
 ```
-Start ASterisk:
+Start Asterisk:
 ```
 $ sudo service asterisk status
 $ sudo service asterisk start
@@ -230,7 +230,7 @@ Not many of the modules will be loaded:
 > exit
 
 #### Configure Asterisk with Github files
-Return to home filder:
+Return to home folder:
 ```
 $ cd ~
 ```
@@ -238,7 +238,7 @@ Close the git project:
 ```
 $ git clone https://github.com/InnovateAsterisk/Browser-Phone.git
 ```
-Copy the cofig files:
+Copy the config files:
 ```
 $ sudo cp /home/pi/Browser-Phone/config/* /etc/asterisk/
 ```
@@ -258,7 +258,7 @@ Copy the Opus codec to modules:
 ```
 $ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib64/asterisk/modules
 ```
-Restart Asterisk and check the moduels loaed:
+Restart Asterisk and check the modules loaded:
 ```
 $ sudo service asterisk restart
 $ sudo asterisk -r
@@ -267,7 +267,7 @@ $ sudo asterisk -r
 > exit
 
 #### Configure sip.conf
-Open the origional /etc/asterisk/sip.conf file and make the following changes:
+Open the original /etc/asterisk/sip.conf file and make the following changes:
 > websocket_enabled=yes
 > maxcallbitrate=5120
 
