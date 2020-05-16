@@ -117,14 +117,15 @@ Create Root Certificate Authority Certificate:
 $ openssl req -x509 -new -nodes -key /home/pi/ca/InnovateAsterisk-Root-CA.key -sha256 -days 3650 -out /home/pi/ca/InnovateAsterisk-Root-CA.crt
 ```
 Something like this should be fine:
-> Country Name (2 letter code) [AU]: GB
-> State or Province Name (full name) [Some-State]: None
-> Locality Name (eg, city) []: None
-> Organization Name (eg, company) [Internet Widgits Pty Ltd]: Innovate Asterisk
-> Organizational Unit Name (eg, section) []: www.innovateasterisk.com
-> Common Name (e.g. server FQDN or YOUR name) []: Innovate Asterisk Root CA
-> Email Address []: youremailgoes@here
-
+```
+Country Name (2 letter code) [AU]: GB
+State or Province Name (full name) [Some-State]: None
+Locality Name (eg, city) []: None
+Organization Name (eg, company) [Internet Widgits Pty Ltd]: Innovate Asterisk
+Organizational Unit Name (eg, section) []: www.innovateasterisk.com
+Common Name (e.g. server FQDN or YOUR name) []: Innovate Asterisk Root CA
+Email Address []: youremailgoes@here
+```
 Generate Certificate Signing Request & Private Key:
 ```
 $ openssl req -new -sha256 -nodes -out /home/pi/csr/raspberrypi.csr -newkey rsa:2048 -keyout /home/pi/certs/raspberrypi.key
@@ -134,13 +135,15 @@ Generate SSL V3 file:
 $ nano /home/pi/csr/openssl-v3.cnf
 ```
 And populate with:
-> authorityKeyIdentifier=keyid,issuer
-> basicConstraints=CA:FALSE
-> keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
-> subjectAltName = @alt_names
->
-> [alt_names]
-> DNS.1 = raspberrypi.local
+```
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = raspberrypi.local
+```
 
 Generate Server Certificate: 
 ```
@@ -226,8 +229,10 @@ $ sudo service asterisk status
 $ sudo asterisk -r
 ```
 Not many of the modules will be loaded:
-> [tab]
-> exit
+```
+[tab]
+exit
+```
 
 #### Configure Asterisk with Github files
 Return to home folder:
@@ -262,116 +267,123 @@ Restart Asterisk and check the modules loaded:
 ```
 $ sudo service asterisk restart
 $ sudo asterisk -r
+[tab]
+exit
 ```
-> [tab]
-> exit
 
 #### Configure sip.conf
 Open the original /etc/asterisk/sip.conf file and make the following changes:
-> websocket_enabled=yes
-> maxcallbitrate=5120
+```
+websocket_enabled=yes
+maxcallbitrate=5120
+```
 
 Add anywhere under [general]:
-> accept_outofcall_message=yes
-> auth_message_requests=no
-> outofcall_message_context=textmessages
-
+```
+accept_outofcall_message=yes
+auth_message_requests=no
+outofcall_message_context=textmessages
+```
 Add to the bottom of /etc/asterisk/sip.conf:
-> [basic](!)
-> type=friend
-> qualify=yes
-> context=from-extensions
-> subscribecontext=subscriptions
-> host=dynamic
-> directmedia=no
-> nat=force_rport,comedia
-> dtmfmode=rfc2833
-> disallow=all
-> videosupport=yes
-> 
-> [phones](!)
-> transport=udp
-> allow=ulaw,alaw,g722,gsm,vp9,vp8,h264
-> 
-> [webrtc](!)
-> transport=wss
-> allow=opus,ulaw,vp9,vp8,h264
-> encryption=yes
-> avpf=yes
-> force_avp=yes
-> icesupport=yes
-> rtcp_mux=yes
-> dtlsenable=yes
-> dtlsverify=fingerprint
-> dtlscertfile=/home/pi/certs/raspberrypi.pem
-> dtlscafile=/home/pi/ca/InnovateAsterisk-Root-CA.crt
-> dtlssetup=actpass
-> 
-> [User1](basic,webrtc)
-> callerid="Conrad de Wet" <100>
-> secret=1234
-> 
-> [User2](basic,webrtc)
-> callerid="User 2" <200>
-> secret=1234
-> 
-> [User3](basic,phones)
-> callerid="User 3" <300>
-> secret=1234
+```
+[basic](!)
+type=friend
+qualify=yes
+context=from-extensions
+subscribecontext=subscriptions
+host=dynamic
+directmedia=no
+nat=force_rport,comedia
+dtmfmode=rfc2833
+disallow=all
+videosupport=yes
+
+[phones](!)
+transport=udp
+allow=ulaw,alaw,g722,gsm,vp9,vp8,h264
+
+[webrtc](!)
+transport=wss
+allow=opus,ulaw,vp9,vp8,h264
+encryption=yes
+avpf=yes
+force_avp=yes
+icesupport=yes
+rtcp_mux=yes
+dtlsenable=yes
+dtlsverify=fingerprint
+dtlscertfile=/home/pi/certs/raspberrypi.pem
+dtlscafile=/home/pi/ca/InnovateAsterisk-Root-CA.crt
+dtlssetup=actpass
+
+[User1](basic,webrtc)
+callerid="Conrad de Wet" <100>
+secret=1234
+
+[User2](basic,webrtc)
+callerid="User 2" <200>
+secret=1234
+
+[User3](basic,phones)
+callerid="User 3" <300>
+secret=1234
+```
 
 #### Configure extensions.conf
 Update the /etc/asterisk/extensions.conf to the following:
-> [general]
-> static=yes
-> writeprotect=yes
-> priorityjumping=no
-> autofallthrough=no
-> 
-> [globals]
-> ATTENDED_TRANSFER_COMPLETE_SOUND=beep
-> 
-> [textmessages]
-> exten => 100,1,Macro(send-text,User1)
-> exten => 200,1,Macro(send-text,User2)
-> exten => 300,1,Macro(send-text,User3)
-> exten => e,1,Hangup()
-> 
-> [subscriptions]
-> exten => 100,hint,SIP/User1
-> exten => 200,hint,SIP/User2
-> exten => 300,hint,SIP/User3
-> 
-> [from-extensions]
-> ; Feature Codes:
-> exten => *65,1,Macro(moh)
-> ; Extensions 
-> exten => 100,1,Macro(dial-extension,User1)
-> exten => 200,1,Macro(dial-extension,User2)
-> exten => 300,1,Macro(dial-extension,User3)
-> ; Anything else, Hangup
-> exten => _[+*0-9].,1,NoOp(You called: ${EXTEN})
-> exten => _[+*0-9].,n,Hangup(1)
-> exten => e,1,Hangup()
-> 
-> [macro-moh]
-> exten => s,1,NoOp(Music On Hold)
-> exten => s,n,Ringing()
-> exten => s,n,Wait(2)
-> exten => s,n,Answer()
-> exten => s,n,Wait(1)
-> exten => s,n,MusicOnHold()
-> 
-> [macro-dial-extension]
-> exten => s,1,NoOp(Calling: ${ARG1})
-> exten => s,n,Dial(SIP/${ARG1},30)
-> exten => e,1,Hangup()
-> 
-> [macro-send-text]
-> exten => s,1,NoOp(Sending Text To: ${ARG1})
-> exten => s,n,Set(PEER=${CUT(CUT(CUT(MESSAGE(from),@,1),<,2),:,2)})
-> exten => s,n,Set(FROM=${SHELL(asterisk -rx 'sip show peer ${PEER}' | grep 'Callerid' | cut -d':' -f2- | sed 's/^\ *//' | tr -d '\n')})
-> exten => s,n,MessageSend(sip:${ARG1},${FROM})
-> exten => s,n,Hangup()
+```
+[general]
+static=yes
+writeprotect=yes
+priorityjumping=no
+autofallthrough=no
+
+[globals]
+ATTENDED_TRANSFER_COMPLETE_SOUND=beep
+
+[textmessages]
+exten => 100,1,Macro(send-text,User1)
+exten => 200,1,Macro(send-text,User2)
+exten => 300,1,Macro(send-text,User3)
+exten => e,1,Hangup()
+
+[subscriptions]
+exten => 100,hint,SIP/User1
+exten => 200,hint,SIP/User2
+exten => 300,hint,SIP/User3
+
+[from-extensions]
+; Feature Codes:
+exten => *65,1,Macro(moh)
+; Extensions 
+exten => 100,1,Macro(dial-extension,User1)
+exten => 200,1,Macro(dial-extension,User2)
+exten => 300,1,Macro(dial-extension,User3)
+; Anything else, Hangup
+exten => _[+*0-9].,1,NoOp(You called: ${EXTEN})
+exten => _[+*0-9].,n,Hangup(1)
+exten => e,1,Hangup()
+
+[macro-moh]
+exten => s,1,NoOp(Music On Hold)
+exten => s,n,Ringing()
+exten => s,n,Wait(2)
+exten => s,n,Answer()
+exten => s,n,Wait(1)
+exten => s,n,MusicOnHold()
+
+[macro-dial-extension]
+exten => s,1,NoOp(Calling: ${ARG1})
+exten => s,n,Dial(SIP/${ARG1},30)
+exten => e,1,Hangup()
+
+[macro-send-text]
+exten => s,1,NoOp(Sending Text To: ${ARG1})
+exten => s,n,Set(PEER=${CUT(CUT(CUT(MESSAGE(from),@,1),<,2),:,2)})
+exten => s,n,Set(FROM=${SHELL(asterisk -rx 'sip show peer ${PEER}' | grep 'Callerid' | cut -d':' -f2- | sed /^\ *//' | tr -d '\n')})
+exten => s,n,MessageSend(sip:${ARG1},${FROM})
+exten => s,n,Hangup()
+```
 
 Restart Asterisk or Reload SIP and Dialplan:
 ```
