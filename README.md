@@ -37,7 +37,9 @@ Note: These libraries will load automatically from CDN.
 
 ## Step-by-step Guide
 
-You can follow the How-to video to achieve the outcome for this project: https://youtu.be/mS28vfT8wJ8
+You can follow the How-to video to achieve the outcome for this project:
+
+[![View on YouTube](https://img.youtube.com/vi/mS28vfT8wJ8/0.jpg)](https://www.youtube.com/watch?v=mS28vfT8wJ8)
 
 Or follow these steps.
 
