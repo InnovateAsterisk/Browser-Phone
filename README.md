@@ -52,6 +52,8 @@ and on Windows, you can just use Notepad and save it as: `D:/ssh`
 
 Insert the SD Card into your Raspberry Pi, connect a Network Cable and boot up. 
 
+Connect to the raspberry pi over the network using Terminal (on Mac), or Putty (on Windows), as: `ssh pi@raspberrypi.local`.
+
 The default password for raspberry pi is: `raspberry`
 
 #### Initial Setup
