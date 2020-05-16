@@ -388,10 +388,9 @@ exten => s,n,Hangup()
 Restart Asterisk or Reload SIP and Dialplan:
 ```
 $ sudo asterisk -r
+sip reload
+dialplan reload
 ```
-> sip reload
-> dialplan reload
-
 
 ## Screenshots
 
