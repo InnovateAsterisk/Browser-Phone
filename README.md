@@ -37,7 +37,7 @@ Note: These libraries will load automatically from CDN.
 
 ## Step-by-step Guide
 
-You can follow the How-to video to achieve the outcome for this project: 
+You can follow the How-to video to achieve the outcome for this project: https://youtu.be/mS28vfT8wJ8
 
 Or follow these steps.
 
@@ -188,7 +188,7 @@ Change to Asterisk folder
 ```
 $ cd aster[tab]
 ```
-Going to install afain, so go back to root:
+Going to install again, so go back to root:
 ```
 $ sudo su
 ```
