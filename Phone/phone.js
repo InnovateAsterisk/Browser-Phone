@@ -28,34 +28,10 @@ Dependencies:
     ✅ croppie.min.js                       : Profile Picture Crop Library
 Note: These Libraries get loaded automatically.
 
-==========
-TODO List:
-==========
-    ✅ Ring Device Settings
-
-=============
-New Features:
-=============
-    ✅ Voicemail Notification
-    ✅ Group: Managment / Conference / Monitoring
-    ✅ Scratchpad Toolbar
-    ✅ QOS Data Storage
-    ✅ CDR Details window
-    ✅ Action URLs
-    ✅ Personalisation: Audio, Buddy Backgrounds, Buddy Ringtones
-    ✅ Blacklists / Whitelists (Inbound)
-    ✅ Trim Buddy Stream (rather than delete)
-    ✅ Keyboard Shortcuts
-    ✅ Disk Storage Analysis
-    ✅ Languages
-    ✅ Busy Tone
-    ✅ XMPP support
 
 =========================
 Performance Improvements:
 =========================
-    ✅ IndexDB for Images
-    ✅ IndexDB for Streams
     ✅ Code Cleanup: namespace, objects, memory cleanup
     ✅ Hosted Tones and Audio files (commit to storage on apply)
 
@@ -1489,7 +1465,7 @@ $(document).ready(function () {
             password: SipPassword,
             registerExpires: 300,
             hackWssInTransport: true, // makes it transport=wss in Contact (Required for Asterisk as it doesnt support Path)
-            // hackIpInContact: true,
+            hackIpInContact: true, // makes the contact field up from a random ip address (as it porbably doesnt know its own ip at this point... why would it)
             userAgentString: userAgentStr,
             keepAliveInterval: 59,
             autostart: false,
