@@ -28,17 +28,16 @@ Dependencies:
     ✅ croppie.min.js                       : Profile Picture Crop Library
 Note: These Libraries get loaded automatically.
 
-
 =========================
 Performance Improvements:
 =========================
     ✅ Code Cleanup: namespace, objects, memory cleanup
     ✅ Hosted Tones and Audio files (commit to storage on apply)
 
-==================================
-Extensded & Non-standard Features:
-==================================
-    ✅ Extended Servces Send: Image, Recording, Video, SMS, Email
+=================================
+Extended & Non-standard Features:
+=================================
+    ✅ Extended Services Send: Image, Recording, Video, FAX, SMS, Email
     ✅ Preview : File, Image, Video, YouTube, Audio
 
 */
@@ -1490,7 +1489,7 @@ $(document).ready(function () {
 
         // Start Subscribe Loop
         if(!isReRegister) {
-            Subscribe();
+            SubscribeAll();
         }
         isReRegister = true;
     });
@@ -1578,7 +1577,7 @@ function Unregister() {
     console.log("Unsubscribing...");
     $("#regStatus").html("Unsubscribing...");
     try {
-        UnSubscribe();
+        UnsubscribeAll();
     } catch (e) { }
 
     console.log("Disconnecting...");
@@ -1682,6 +1681,8 @@ function ReceiveCall(session) {
     session.data.withvideo = false;
     var videoInvite = false;
     if(session.request.body){
+        // Asterisk 13 PJ_SIP always sends m=video if endpoint has video codec,
+        // even if origional invite does not specify video.
         if(session.request.body.indexOf("m=video") > -1) videoInvite = true;
     }
 
@@ -3143,22 +3144,50 @@ function MeterSettingsOutput(audioStream, objectId, direction, interval){
 
 // Presence / Subscribe
 // ====================
-function Subscribe() {
+function SubscribeAll() {
     console.log("Subscribe to voicemail Messages...");
 
-    // Voicemail notice
+    // conference, message-summary, dialog, presence, presence.winfo, xcap-diff, dialog.winfo, refer
+
+    // Voicemail notice TODO: Make this optional
     var vmOptions = { expires: 300 };
     voicemailSubs = userAgent.subscribe(SipUsername + "@" + wssServer, 'message-summary', vmOptions); // message-summary = voicemail messages
     voicemailSubs.on('notify', function (notification) {
-        // $("#msg").html("You have voicemail: \n" + notification.request.body);
-        console.log("You have voicemail: \n" + notification.request.body);
+
+        // You have voicemail: 
+        // Message-Account: sip:alice@example.com
+        // Messages-Waiting: no
+        // Fax-Message: 2/4
+        // Voice-Message: 0/0 (0/0)   <-- new/old (new & urgent/ old & urgent)
+
+        var messagesWaitng = false;
+        $.each(notification.request.body.split("\n"), function (i, line) {
+            if(line.indexOf("Messages-Waiting:") != -1){
+                messagesWaitng = ($.trim(line.replace("Messages-Waiting:", "")) == "yes");
+            }
+        });
+
+        if(messagesWaitng){
+            // Notify user of voicemail
+            console.log("You have voicemail!");
+
+            // TODO: 
+            // Check if already notified
+            // Use Alert
+            // Use Notification if allowed
+            // Add Icon to User section
+        }
+
     });
 
-    console.log("Starting Subscribe of all ("+ Buddies.length +") Extension Buddies...");
+    // Dialog Subscription (This version isnt as nice as PIDF)
+    // var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/dialog-info+xml'] };
 
-    // conference, message-summary, dialog, presence, presence.winfo, xcap-diff, dialog.winfo, refer
-    // dialog... var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/dialog-info+xml'] };
+    // PIDF Subscription TODO: make this an option.
     var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] };
+
+    // Start subscribe all
+    console.log("Starting Subscribe of all ("+ Buddies.length +") Extension Buddies...");
     for(var b=0; b<Buddies.length; b++) {
         var buddyObj = Buddies[b];
         if(buddyObj.type == "extension") {
@@ -3189,11 +3218,9 @@ function RecieveBlf(notification) {
 
     var ContentType = notification.request.headers["Content-Type"][0].parsed;
     if (ContentType == "application/pidf+xml") {
-        // Handle "Precence"
-
-        var xml = $($.parseXML(notification.request.body));
-
+        // Handle Presence
         /*
+        // Asteriks chan_sip
         <?xml version="1.0" encoding="ISO-8859-1"?>
         <presence
             xmlns="urn:ietf:params:xml:ns:pidf" 
@@ -3218,11 +3245,36 @@ function RecieveBlf(notification) {
                 </status>
             </tuple>
         </presence>
+
+        // Asterisk chan_pjsip
+        <?xml version="1.0" encoding="UTF-8"?>
+        <presence 
+            entity="sip:300@192.168.88.40:443;transport=ws" 
+            xmlns="urn:ietf:params:xml:ns:pidf" 
+            xmlns:dm="urn:ietf:params:xml:ns:pidf:data-model" 
+            xmlns:rpid="urn:ietf:params:xml:ns:pidf:rpid">
+            <note>Ready</note>
+            <tuple id="300">
+                <status>
+                    <basic>open</basic>
+                </status>
+                <contact priority="1">sip:User1@raspberrypi.local</contact>
+            </tuple>
+            <dm:person />
+        </presence>
         */
 
+        var xml = $($.parseXML(notification.request.body));
+
         var Entity = xml.find("presence").attr("entity");
-        var me = Entity.split("@")[0].split(":")[1];
-        if (SipUsername != me) return;
+        var Contact = xml.find("presence").find("tuple").find("contact").text();
+        if (SipUsername == Entity.split("@")[0].split(":")[1] || SipUsername == Contact.split("@")[0].split(":")[1]){
+            // Message is for you.
+        } 
+        else {
+            console.warn("presence message not for you.", xml);
+            return;
+        }
 
         var buddy = xml.find("presence").find("tuple").attr("id");
 
@@ -3259,7 +3311,11 @@ function RecieveBlf(notification) {
 
         /*
         <?xml version="1.0"?>
-        <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info" version="0-99999" state="full|partial" entity="sip:xxxx@XXX.XX.XX.XX">
+        <dialog-info 
+            xmlns="urn:ietf:params:xml:ns:dialog-info" 
+            version="0-99999" 
+            state="full|partial" 
+            entity="sip:xxxx@XXX.XX.XX.XX">
             <dialog id="xxxx">
                 <state>trying | proceeding | early | terminated | confirmed</state>
             </dialog>
@@ -3309,7 +3365,7 @@ function RecieveBlf(notification) {
         }
     }
 }
-function UnSubscribe() {
+function UnsubscribeAll() {
     console.log("Unsubscribing "+ BlfSubs.length + " subscriptions...");
     for (var blf = 0; blf < BlfSubs.length; blf++) {
         BlfSubs[blf].unsubscribe();
@@ -3327,10 +3383,9 @@ function UnSubscribe() {
         }
     }
 }
-function UnSubscribeBuddy(buddyObj) {
-    if(buddyObj.type != "extension") {
-        return;
-    }
+function UnsubscribeBuddy(buddyObj) {
+    if(buddyObj.type != "extension") return;
+
     for (var blf = 0; blf < BlfSubs.length; blf++) {
         var blfObj = BlfSubs[blf];
         if(blfObj.data.buddyId == buddyObj.identity){
@@ -3338,7 +3393,9 @@ function UnSubscribeBuddy(buddyObj) {
             blfObj.unsubscribe();
             blfObj.close();
 
-            BlfSubs.splice(blf, 1);
+            window.setTimeout(function(){
+                BlfSubs.splice(blf, 1);
+            }, 1000);
 
             break;
         }
@@ -6433,7 +6490,7 @@ function RemoveBuddy(buddy){
         {
             if(Buddies[b].identity == buddy) {
                 RemoveBuddyMessageStream(Buddies[b]);
-                UnSubscribeBuddy(Buddies[b])
+                UnsubscribeBuddy(Buddies[b])
                 Buddies.splice(b, 1);
                 break;
             }
