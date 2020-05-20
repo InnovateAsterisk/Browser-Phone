@@ -253,6 +253,7 @@ Not many of the modules will be loaded:
 
 #### Configure Asterisk with Github files
 > Note: this section assumes you are following this guide and don't have any existing configurations in place. If you do, simply open the config files described below, and copy out the settings that you need.
+
 Return to home folder:
 ```
 $ cd ~
@@ -270,7 +271,7 @@ Clear the existing files in static-http:
 $ sudo rm /var/lib/asterisk/static-http/*
 ```
 Copy the web pages:
->Note: You can skip this step and simply use the hosted pages at: https://www.innovateasterisk.com/phone/ (contains a welcome screen). This page uses a Let's Encrypt Certificate, but you will still need to have a secure connection to your Asterisk box.
+> Note: You can skip this step and simply use the hosted pages at: https://www.innovateasterisk.com/phone/ (contains a welcome screen). This page uses a Let's Encrypt Certificate, but you will still need to have a secure connection to your Asterisk box.
 ```
 $ sudo cp /home/pi/Browser-Phone/Phone/* /var/lib/asterisk/static-http/
 ```
@@ -279,7 +280,7 @@ Set the file permissions:
 $ sudo chmod 744 /var/lib/asterisk/static-http/*
 ```
 Copy the Opus codec to modules:
-Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 computer, just select it from the make menuselect.
+> Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 server, just select it from the make menuselect.
 ```
 $ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib64/asterisk/modules
 ```
@@ -296,7 +297,7 @@ The browser phone is compltible with both chan_sip and chan_pjsip. Follow the gu
 
 > Note: As of writing, Asterisk 13 chan_pjsip always invites a call with m=video in the SDP (if the endpoint has any video codec) no matter what the SDP of the original inviting call has, this means that all calls appear as video calls and the "Answer with video" appears for both audio and video calls. I'm yet to find a solution.
 
-### chan_sip
+## chan_sip
 
 #### Configure sip.conf
 Open the original /etc/asterisk/sip.conf file and make the following changes:
@@ -405,7 +406,7 @@ $ sudo asterisk -r
 > dialplan reload
 ```
 
-### chan_pjsip
+## chan_pjsip
 
 #### Configure pjsip.conf
 Open the original /etc/asterisk/pjsip.conf file and make the following changes:
