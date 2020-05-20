@@ -267,8 +267,8 @@ Clear the existing files in static-http:
 $ sudo rm /var/lib/asterisk/static-http/*
 ```
 Copy the web pages:
-Note: You can skip this step and simply to the hosted pages at: https://www.innovateasterisk.com/phone/
-Although you will have to accept the nag screen each time.
+Note: You can skip this step and simply use the hosted pages at: https://www.innovateasterisk.com/phone/ (contains a welcome screen)
+This page uses a Let's Encrypt Certificate, but you will still need to have a secure connection to your Asterisk box.
 ```
 $ sudo cp /home/pi/Browser-Phone/Phone/* /var/lib/asterisk/static-http/
 ```
