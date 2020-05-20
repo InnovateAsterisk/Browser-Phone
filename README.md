@@ -4,7 +4,7 @@ A fully featured browser based WebRTC SIP phone for Asterisk
 ### Description
 This web application designed to work with Asterisk PBX (supported versions unknown). Once loaded application will connect to Asterisk PBX on its web socket, and register an extension. Calls are made between contacts, and a full call detail is saved. Audio Calls can be recorded. Video Calls can be recorded, and can be saved with 5 different recording layouts and 3 different quality settings. This application does not use any cloud systems or services, and is designed to be stand-alone. Additional libraries will be downloaded at run time (but can also be saved to the web server for a complete off-line solution).
 
-_Hosted version_ *(contains a welcome screen)*: https://www.innovateasterisk.com/phone/ 
+**Hosted version** *(contains a welcome screen)*: https://www.innovateasterisk.com/phone/ 
 
 ![Image of Main Interface](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall.jpg)
 
