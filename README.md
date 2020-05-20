@@ -4,6 +4,8 @@ A fully featured browser based WebRTC SIP phone for Asterisk
 ### Description
 This web application designed to work with Asterisk PBX (supported versions unknown). Once loaded application will connect to Asterisk PBX on its web socket, and register an extension. Calls are made between contacts, and a full call detail is saved. Audio Calls can be recorded. Video Calls can be recorded, and can be saved with 5 different recording layouts and 3 different quality settings. This application does not use any cloud systems or services, and is designed to be stand-alone. Additional libraries will be downloaded at run time (but can also be saved to the web server for a complete off-line solution).
 
+Hosted version (contains a nag screen): https://www.innovateasterisk.com/phone/ 
+
 ![Image of Main Interface](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall.jpg)
 
 ## Features
@@ -39,6 +41,9 @@ Note: These libraries will load automatically from CDN.
 
 You can follow the How-to video to achieve the outcome for this project:
 
+chan_sip:
+[![View on YouTube](https://img.youtube.com/vi/mS28vfT8wJ8/0.jpg)](https://www.youtube.com/watch?v=mS28vfT8wJ8)
+chan_pjsip:
 [![View on YouTube](https://img.youtube.com/vi/mS28vfT8wJ8/0.jpg)](https://www.youtube.com/watch?v=mS28vfT8wJ8)
 
 Or follow these steps.
@@ -108,6 +113,8 @@ exit su:
 ```
 
 #### Create a Certificate Authority
+The following steps will make boith a CA certificate and a server certificate. The CA certificate will be slef-signed, so you will need to copy that to your PC, and install (add) it to your Trust root CA certificate store.
+
 Create some folders:
 ```
 $ mkdir /home/pi/ca
@@ -242,11 +249,12 @@ Not many of the modules will be loaded:
 ```
 
 #### Configure Asterisk with Github files
+Note: this section assumes you are folowing this guid and dont have any existing configurations in place. If you do, simply open the config files described below, and copy out the settings that you need.
 Return to home folder:
 ```
 $ cd ~
 ```
-Close the git project:
+Clone the git project:
 ```
 $ git clone https://github.com/InnovateAsterisk/Browser-Phone.git
 ```
@@ -259,6 +267,8 @@ Clear the existing files in static-http:
 $ sudo rm /var/lib/asterisk/static-http/*
 ```
 Copy the web pages:
+Note: You can skip this step and simply to the hosted pages at: https://www.innovateasterisk.com/phone/
+Although you will have to accept the nag screen each time.
 ```
 $ sudo cp /home/pi/Browser-Phone/Phone/* /var/lib/asterisk/static-http/
 ```
@@ -267,6 +277,7 @@ Set the file permissions:
 $ sudo chmod 744 /var/lib/asterisk/static-http/*
 ```
 Copy the Opus codec to modules:
+Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 computer, just select it from the make menuselect.
 ```
 $ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib64/asterisk/modules
 ```
@@ -277,6 +288,13 @@ $ sudo asterisk -r
 > [tab]
 > exit
 ```
+
+## chan_sip or chan_pjsip?
+The browser phone is compltible with both chan_sip and chan_pjsip. Follow the guide that suide your developement. You will not be able to use both chan_sip and chan_pjsip in the same installation.
+
+Note: As of writing, Asterisk 13 chan_pjsip always invites a call with m=video in the SDP (if the endpoint has any video codec) no matter what the SDP of the origional inviting call has, this means that all calls appear as video calls and the "Answer with video" appears for both audio and video calls. I'm yet to find a solution.
+
+### chan_sip
 
 #### Configure sip.conf
 Open the original /etc/asterisk/sip.conf file and make the following changes:
@@ -293,35 +311,7 @@ outofcall_message_context=textmessages
 ```
 Add to the bottom of /etc/asterisk/sip.conf:
 ```
-[basic](!)
-type=friend
-qualify=yes
-context=from-extensions
-subscribecontext=subscriptions
-host=dynamic
-directmedia=no
-nat=force_rport,comedia
-dtmfmode=rfc2833
-disallow=all
-videosupport=yes
-
-[phones](!)
-transport=udp
-allow=ulaw,alaw,g722,gsm,vp9,vp8,h264
-
-[webrtc](!)
-transport=wss
-allow=opus,ulaw,vp9,vp8,h264
-encryption=yes
-avpf=yes
-force_avp=yes
-icesupport=yes
-rtcp_mux=yes
-dtlsenable=yes
-dtlsverify=fingerprint
-dtlscertfile=/home/pi/certs/raspberrypi.pem
-dtlscafile=/home/pi/ca/InnovateAsterisk-Root-CA.crt
-dtlssetup=actpass
+; == Users
 
 [User1](basic,webrtc)
 callerid="Conrad de Wet" <100>
@@ -334,6 +324,17 @@ secret=1234
 [User3](basic,phones)
 callerid="User 3" <300>
 secret=1234
+```
+
+#### Disable chan_pjsip in /etc/asterisk/modiules.conf
+Its best to only use one channel driver
+```
+noload => res_pjsip.so
+noload => res_pjsip_pubsub.so
+noload => res_pjsip_session.so
+noload => chan_pjsip.so
+noload => res_pjsip_exten_state.so
+noload => res_pjsip_log_forwarder.so
 ```
 
 #### Configure extensions.conf
@@ -382,13 +383,16 @@ exten => s,n,MusicOnHold()
 [macro-dial-extension]
 exten => s,1,NoOp(Calling: ${ARG1})
 exten => s,n,Dial(SIP/${ARG1},30)
+exten => s,n,Hangup()
 exten => e,1,Hangup()
 
 [macro-send-text]
 exten => s,1,NoOp(Sending Text To: ${ARG1})
 exten => s,n,Set(PEER=${CUT(CUT(CUT(MESSAGE(from),@,1),<,2),:,2)})
 exten => s,n,Set(FROM=${SHELL(asterisk -rx 'sip show peer ${PEER}' | grep 'Callerid' | cut -d':' -f2- | sed /^\ *//' | tr -d '\n')})
-exten => s,n,MessageSend(sip:${ARG1},${FROM})
+exten => s,n,Set(CALLERID_NUM=${CUT(CUT(FROM,>,1),<,2)})
+exten => s,n,Set(FROM_SIP=${STRREPLACE(MESSAGE(from),<sip:${PEER}@,<sip:${CALLERID_NUM}@)})
+exten => s,n,MessageSend(sip:${ARG1},${FROM_SIP})
 exten => s,n,Hangup()
 ```
 
@@ -396,6 +400,125 @@ Restart Asterisk or Reload SIP and Dialplan:
 ```
 $ sudo asterisk -r
 > sip reload
+> dialplan reload
+```
+
+### chan_pjsip
+
+#### Configure pjsip.conf
+Open the original /etc/asterisk/pjsip.conf file and make the following changes:
+```
+; == Users
+
+[User1](basic_endpoint,webrtc_endpoint)
+type=endpoint
+callerid="Conrad de Wet" <100>
+auth=User1
+aors=User1
+[User1](single_aor)
+type=aor
+mailboxes=User1@default
+[User1](userpass_auth)
+type=auth
+username=User1
+password=1234
+
+[User2](basic_endpoint,webrtc_endpoint)
+type=endpoint
+callerid="User Two" <200>
+auth=User2
+aors=User2
+[User2](single_aor)
+type=aor
+[User2](userpass_auth)
+type=auth
+username=User2
+password=1234
+
+[User3](basic_endpoint,phone_endpoint)
+type=endpoint
+callerid="User Three" <300>
+auth=User3
+aors=User3
+[User3](single_aor)
+type=aor
+[User3](userpass_auth)
+type=auth
+username=User3
+password=1234
+```
+
+#### Disable chan_sip in /etc/asterisk/modiules.conf
+It's best to only use one channel driver
+```
+noload => chan_sip.so
+```
+
+#### Configure extensions.conf
+Update the /etc/asterisk/extensions.conf to the following:
+```
+[general]
+static=yes
+writeprotect=yes
+priorityjumping=no
+autofallthrough=no
+
+[globals]
+ATTENDED_TRANSFER_COMPLETE_SOUND=beep
+
+[textmessages]
+exten => 100,1,Macro(send-text,User1)
+exten => 200,1,Macro(send-text,User2)
+exten => 300,1,Macro(send-text,User3)
+
+[subscriptions]
+exten => 100,hint,PJSIP/User1
+exten => 200,hint,PJSIP/User2
+exten => 300,hint,PJSIP/User3
+
+[from-extensions]
+; Feature Codes:
+exten => *65,1,Macro(moh)
+; Extensions
+exten => 100,1,Macro(dial-extension,User1)
+exten => 200,1,Macro(dial-extension,User2)
+exten => 300,1,Macro(dial-extension,User3)
+; Anything else, Hangup
+exten => _[+*0-9].,1,NoOp(You called: ${EXTEN})
+exten => _[+*0-9].,n,Hangup(1)
+
+exten => e,1,Hangup()
+
+[macro-moh]
+exten => s,1,NoOp(Music On Hold)
+exten => s,n,Ringing()
+exten => s,n,Wait(2)
+exten => s,n,Answer()
+exten => s,n,Wait(1)
+exten => s,n,MusicOnHold()
+
+[macro-dial-extension]
+exten => s,1,NoOp(Calling: ${ARG1})
+exten => s,n,Set(JITTERBUFFER(adaptive)=default)
+exten => s,n,Dial(PJSIP/${ARG1},30)
+exten => s,n,Hangup()
+
+exten => e,1,Hangup()
+
+[macro-send-text]
+exten => s,1,NoOp(Sending Text To: ${ARG1})
+exten => s,n,Set(PEER=${CUT(CUT(CUT(MESSAGE(from),@,1),<,2),:,2)})
+exten => s,n,Set(FROM=${SHELL(asterisk -rx 'pjsip show endpoint ${PEER}' | grep 'callerid ' | cut -d':' -f2- | sed 's/^\ *//' | tr -d '\n')})
+exten => s,n,Set(CALLERID_NUM=${CUT(CUT(FROM,>,1),<,2)})
+exten => s,n,Set(FROM_SIP=${STRREPLACE(MESSAGE(from),<sip:${PEER}@,<sip:${CALLERID_NUM}@)})
+exten => s,n,MessageSend(pjsip:${ARG1},${FROM_SIP})
+exten => s,n,Hangup()
+```
+
+Restart Asterisk or Reload PJSIP and Dialplan:
+```
+$ sudo asterisk -r
+> module reload res_pjsip.so
 > dialplan reload
 ```
 

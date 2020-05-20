@@ -46,6 +46,36 @@ Extended & Non-standard Features:
 // ===============
 var enabledExtendedServices = false;   // Send: Image, Recording, Video, SMS, Email
 var enabledGroupServices = false;      // Group calling functionality - requires Asterisks config
+// Set the following to null to disable
+var welcomeScreen = "<div class=\"UiWindowField scroller\"><pre style=\"font-size: 12px\">";
+welcomeScreen += "===========================================================================\n";
+welcomeScreen += "Copyright © 2020 - All Rights Reserved\n";
+welcomeScreen += "===========================================================================\n";
+welcomeScreen += "\n";
+welcomeScreen += "                            NO WARRANTY\n";
+welcomeScreen += "\n";
+welcomeScreen += "BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY\n";
+welcomeScreen += "FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN\n";
+welcomeScreen += "OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES\n";
+welcomeScreen += "PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED\n";
+welcomeScreen += "OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF\n";
+welcomeScreen += "MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS\n";
+welcomeScreen += "TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE\n";
+welcomeScreen += "PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,\n";
+welcomeScreen += "REPAIR OR CORRECTION.\n";
+welcomeScreen += "\n";
+welcomeScreen += "IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING\n";
+welcomeScreen += "WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR\n";
+welcomeScreen += "REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,\n";
+welcomeScreen += "INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING\n";
+welcomeScreen += "OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED\n";
+welcomeScreen += "TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY\n";
+welcomeScreen += "YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER\n";
+welcomeScreen += "PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE\n";
+welcomeScreen += "POSSIBILITY OF SUCH DAMAGES.\n";
+welcomeScreen += "\n";
+welcomeScreen += "============================================================================\n</pre>";
+welcomeScreen += "</div>";
 
 // Rather don't fiddle with anything beyond this point
 // -------------------------------------------------------------------------------------------------------------------------
@@ -1445,6 +1475,16 @@ $(document).ready(function () {
     if(localDB.getItem("SelectedBuddy") != null){
         console.log("Selecting previously selected buddy...", localDB.getItem("SelectedBuddy"));
         SelectBuddy(localDB.getItem("SelectedBuddy"));
+    }
+
+    // Show Welcome Screen
+    if(welcomeScreen){
+        if(localDB.getItem("WelcomeScreenAccept") != "yes"){
+            OpenWindow(welcomeScreen, "Welcome", 480, 800, true, false, "Accept", function(){
+                localDB.setItem("WelcomeScreenAccept", "yes");
+                CloseWindow();
+            }, null, null, null, null);
+        }
     }
 
     // Create User Agent
