@@ -41,9 +41,12 @@ Note: These libraries will load automatically from CDN.
 
 You can follow the How-to video to achieve the outcome for this project:
 
-chan_sip:
+### chan_sip:
+
 [![View on YouTube](https://img.youtube.com/vi/mS28vfT8wJ8/0.jpg)](https://www.youtube.com/watch?v=mS28vfT8wJ8)
-chan_pjsip:
+
+### chan_pjsip:
+
 [![View on YouTube](https://img.youtube.com/vi/mS28vfT8wJ8/0.jpg)](https://www.youtube.com/watch?v=mS28vfT8wJ8)
 
 Or follow these steps.
