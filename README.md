@@ -35,7 +35,7 @@ Hosted version (contains a welcome screen): https://www.innovateasterisk.com/pho
 - moment-with-locales-2.24.0.min.js    : Date & Time Library
 - croppie.min.js                       : Profile Picture Crop Library
 
-Note: These libraries will load automatically from CDN.
+> Note: These libraries will load automatically from CDN.
 
 ## Step-by-step Guide
 
@@ -116,7 +116,7 @@ exit su:
 ```
 
 #### Create a Certificate Authority
-The following steps will make boith a CA certificate and a server certificate. The CA certificate will be slef-signed, so you will need to copy that to your PC, and install (add) it to your Trust root CA certificate store.
+> Note: The following steps will make both a CA certificate and a server certificate. The CA certificate will be self-signed, so you will need to copy that to your PC, and install (add) it to your Trust root CA certificate store.
 
 Create some folders:
 ```
@@ -252,7 +252,7 @@ Not many of the modules will be loaded:
 ```
 
 #### Configure Asterisk with Github files
-Note: this section assumes you are folowing this guid and dont have any existing configurations in place. If you do, simply open the config files described below, and copy out the settings that you need.
+> Note: this section assumes you are following this guide and don't have any existing configurations in place. If you do, simply open the config files described below, and copy out the settings that you need.
 Return to home folder:
 ```
 $ cd ~
@@ -270,8 +270,7 @@ Clear the existing files in static-http:
 $ sudo rm /var/lib/asterisk/static-http/*
 ```
 Copy the web pages:
-Note: You can skip this step and simply use the hosted pages at: https://www.innovateasterisk.com/phone/ (contains a welcome screen)
-This page uses a Let's Encrypt Certificate, but you will still need to have a secure connection to your Asterisk box.
+>Note: You can skip this step and simply use the hosted pages at: https://www.innovateasterisk.com/phone/ (contains a welcome screen). This page uses a Let's Encrypt Certificate, but you will still need to have a secure connection to your Asterisk box.
 ```
 $ sudo cp /home/pi/Browser-Phone/Phone/* /var/lib/asterisk/static-http/
 ```
@@ -295,7 +294,7 @@ $ sudo asterisk -r
 ## chan_sip or chan_pjsip?
 The browser phone is compltible with both chan_sip and chan_pjsip. Follow the guide that suide your developement. You will not be able to use both chan_sip and chan_pjsip in the same installation.
 
-Note: As of writing, Asterisk 13 chan_pjsip always invites a call with m=video in the SDP (if the endpoint has any video codec) no matter what the SDP of the origional inviting call has, this means that all calls appear as video calls and the "Answer with video" appears for both audio and video calls. I'm yet to find a solution.
+> Note: As of writing, Asterisk 13 chan_pjsip always invites a call with m=video in the SDP (if the endpoint has any video codec) no matter what the SDP of the original inviting call has, this means that all calls appear as video calls and the "Answer with video" appears for both audio and video calls. I'm yet to find a solution.
 
 ### chan_sip
 
