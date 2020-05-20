@@ -189,8 +189,12 @@ Exit root:
 # exit
 ```
 Wget the Asterisk source:
+
+> Note: chan_sip works fine on Asteriks 13, but chan_pjsip is rather broken. If you are using chan_pjsip, rather use Asterisk 16, the guid is exactly the same, except I have not included an Opus codec for Asterisk 16. If you are on an x86 server, you can just enable this in make menuselect, otherwise take the opus codec out of the allow= section of the endpoint. 
 ```
 $ wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz
+or
+$ wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-16-current.tar.gz
 ```
 Untar the download:
 ```
@@ -280,7 +284,7 @@ Set the file permissions:
 $ sudo chmod 744 /var/lib/asterisk/static-http/*
 ```
 Copy the Opus codec to modules:
-> Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 server, just select it from the make menuselect.
+> Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 server, just select it from the make menuselect. If you are using Asterisk 16... you're outta luck sorry, and ARM version does not currently exists. This appreas only to effect transcoding, so passthrough calls will still be able to use opus, if two endpoints can both use opus.
 ```
 $ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib64/asterisk/modules
 ```
@@ -353,9 +357,9 @@ autofallthrough=no
 ATTENDED_TRANSFER_COMPLETE_SOUND=beep
 
 [textmessages]
-exten => 100,1,Macro(send-text,User1)
-exten => 200,1,Macro(send-text,User2)
-exten => 300,1,Macro(send-text,User3)
+exten => 100,1,Gosub(send-text,s,1,(User1))
+exten => 200,1,Gosub(send-text,s,1,(User2))
+exten => 300,1,Gosub(send-text,s,1,(User3))
 exten => e,1,Hangup()
 
 [subscriptions]
@@ -365,17 +369,17 @@ exten => 300,hint,SIP/User3
 
 [from-extensions]
 ; Feature Codes:
-exten => *65,1,Macro(moh)
+exten => *65,1,Gosub(moh,s,1)
 ; Extensions 
-exten => 100,1,Macro(dial-extension,User1)
-exten => 200,1,Macro(dial-extension,User2)
-exten => 300,1,Macro(dial-extension,User3)
+exten => 100,1,Gosub(dial-extension,s,1,(User1))
+exten => 200,1,Gosub(dial-extension,s,1,(User2))
+exten => 300,1,Gosub(dial-extension,s,1,(User3))
 ; Anything else, Hangup
 exten => _[+*0-9].,1,NoOp(You called: ${EXTEN})
 exten => _[+*0-9].,n,Hangup(1)
 exten => e,1,Hangup()
 
-[macro-moh]
+[moh]
 exten => s,1,NoOp(Music On Hold)
 exten => s,n,Ringing()
 exten => s,n,Wait(2)
@@ -383,13 +387,13 @@ exten => s,n,Answer()
 exten => s,n,Wait(1)
 exten => s,n,MusicOnHold()
 
-[macro-dial-extension]
+[dial-extension]
 exten => s,1,NoOp(Calling: ${ARG1})
 exten => s,n,Dial(SIP/${ARG1},30)
 exten => s,n,Hangup()
 exten => e,1,Hangup()
 
-[macro-send-text]
+[send-text]
 exten => s,1,NoOp(Sending Text To: ${ARG1})
 exten => s,n,Set(PEER=${CUT(CUT(CUT(MESSAGE(from),@,1),<,2),:,2)})
 exten => s,n,Set(FROM=${SHELL(asterisk -rx 'sip show peer ${PEER}' | grep 'Callerid' | cut -d':' -f2- | sed /^\ *//' | tr -d '\n')})
@@ -470,9 +474,9 @@ autofallthrough=no
 ATTENDED_TRANSFER_COMPLETE_SOUND=beep
 
 [textmessages]
-exten => 100,1,Macro(send-text,User1)
-exten => 200,1,Macro(send-text,User2)
-exten => 300,1,Macro(send-text,User3)
+exten => 100,1,Gosub(send-text,s,1,(User1))
+exten => 200,1,Gosub(send-text,s,1,(User2))
+exten => 300,1,Gosub(send-text,s,1,(User3))
 
 [subscriptions]
 exten => 100,hint,PJSIP/User1
@@ -481,18 +485,18 @@ exten => 300,hint,PJSIP/User3
 
 [from-extensions]
 ; Feature Codes:
-exten => *65,1,Macro(moh)
+exten => *65,1,Gosub(moh,s,1)
 ; Extensions
-exten => 100,1,Macro(dial-extension,User1)
-exten => 200,1,Macro(dial-extension,User2)
-exten => 300,1,Macro(dial-extension,User3)
+exten => 100,1,Gosub(dial-extension,s,1,(User1))
+exten => 200,1,Gosub(dial-extension,s,1,(User2))
+exten => 300,1,Gosub(dial-extension,s,1,(User3))
 ; Anything else, Hangup
 exten => _[+*0-9].,1,NoOp(You called: ${EXTEN})
 exten => _[+*0-9].,n,Hangup(1)
 
 exten => e,1,Hangup()
 
-[macro-moh]
+[moh]
 exten => s,1,NoOp(Music On Hold)
 exten => s,n,Ringing()
 exten => s,n,Wait(2)
@@ -500,7 +504,7 @@ exten => s,n,Answer()
 exten => s,n,Wait(1)
 exten => s,n,MusicOnHold()
 
-[macro-dial-extension]
+[dial-extension]
 exten => s,1,NoOp(Calling: ${ARG1})
 exten => s,n,Set(JITTERBUFFER(adaptive)=default)
 exten => s,n,Dial(PJSIP/${ARG1},30)
@@ -508,7 +512,7 @@ exten => s,n,Hangup()
 
 exten => e,1,Hangup()
 
-[macro-send-text]
+[send-text]
 exten => s,1,NoOp(Sending Text To: ${ARG1})
 exten => s,n,Set(PEER=${CUT(CUT(CUT(MESSAGE(from),@,1),<,2),:,2)})
 exten => s,n,Set(FROM=${SHELL(asterisk -rx 'pjsip show endpoint ${PEER}' | grep 'callerid ' | cut -d':' -f2- | sed 's/^\ *//' | tr -d '\n')})
