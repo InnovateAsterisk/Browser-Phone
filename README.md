@@ -26,7 +26,7 @@ This web application is designed to work with Asterisk PBX (supported versions u
 
 ## Dependencies
 - Asterisk PBX (with WebRTC and Messaging)
-- sip-0.11.6.js                        : WebRTC and SIP signaling library
+- sip-0.11.6.js                        : WebRTC and SIP signalling library
 - jquery-3.3.1.min.js                  : JavaScript toolkit
 - jquery.md5-min.js                    : Md5 Hash plug-in (unused)
 - Chart.bundle-2.7.2.js                : Graph and Chart UI
@@ -190,7 +190,7 @@ Exit root:
 ```
 Wget the Asterisk source:
 
-> Note: chan_sip works fine on Asteriks 13, but chan_pjsip is rather broken. If you are using chan_pjsip, rather use Asterisk 16, the guid is exactly the same, except I have not included an Opus codec for Asterisk 16. If you are on an x86 server, you can just enable this in make menuselect, otherwise take the opus codec out of the allow= section of the endpoint. 
+> Note: chan_sip works fine on Asterisk 13, but chan_pjsip is rather broken. If you are using chan_pjsip, rather use Asterisk 16, the guide is exactly the same, except I have not included an Opus codec for Asterisk 16. If you are on an x86 server, you can just enable this in make menuselect, otherwise take the opus codec out of the allow= section of the endpoint. 
 ```
 $ wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz
 or
@@ -295,9 +295,9 @@ enablestatic=yes
 sessionlimit=1000
 redirect=/ /static/index.html
 ```
-> Note: If you are running asteriks as root (as this guide does), then you can specify port 443, if you are running as asterisk or something else, you will need to specify a port greater than 1024. 
+> Note: If you are running asterisk as root (as this guide does), then you can specify port 443, if you are running as asterisk or something else, you will need to specify a port greater than 1024. 
 > You can test that this works by going to https://raspberrypi.local/httpstatus but in order to see this page, you have to download that Root CA certificate that you made earlier to your own PC. 
-> To install: On Mac, just double click it, then again double click the certificate, and select Trust Always. On windows you will need to Import it to the Cerficifate Manager. (If you are using Firefox Browser, you have to again install it to the Firefox Trusted Root certificates.)
+> To install: On Mac, just double click it, then again double click the certificate, and select Trust Always. On windows you will need to Import it to the Certificate Manager. (If you are using Firefox Browser, you have to again install it to the Firefox Trusted Root certificates.)
 
 Copy the Opus codec to modules:
 > Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 server, just select it from the make menuselect. If you are using Asterisk 16 on a Raspberry Pi... you're outta luck sorry, an ARM version does not currently exists. This appears only to effect transcoding, so passthrough calls will still be able to use opus, if two endpoints can both use opus.
@@ -313,7 +313,7 @@ $ sudo asterisk -r
 ```
 
 ## chan_sip or chan_pjsip?
-The browser phone is compltible with both chan_sip and chan_pjsip. Follow the guide that suits your developement. You will not be able to use both chan_sip and chan_pjsip in the same installation.
+The browser phone is compatible with both chan_sip and chan_pjsip. Follow the guide that suits your development. You will not be able to use both chan_sip and chan_pjsip in the same installation.
 
 > Note: As of writing, Asterisk 13 chan_pjsip always invites a call with m=video in the SDP (if the endpoint has any video codec) no matter what the SDP of the original inviting call has, this means that all calls appear as video calls and the "Answer with video" appears for both audio and video calls. I'm yet to find a solution.
 
