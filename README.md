@@ -45,7 +45,7 @@ You can follow the How-to video to achieve the outcome for this project:
 
 [![View on YouTube](https://img.youtube.com/vi/mS28vfT8wJ8/0.jpg)](https://www.youtube.com/watch?v=mS28vfT8wJ8)
 
-### chan_pjsip:
+### chan_pjsip (coming soon):
 
 [![View on YouTube](https://img.youtube.com/vi/mS28vfT8wJ8/0.jpg)](https://www.youtube.com/watch?v=mS28vfT8wJ8)
 
@@ -80,7 +80,7 @@ Issue and update:
 ```
 Install a few essential applications:
 ```
-# apt-get instal samba ntp git
+# apt-get install samba ntp git
 ```
 
 #### Configure Samba
