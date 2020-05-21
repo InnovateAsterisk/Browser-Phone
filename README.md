@@ -283,8 +283,24 @@ Set the file permissions:
 ```
 $ sudo chmod 744 /var/lib/asterisk/static-http/*
 ```
+Setup /etc/asterisk/http.conf with the following:
+```
+[general]
+enabled=no ; HTTP
+tlsenable=yes ; HTTPS
+tlsbindaddr=0.0.0.0:443
+tlscertfile=/home/pi/certs/raspberrypi.crt
+tlsprivatekey=/home/pi/certs/raspberrypi.key
+enablestatic=yes
+sessionlimit=1000
+redirect=/ /static/index.html
+```
+> Note: If you are running asteriks as root (as this guide does), then you can specify port 443, if you are running as asterisk or something else, you will need to specify a port greater than 1024. 
+> You can test that this works by going to https://raspberrypi.local/httpstatus but in order to see this page, you have to download that Root CA certificate that you made earlier to your own PC. 
+> To install: On Mac, just double click it, then again double click the certificate, and select Trust Always. On windows you will need to Import it to the Cerficifate Manager. (If you are using Firefox Browser, you have to again install it to the Firefox Trusted Root certificates.)
+
 Copy the Opus codec to modules:
-> Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 server, just select it from the make menuselect. If you are using Asterisk 16... you're outta luck sorry, and ARM version does not currently exists. This appreas only to effect transcoding, so passthrough calls will still be able to use opus, if two endpoints can both use opus.
+> Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 server, just select it from the make menuselect. If you are using Asterisk 16 on a Raspberry Pi... you're outta luck sorry, an ARM version does not currently exists. This appears only to effect transcoding, so passthrough calls will still be able to use opus, if two endpoints can both use opus.
 ```
 $ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib64/asterisk/modules
 ```
