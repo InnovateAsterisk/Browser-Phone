@@ -349,7 +349,7 @@ callerid="User 3" <300>
 secret=1234
 ```
 
-#### Disable chan_pjsip in /etc/asterisk/modiules.conf
+#### Disable chan_pjsip in /etc/asterisk/modules.conf
 Its best to only use one channel driver
 ```
 noload => res_pjsip.so
@@ -471,7 +471,7 @@ username=User3
 password=1234
 ```
 
-#### Disable chan_sip in /etc/asterisk/modiules.conf
+#### Disable chan_sip in /etc/asterisk/modules.conf
 It's best to only use one channel driver
 ```
 noload => chan_sip.so
