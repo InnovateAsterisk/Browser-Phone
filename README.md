@@ -313,7 +313,7 @@ $ sudo asterisk -r
 ```
 
 ## chan_sip or chan_pjsip?
-The browser phone is compltible with both chan_sip and chan_pjsip. Follow the guide that suide your developement. You will not be able to use both chan_sip and chan_pjsip in the same installation.
+The browser phone is compltible with both chan_sip and chan_pjsip. Follow the guide that suits your developement. You will not be able to use both chan_sip and chan_pjsip in the same installation.
 
 > Note: As of writing, Asterisk 13 chan_pjsip always invites a call with m=video in the SDP (if the endpoint has any video codec) no matter what the SDP of the original inviting call has, this means that all calls appear as video calls and the "Answer with video" appears for both audio and video calls. I'm yet to find a solution.
 
