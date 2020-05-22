@@ -2,7 +2,7 @@
 A fully featured browser based WebRTC SIP phone for Asterisk
 
 ### Description
-This web application is designed to work with Asterisk PBX (supported versions unknown). Once loaded application will connect to Asterisk PBX on its web socket, and register an extension. Calls are made between contacts, and a full call detail is saved. Audio Calls can be recorded. Video Calls can be recorded, and can be saved with 5 different recording layouts and 3 different quality settings. This application does not use any cloud systems or services, and is designed to be stand-alone. Additional libraries will be downloaded at run time (but can also be saved to the web server for a complete off-line solution).
+This web application is designed to work with Asterisk PBX (v13 & v16). Once loaded application will connect to Asterisk PBX on its web socket, and register an extension. Calls are made between contacts, and a full call detail is saved. Audio Calls can be recorded. Video Calls can be recorded, and can be saved with 5 different recording layouts and 3 different quality settings. This application does not use any cloud systems or services, and is designed to be stand-alone. Additional libraries will be downloaded at run time (but can also be saved to the web server for a complete off-line solution).
 
 **Hosted version** *(contains a welcome screen)*: https://www.innovateasterisk.com/phone/ 
 
@@ -190,7 +190,7 @@ Exit root:
 ```
 Wget the Asterisk source:
 
-> Note: chan_sip works fine on Asterisk 13, but chan_pjsip is rather broken. If you are using chan_pjsip, rather use Asterisk 16, the guide is exactly the same, except I have not included an Opus codec for Asterisk 16. If you are on an x86 server, you can just enable this in make menuselect, otherwise take the opus codec out of the allow= section of the endpoint. 
+> Note: chan_sip works fine on Asterisk 13, but chan_pjsip is rather broken. If you are using chan_pjsip, rather use Asterisk 16, the guide is exactly the same. If you are on an x86 server, you can enable opus in make menuselect, or download it from the github project, otherwise take the opus codec out of the allow= section of the endpoint. 
 ```
 $ wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz
 or
@@ -300,9 +300,10 @@ redirect=/ /static/index.html
 > To install: On Mac, just double click it, then again double click the certificate, and select Trust Always. On windows you will need to Import it to the Certificate Manager. (If you are using Firefox Browser, you have to again install it to the Firefox Trusted Root certificates.)
 
 Copy the Opus codec to modules:
-> Note: This is only for Asterisk 13 on ARM (Raspberry pi). If you are using x86 server, just select it from the make menuselect. If you are using Asterisk 16 on a Raspberry Pi... you're outta luck sorry, an ARM version does not currently exists. This appears only to effect transcoding, so passthrough calls will still be able to use opus, if two endpoints can both use opus.
 ```
 $ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib64/asterisk/modules
+or
+$ sudo cp /home/pi/Browser-Phone/modules/ast-16/codec_opus_arm.so /usr/lib64/asterisk/modules
 ```
 Restart Asterisk and check the modules loaded:
 ```
