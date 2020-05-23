@@ -214,7 +214,7 @@ Install the prerequisites:
 ```
 Configure Asterisk:
 ```
-# ./configure --libdir=/usr/lib64 --with-pjproject-bundled
+# ./configure --with-pjproject-bundled
 ```
 Enter menuselect, and turn off CDR, CEL, and change MOH to WAV:
 ```
@@ -232,27 +232,9 @@ Configure Asterisk to start automatically:
 ```
 # make config
 ```
-Ensure Asterisk knows the location of its binary files:
-```
-# echo "/usr/lib64" > /etc/ld.so.conf.d/lib_asterisk.conf
-# ldconfig
-# ldd /usr/sbin/asterisk 
-```
 Exit root:
 ```
 # exit
-```
-Start Asterisk:
-```
-$ sudo service asterisk status
-$ sudo service asterisk start
-$ sudo service asterisk status
-$ sudo asterisk -r
-```
-Not many of the modules will be loaded:
-```
-> [tab]
-> exit
 ```
 
 #### Configure Asterisk with Github files
@@ -304,6 +286,12 @@ Copy the Opus codec to modules:
 $ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib64/asterisk/modules
 or
 $ sudo cp /home/pi/Browser-Phone/modules/ast-16/codec_opus_arm.so /usr/lib64/asterisk/modules
+```
+> Note: Asterisk 16 will check that the checksum of the .so files in modules folder matches the id gerenated at make menuselect, so you need to update the checksum in codec_opus_arm.so:
+```
+$ nano /home/pi/asterisk-16.*.0/include/asterisk/buildopts.h
+Take note of the AST_BUILDOPT_SUM (copy the value)
+$  sed -i 's/1fb7f5c06d7a2052e38d021b3d8ca151/<value of AST_BUILDOPT_SUM>/g' /usr/lib/asterisk/modules/codec_opus_arm.so
 ```
 Restart Asterisk and check the modules loaded:
 ```
