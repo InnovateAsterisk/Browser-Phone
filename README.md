@@ -283,9 +283,9 @@ redirect=/ /static/index.html
 
 Copy the Opus codec to modules:
 ```
-$ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib64/asterisk/modules
+$ sudo cp /home/pi/Browser-Phone/modules/ast-13/codec_opus_arm.so /usr/lib/asterisk/modules
 or
-$ sudo cp /home/pi/Browser-Phone/modules/ast-16/codec_opus_arm.so /usr/lib64/asterisk/modules
+$ sudo cp /home/pi/Browser-Phone/modules/ast-16/codec_opus_arm.so /usr/lib/asterisk/modules
 ```
 > Note: Asterisk 16 will check that the checksum of the .so files in modules folder matches the id gerenated at make menuselect, so you need to update the checksum in codec_opus_arm.so:
 ```
