@@ -401,7 +401,7 @@ exten => e,1,Hangup()
 [send-text]
 exten => s,1,NoOp(Sending Text To: ${ARG1})
 exten => s,n,Set(PEER=${CUT(CUT(CUT(MESSAGE(from),@,1),<,2),:,2)})
-exten => s,n,Set(FROM=${SHELL(asterisk -rx 'sip show peer ${PEER}' | grep 'Callerid' | cut -d':' -f2- | sed /^\ *//' | tr -d '\n')})
+exten => s,n,Set(FROM=${SHELL(asterisk -rx 'sip show peer ${PEER}' | grep 'Callerid' | cut -d':' -f2- | 'sed /^\ *//' | tr -d '\n')})
 exten => s,n,Set(CALLERID_NUM=${CUT(CUT(FROM,>,1),<,2)})
 exten => s,n,Set(FROM_SIP=${STRREPLACE(MESSAGE(from),<sip:${PEER}@,<sip:${CALLERID_NUM}@)})
 exten => s,n,MessageSend(sip:${ARG1},${FROM_SIP})
