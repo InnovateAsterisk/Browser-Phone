@@ -3430,13 +3430,11 @@ function UnsubscribeBuddy(buddyObj) {
         var blfObj = BlfSubs[blf];
         if(blfObj.data.buddyId == buddyObj.identity){
         console.log("Unsubscribing:", buddyObj.identity);
-            blfObj.unsubscribe();
-            blfObj.close();
-
-            window.setTimeout(function(){
-                BlfSubs.splice(blf, 1);
-            }, 1000);
-
+            if(blfObj.dialog != null){
+                blfObj.unsubscribe();
+                blfObj.close();
+            }
+            BlfSubs.splice(blf, 1);
             break;
         }
     }
@@ -6429,9 +6427,10 @@ function RemoveBuddyMessageStream(buddyObj){
 
     // Remove Stream
     $("#stream-"+ buddyObj.identity).remove();
-
+    var stream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
     localDB.removeItem(buddyObj.identity + "-stream");
 
+    // Remove Buddy
     var json = JSON.parse(localDB.getItem("UserBuddiesJson"));
     var x = 0;
     $.each(json.DataCollection, function (i, item) {
@@ -6444,11 +6443,58 @@ function RemoveBuddyMessageStream(buddyObj){
     json.TotalRows = json.DataCollection.length;
     localDB.setItem("UserBuddiesJson", JSON.stringify(json));
 
+    // Remove Images
     localDB.removeItem("img-"+ buddyObj.identity +"-extension");
     localDB.removeItem("img-"+ buddyObj.identity +"-contact");
     localDB.removeItem("img-"+ buddyObj.identity +"-group");
 
+    // Remove Call Recordings
+    if(stream && stream.DataCollection && stream.DataCollection.length >= 1){
+        DeleteCallRecordings(buddyObj.identity, stream);
+    }
 }
+function DeleteCallRecordings(buddy, stream){
+    var indexedDB = window.indexedDB;
+    var request = indexedDB.open("CallRecordings");
+    request.onerror = function(event) {
+        console.error("IndexDB Request Error:", event);
+    }
+    request.onupgradeneeded = function(event) {
+        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
+        // If this is the case, there will be no call recordings
+    }
+    request.onsuccess = function(event) {
+        console.log("IndexDB connected to CallRecordings");
+
+        var IDB = event.target.result;
+        if(IDB.objectStoreNames.contains("Recordings") == false){
+            console.warn("IndexDB CallRecordings.Recordings does not exists");
+            return;
+        }
+        IDB.onerror = function(event) {
+            console.error("IndexDB Error:", event);
+        };
+
+        // Loop and Delete
+        $.each(stream.DataCollection, function (i, item) {
+            if (item.Recordings && item.Recordings.length) {
+                $.each(item.Recordings, function (i, recording) {
+                    console.log("Deleting Call Recording: ", recording.uID);
+                    var objectStore = IDB.transaction(["Recordings"], "readwrite").objectStore("Recordings");
+                    try{
+                        var deleteRequest = objectStore.delete(recording.uID);
+                        deleteRequest.onsuccess = function(event) {
+                            console.log("Call Recording Deleted: ", recording.uID);
+                        }
+                    } catch(e){
+                        console.log("Call Recording Delete failed: ", e);
+                    }
+                });
+            }
+        });
+    }
+}
+
 function SelectBuddy(buddy, typeStr) {
     var buddyObj = FindBuddyByIdentity(buddy);
     if(buddyObj == null) return;
