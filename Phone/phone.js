@@ -5815,11 +5815,26 @@ function SendVideo(buddy, src){
             resampleContext.drawImage(videoObj, 0, 0, videoWidth, videoHeight);
         }, 40); // 25frames per second
 
-        var videoMediaStream = newVideo.get(0).captureStream();
+        // Capture the streams
+        var videoMediaStream = null;
+        if('captureStream' in videoObj) {
+            videoMediaStream = videoObj.captureStream();
+        }
+        else if('mozCaptureStream' in videoObj) {
+            // This doesnt really work?
+            // see: https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/captureStream
+            videoMediaStream = videoObj.mozCaptureStream();
+        }
+        else {
+            // This is not supported??.
+            // videoMediaStream = videoObj.webkitCaptureStream();
+            console.warn("Cannot capture stream from video, this will result in no audio being transmitted.")
+        }
         var resampleVideoMediaStream = resampleCanvas.captureStream(25);
-        //var videoMediaTrack = videoMediaStream.getVideoTracks()[0];
+
+        // Get the Tracks
         var videoMediaTrack = resampleVideoMediaStream.getVideoTracks()[0];
-        var audioTrackFromVideo = videoMediaStream.getAudioTracks()[0];
+        var audioTrackFromVideo = (videoMediaStream != null )? videoMediaStream.getAudioTracks()[0] : null;
 
         // Switch & Merge Tracks
         var pc = session.sessionDescriptionHandler.peerConnection;
@@ -5835,7 +5850,7 @@ function SendVideo(buddy, src){
                 session.data.AudioSourceTrack = RTCRtpSender.track;
 
                 var mixedAudioStream = new MediaStream();
-                mixedAudioStream.addTrack(audioTrackFromVideo);
+                if(audioTrackFromVideo) mixedAudioStream.addTrack(audioTrackFromVideo);
                 mixedAudioStream.addTrack(RTCRtpSender.track);
                 var mixedAudioTrack = MixAudioStreams(mixedAudioStream).getAudioTracks()[0];
                 mixedAudioTrack.IsMixedTrack = true;
