@@ -291,7 +291,7 @@ $ sudo cp /home/pi/Browser-Phone/modules/ast-16/codec_opus_arm.so /usr/lib/aster
 ```
 $ nano /home/pi/asterisk-16.*.0/include/asterisk/buildopts.h
 Take note of the AST_BUILDOPT_SUM (copy the value)
-$  sed -i 's/1fb7f5c06d7a2052e38d021b3d8ca151/<value of AST_BUILDOPT_SUM>/g' /usr/lib/asterisk/modules/codec_opus_arm.so
+$ sudo sed -i 's/1fb7f5c06d7a2052e38d021b3d8ca151/<value of AST_BUILDOPT_SUM>/g' /usr/lib/asterisk/modules/codec_opus_arm.so
 ```
 Restart Asterisk and check the modules loaded:
 ```
