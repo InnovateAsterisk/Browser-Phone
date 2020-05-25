@@ -5509,6 +5509,7 @@ function ConferenceDail(buddy){
         }
         // Restore Audio Stream is it was changed
         if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+            var pc = session.sessionDescriptionHandler.peerConnection;
             pc.getSenders().forEach(function (RTCRtpSender) {
                 if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
                     RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
@@ -5636,7 +5637,7 @@ function switchVideoSource(buddy, srcId){
     var localStream = new MediaStream();
     navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
         var newMediaTrack = newStream.getVideoTracks()[0];
-        var pc = session.sessionDescriptionHandler.peerConnection;
+        // var pc = session.sessionDescriptionHandler.peerConnection;
         pc.getSenders().forEach(function (RTCRtpSender) {
             if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
                 console.log("Switching Video Track : "+ RTCRtpSender.track.label + " to "+ newMediaTrack.label);
