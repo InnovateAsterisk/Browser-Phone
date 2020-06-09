@@ -81,32 +81,6 @@ welcomeScreen += "</div>";
 // -------------------------------------------------------------------------------------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // System variables
 // ================
 var localDB = window.localStorage;
@@ -161,6 +135,8 @@ var VideoResampleSize = getDbItem("VideoResampleSize", "HD");               // T
 var RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recodings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
 var RecordingVideoFps = parseInt(getDbItem("RecordingVideoFps", 12));       // The Frame Per Second of the Video Track recording
 var RecordingLayout = getDbItem("RecordingLayout", "them-pnp");         // The Layout of the Recording Video Track (side-by-side | us-pnp | them-pnp | us-only | them-only)
+
+var DidLength = parseInt(getDbItem("DidLength", 6));  // DID length from which to decide if an incoming caller is a "contact" or an "extension".
 
 // Utilities
 // =========
@@ -1639,16 +1615,11 @@ function ReceiveCall(session) {
 
     var buddyObj = FindBuddyByDid(did);
     // Make new contact of its not there
-    if(buddyObj == null)
-    {
-        // Note: typically incoming numbers are long, about 10+ 
-        // but also typically extension numbers aer short, about 3 or 4
-        // making this identifyer 6, should be comfortable.
-
+    if(buddyObj == null) {
         var json = JSON.parse(localDB.getItem("UserBuddiesJson"));
         if(json == null) json = InitUserBuddies();
 
-        if(did.length > 6){
+        if(did.length > DidLength){
             // Add Regular Contact
             var id = uID();
             var dateNow = utcDateNow();
