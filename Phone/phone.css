@@ -929,6 +929,15 @@ div.dhx_popup_material div.dhx_popup_area {
     box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
     float: left;
 }
+.callAnswerBuddyIcon{
+    border-radius: 100px;
+    width: 100px;
+    height: 100px;
+    background-size: 100px;
+    background-color: #CCCCCC;
+    border: 1px solid #3e3e3e;
+    display: inline-block;
+}
 
 .contact {
     padding: 5px;

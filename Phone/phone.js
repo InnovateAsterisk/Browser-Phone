@@ -1697,8 +1697,6 @@ function ReceiveCall(session) {
         if(session.request.body.indexOf("m=video") > -1) videoInvite = true;
     }
 
-
-
     // Handle the cancel events
     session.on('terminated', function(message, cause) {
 
@@ -1740,7 +1738,17 @@ function ReceiveCall(session) {
         if(CurrentCalls == 0){ // There are no other calls, so you can answer
             var buddyId = buddyObj.identity;
             window.setTimeout(function(){
-                AnswerAudioCall(buddyId);
+                // If the call is with video, assume the auto answer is also
+                // In order for this to work nicely, the recipient maut be "ready" to accept video calls
+                // In order to ensure video call compatibility (i.e. the recipient must have their web cam in, and working)
+                // The NULL video sould be configured
+                // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
+                if(videoInvite) {
+                    AnswerVideoCall(buddyId)
+                }
+                else {
+                    AnswerAudioCall(buddyId);
+                }
             }, 1000);
 
             // Select Buddy
@@ -1814,7 +1822,22 @@ function ReceiveCall(session) {
     } 
     else {
         // Show Call Answer Window
-        // ?
+        var callAnswerHtml = "<div class=\"UiWindowField scroller\" style=\"text-align:center\">"
+        callAnswerHtml += "<div style=\"font-size: 18px; margin-top:05px\">"+ callerID + "<div>";
+        callAnswerHtml += "<div class=callAnswerBuddyIcon style=\"background-image: url("+ getPicture(buddyObj.identity) +"); margin-top:15px\"></div>";
+        callAnswerHtml += "<div style=\"margin-top:5px\"><button onclick=\"AnswerAudioCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-phone\"></i> Answer Call</button></div>";
+        if(videoInvite) {
+            callAnswerHtml += "<div style=\"margin-top:15px\"><button onclick=\"AnswerVideoCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> Answer Call with Video</button></div>";
+        }
+        callAnswerHtml += "</div>";
+        OpenWindow(callAnswerHtml, 'You have an inbound call', 350, 300, true, false, "Reject Call", function(){
+            // Reject the call
+            RejectCall(buddyObj.identity);
+            CloseWindow();
+        }, "Close", function(){
+            // Let it ring
+            CloseWindow();
+        }, null, null);
 
         // Add a notification badge
         IncreaseMissedBadge(buddyObj.identity);
@@ -1829,7 +1852,13 @@ function ReceiveCall(session) {
 
                     var buddyId = buddyObj.identity;
                     window.setTimeout(function(){
-                        AnswerAudioCall(buddyId);
+                        // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
+                        if(videoInvite) {
+                            AnswerVideoCall(buddyId)
+                        }
+                        else {
+                            AnswerAudioCall(buddyId);
+                        }
                     }, 1000);
 
                     // Select Buddy
@@ -1842,6 +1871,8 @@ function ReceiveCall(session) {
     }
 }
 function AnswerAudioCall(buddy) {
+    CloseWindow();
+    SelectBuddy(buddy);
     var session = getSession(buddy);
     if (session != null) {
         session.data.withvideo = false;
@@ -1882,6 +1913,8 @@ function AnswerAudioCall(buddy) {
     $("#contact-" + buddy + "-AnswerCall").hide();
 }
 function AnswerVideoCall(buddy) {
+    CloseWindow();
+    SelectBuddy(buddy);
     var session = getSession(buddy);
     if (session != null) {
         // TODO: validate devices
