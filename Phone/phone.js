@@ -100,6 +100,11 @@ var confirmObj = null;
 var promptObj = null;
 var windowsCollection = null;
 var messagingCollection = null;
+var HasVideoDevice = false;
+var HasAudioDevice = false;
+var AudioinputDevices = [];
+var VideoinputDevices = [];
+
 
 // User Settings & Defaults
 // ========================
@@ -1873,92 +1878,162 @@ function ReceiveCall(session) {
 function AnswerAudioCall(buddy) {
     CloseWindow();
     SelectBuddy(buddy);
+
     var session = getSession(buddy);
-    if (session != null) {
-        session.data.withvideo = false;
-        session.data.VideoSourceDevice = null;
-        session.data.AudioSourceDevice = getAudioSrcID();
-        session.data.AudioOutputDevice = getAudioOutputID();
+    if (session == null) {
+        console.warn("Audio Answer failed, null session");
+        $("#contact-" + buddy + "-msg").html("Audio Answer failed, null session");
+        $("#contact-" + buddy + "-AnswerCall").hide();
+        return;
+    }
 
-        // Stop the ringtone
-        if(session.data.rinngerObj){
-            session.data.rinngerObj.pause();
-            session.data.rinngerObj = null;
-        }
+    // Stop the ringtone
+    if(session.data.rinngerObj){
+        session.data.rinngerObj.pause();
+        session.data.rinngerObj = null;
+    }
 
-        var spdOptions = {
-            sessionDescriptionHandlerOptions: {
-                constraints: {
-                    audio: {
-                        deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
-                    },
-                    video: false
-                }
+    if(HasAudioDevice == false){
+        Alert("Sorry, you don't have any Microphone connected to this computer. You cannot receive calls.");
+        $("#contact-" + buddy + "-msg").html("Audio Answer failed, no microphone");
+        $("#contact-" + buddy + "-AnswerCall").hide();
+        return;
+    }
+
+    var spdOptions = {
+        sessionDescriptionHandlerOptions: {
+            constraints: {
+                audio: {
+                    deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
+                },
+                video: false
             }
         }
-        // Add additional Constraints
-        var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
-        if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
-        if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
-        if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
-
-        session.accept(spdOptions);
-
-        wireupAudioSession(session, "inbound", buddy);
-        $("#contact-" + buddy + "-msg").html("Audo Call in Progress!");
     }
-    else {
-        $("#contact-" + buddy + "-msg").html("Audo Answer failed, null session");
+    var currentAudioDevice = getAudioSrcID();
+    var confirmedAudioDevice = false;
+    for (var i = 0; i < AudioinputDevices.length; ++i) {
+        if(currentAudioDevice != "default" && currentAudioDevice == AudioinputDevices[i].deviceId) {
+            confirmedAudioDevice = true;
+        }
     }
+    // Check devices
+    if(currentAudioDevice != "default" && !confirmedAudioDevice) {
+        console.warn("The audio device you used before is no longer availabe, default settings applied.");
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
+    }
+    // Add additional Constraints
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+    if(supportedConstraints.autoGainControl) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    }
+    if(supportedConstraints.echoCancellation) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    }
+    if(supportedConstraints.noiseSuppression) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+    }
+
+    // Send Answer
+    session.accept(spdOptions);
+    session.data.withvideo = false;
+    session.data.VideoSourceDevice = null;
+    session.data.AudioSourceDevice = getAudioSrcID();
+    session.data.AudioOutputDevice = getAudioOutputID();
+
+    // Wire up UI
+    wireupAudioSession(session, "inbound", buddy);
+    $("#contact-" + buddy + "-msg").html("Audo Call in Progress!");
+
+    // Clear Answer Buttons
     $("#contact-" + buddy + "-AnswerCall").hide();
 }
 function AnswerVideoCall(buddy) {
     CloseWindow();
     SelectBuddy(buddy);
-    var session = getSession(buddy);
-    if (session != null) {
-        // TODO: validate devices
-        session.data.withvideo = true;
-        session.data.VideoSourceDevice = getVideoSrcID();
-        session.data.AudioSourceDevice = getAudioSrcID();
-        session.data.AudioOutputDevice = getAudioOutputID();
 
-        // Stop the ringtone
-        if(session.data.rinngerObj){
-            session.data.rinngerObj.pause();
-            session.data.rinngerObj = null;
-        }
-        
-        var spdOptions = {
-            sessionDescriptionHandlerOptions: {
-                constraints: {
-                    audio: {
-                        deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
-                    },
-                    video: {
-                        deviceId: (getVideoSrcID() != "default")?  { exact: getVideoSrcID() } : "default"
-                    }
-                }
+    var session = getSession(buddy);
+    if (session == null) {
+        console.warn("Video Answer failed, null session");
+        $("#contact-" + buddy + "-msg").html("Video Answer failed, null session");
+        $("#contact-" + buddy + "-AnswerCall").hide();
+        return;
+    }
+
+    // Stop the ringtone
+    if(session.data.rinngerObj){
+        session.data.rinngerObj.pause();
+        session.data.rinngerObj = null;
+    }
+
+    if(HasAudioDevice == false){
+        Alert("Sorry, you don't have any Microphone connected to this computer. You cannot receive calls.");
+        $("#contact-" + buddy + "-msg").html("Video Answer failed, no microphone");
+        $("#contact-" + buddy + "-AnswerCall").hide();
+        return;
+    }
+
+    var spdOptions = {
+        sessionDescriptionHandlerOptions: {
+            constraints: {
+                audio: {
+                    deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
+                },
+                video: false
             }
+        }
+    }
+
+    // Configure Video
+    if(HasVideoDevice){
+        var currentVideoDevice = getVideoSrcID();
+        var confirmedVideoDevice = false;
+        for (var i = 0; i < VideoinputDevices.length; ++i) {
+            if(currentVideoDevice != "default" && currentVideoDevice == VideoinputDevices[i].deviceId) {
+                confirmedVideoDevice = true;
+            }
+        }
+        // The user has a camera
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video =  {deviceId: (getVideoSrcID() != "default")?  { exact: getVideoSrcID() } : "default" }
+        // Check Video devices
+        if(currentVideoDevice != "default" && !confirmedVideoDevice) {
+            console.warn("The video device you used before is no longer availabe, default settings applied.");
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = "default";
         }
         // Add additional Constraints
         if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
         if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
         if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
-
-        var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
-        if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
-        if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
-        if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
-
-        session.accept(spdOptions);
-
-        wireupVideoSession(session, "inbound", buddy);
-        $("#contact-" + buddy + "-msg").html("Audo Call in Progress!");
-    }
+    } 
     else {
-        $("#contact-" + buddy + "-msg").html("Video Answer failed, null session");
+        console.warn("No video devices (webcam) found, switching to audio call.");
+        AnswerAudioCall(buddy);
+        return;
     }
+
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+    if(supportedConstraints.autoGainControl) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    }
+    if(supportedConstraints.echoCancellation) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    }
+    if(supportedConstraints.noiseSuppression) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+    }
+
+    // Send Answer
+    session.accept(spdOptions);
+    session.data.withvideo = true;
+    session.data.VideoSourceDevice = getVideoSrcID();
+    session.data.AudioSourceDevice = getAudioSrcID();
+    session.data.AudioOutputDevice = getAudioOutputID();
+
+    // Wire up UI
+    wireupVideoSession(session, "inbound", buddy);
+    $("#contact-" + buddy + "-msg").html("Audo Call in Progress!");
+
+    // Clear Answer Buttons
     $("#contact-" + buddy + "-AnswerCall").hide();
 }
 function RejectCall(buddy) {
@@ -4012,6 +4087,12 @@ function ClearMissedBadge(buddy) {
 function VideoCall(buddy) {
 
     var buddyObj = FindBuddyByIdentity(buddy);
+    if(buddyObj == null) return;
+
+    if(HasAudioDevice == false){
+        Alert("Sorry, you don't have any Microphone connected to this computer. You cannot make calls.");
+        return;
+    }
 
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
@@ -4019,107 +4100,92 @@ function VideoCall(buddy) {
                 audio: {
                     deviceId: (getAudioSrcID() != "default")? { exact: getAudioSrcID() } : "default"
                 },
-                video: {
-                    deviceId: (getVideoSrcID() != "default")?  { exact: getVideoSrcID() } : "default"
-                }
+                video: false
             }
         }
     }
-    // Add additional Constraints
-    if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
-    if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
-    if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
 
-    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
-    if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
-    if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
-    if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
-
-    navigator.mediaDevices.enumerateDevices().then(function(deviceInfos){
+    // Configure Video
+    if(HasVideoDevice){
         var currentVideoDevice = getVideoSrcID();
-        var currentAudioDevice = getAudioSrcID();
-
-        var hasVideoDevice = false;
         var confirmedVideoDevice = false;
-
-        var hasAudioDevice = false;
-        var confirmedAudioDevice = false;
-
-        for (var i = 0; i < deviceInfos.length; ++i) {
-            if (deviceInfos[i].kind === "audioinput") {
-                hasAudioDevice = true;
-                if(currentAudioDevice != "default" && currentAudioDevice == deviceInfos[i].deviceId)
-                {
-                    confirmedAudioDevice = true;
-                }                
-            }
-            else if (deviceInfos[i].kind === "audiooutput") {
-                // Speakers... not always available
-            }
-            else if (deviceInfos[i].kind === "videoinput") {
-                hasVideoDevice = true;
-                if(currentVideoDevice != "default" && currentVideoDevice == deviceInfos[i].deviceId)
-                {
-                    confirmedVideoDevice = true;
-                }
+        for (var i = 0; i < VideoinputDevices.length; ++i) {
+            if(currentVideoDevice != "default" && currentVideoDevice == VideoinputDevices[i].deviceId) {
+                confirmedVideoDevice = true;
             }
         }
-
-        // Check devices
-        if(hasAudioDevice == false){
-            Alert("Sorry, you don't have any Microphone connected to this computer. You cannot make calls.");
-            return;
-        }
-        if(hasVideoDevice == false) {
-            Alert("Sorry, you don't have any WebCam/Video Source connected to this computer. You cannot use the video option.");
-            return;
-        }
-        if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-            console.warn("The audio device you used before is no longer availabe, default settings applied.");
-            spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
-        }
+        // The user has a camera
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video =  {deviceId: (getVideoSrcID() != "default")?  { exact: getVideoSrcID() } : "default" }
+        // Check Video devices
         if(currentVideoDevice != "default" && !confirmedVideoDevice) {
             console.warn("The video device you used before is no longer availabe, default settings applied.");
             spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = "default";
         }
+        // Add additional Constraints
+        if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+        if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+        if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    } 
+    else {
+        console.warn("No video devices (webcam) found, switching to audio call.");
+        AudioCall(buddyObj.identity, buddyObj.ExtNo);
+        return;
+    }
 
-        $("#contact-" + buddyObj.identity + "-msg").html("Starting Video Call...");
-        $("#contact-" + buddyObj.identity + "-timer").show();
+    // Configure Audio
+    var currentAudioDevice = getAudioSrcID();
+    var confirmedAudioDevice = false;
+    for (var i = 0; i < AudioinputDevices.length; ++i) {
+        if(currentAudioDevice != "default" && currentAudioDevice == AudioinputDevices[i].deviceId) {
+            confirmedAudioDevice = true;
+        }
+    }
+    // Check Audio devices
+    if(currentAudioDevice != "default" && !confirmedAudioDevice) {
+        console.warn("The audio device you used before is no longer availabe, default settings applied.");
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
+    }
+    // Additional Constaints
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+    if(supportedConstraints.autoGainControl) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    }
+    if(supportedConstraints.echoCancellation) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    }
+    if(supportedConstraints.noiseSuppression) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+    }
 
-        // Invite
-        // ======
-        console.log("INVITE (video): " + buddyObj.ExtNo + "@" + wssServer);
-        var session = userAgent.invite("sip:" + buddyObj.ExtNo + "@" + wssServer, spdOptions);
+    $("#contact-" + buddyObj.identity + "-msg").html("Starting Video Call...");
+    $("#contact-" + buddyObj.identity + "-timer").show();
 
-        var startTime = moment.utc();
-        session.data.calldirection = "outbound";
-        session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
-        session.data.callTimer = window.setInterval(function(){
-            var now = moment.utc();
-            var duration = moment.duration(now.diff(startTime)); 
-            $("#contact-" + buddyObj.identity + "-timer").html(formatShortDuration(duration.asSeconds()));
-        }, 1000);
-        session.data.VideoSourceDevice = getVideoSrcID();
-        session.data.AudioSourceDevice = getAudioSrcID();
-        session.data.AudioOutputDevice = getAudioOutputID();
-        session.data.terminateby = "them";
-        session.data.withvideo = true;
+    // Invite
+    console.log("INVITE (video): " + buddyObj.ExtNo + "@" + wssServer);
+    var session = userAgent.invite("sip:" + buddyObj.ExtNo + "@" + wssServer, spdOptions);
 
-        // Add Call to CallSessions
-        // ========================
-        addActiveSession(session, true, buddyObj.identity);
+    var startTime = moment.utc();
+    session.data.calldirection = "outbound";
+    session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
+    session.data.callTimer = window.setInterval(function(){
+        var now = moment.utc();
+        var duration = moment.duration(now.diff(startTime)); 
+        $("#contact-" + buddyObj.identity + "-timer").html(formatShortDuration(duration.asSeconds()));
+    }, 1000);
+    session.data.VideoSourceDevice = getVideoSrcID();
+    session.data.AudioSourceDevice = getAudioSrcID();
+    session.data.AudioOutputDevice = getAudioOutputID();
+    session.data.terminateby = "them";
+    session.data.withvideo = true;
 
-        // Do Nessesary UI Wireup
-        // ======================
-        wireupVideoSession(session, buddyObj.type, buddyObj.identity);
+    // Add Call to CallSessions
+    addActiveSession(session, true, buddyObj.identity);
 
-        // List Update
-        // ===========
-        UpdateBuddyActivity(buddyObj.identity);
+    // Do Nessesary UI Wireup
+    wireupVideoSession(session, buddyObj.type, buddyObj.identity);
 
-    }).catch(function(e){
-        console.error(e);
-    });
+    // List Update
+    UpdateBuddyActivity(buddyObj.identity);
 }
 function AudioCallMenu(buddy, obj){
     var x = window.dhx4.absLeft(obj);
@@ -4179,6 +4245,12 @@ function AudioCallMenu(buddy, obj){
 function AudioCall(buddy, dialledNumber) {
 
     var buddyObj = FindBuddyByIdentity(buddy);
+    if(buddyObj == null) return;
+
+    if(HasAudioDevice == false){
+        Alert("Sorry, you don't have any Microphone connected to this computer. You cannot make calls.");
+        return;
+    }
 
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
@@ -4190,78 +4262,60 @@ function AudioCall(buddy, dialledNumber) {
             }
         }
     }
+
+    var currentAudioDevice = getAudioSrcID();
+    var confirmedAudioDevice = false;
+    for (var i = 0; i < AudioinputDevices.length; ++i) {
+        if(currentAudioDevice != "default" && currentAudioDevice == AudioinputDevices[i].deviceId) {
+            confirmedAudioDevice = true;
+        }
+    }
+    // Check devices
+    if(currentAudioDevice != "default" && !confirmedAudioDevice) {
+        console.warn("The audio device you used before is no longer availabe, default settings applied.");
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
+    }
     // Add additional Constraints
     var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
-    if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
-    if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
-    if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+    if(supportedConstraints.autoGainControl) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    }
+    if(supportedConstraints.echoCancellation) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    }
+    if(supportedConstraints.noiseSuppression) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+    }
 
-    navigator.mediaDevices.enumerateDevices().then(function(deviceInfos){
-        var currentAudioDevice = getAudioSrcID();
+    $("#contact-" + buddyObj.identity + "-msg").html("Starting Audio Call...");
+    $("#contact-" + buddyObj.identity + "-timer").show();
 
-        var hasAudioDevice = false;
-        var confirmedAudioDevice = false;
+    // Invite
+    console.log("INVITE (audio): " + dialledNumber + "@" + wssServer);
+    var session = userAgent.invite("sip:" + dialledNumber + "@" + wssServer, spdOptions);
 
-        for (var i = 0; i < deviceInfos.length; ++i) {
-            if (deviceInfos[i].kind === "audioinput") {
-                hasAudioDevice = true;
-                if(currentAudioDevice != "default" && currentAudioDevice == deviceInfos[i].deviceId)
-                {
-                    confirmedAudioDevice = true;
-                }                
-            }
-            else if (deviceInfos[i].kind === "audiooutput") {
-                // Speakers... not always available
-            }
-            else if (deviceInfos[i].kind === "videoinput") {
-                // Ignore
-            }
-        }
+    var startTime = moment.utc();
+    session.data.calldirection = "outbound";
+    session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
+    session.data.callTimer = window.setInterval(function(){
+        var now = moment.utc();
+        var duration = moment.duration(now.diff(startTime)); 
+        $("#contact-" + buddyObj.identity + "-timer").html(formatShortDuration(duration.asSeconds()));
+    }, 1000);
+    session.data.VideoSourceDevice = null;
+    session.data.AudioSourceDevice = getAudioSrcID();
+    session.data.AudioOutputDevice = getAudioOutputID();
+    session.data.terminateby = "them";
+    session.data.withvideo = false;
 
-        // Check devices
-        if(hasAudioDevice == false){
-            Alert("Sorry, you don't have any Microphone connected to this computer. You cannot make calls.");
-            return;
-        }
-        if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-            console.warn("The audio device you used before is no longer availabe, default settings applied.");
-            spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
-        }
+    // Add Call to CallSessions
+    addActiveSession(session, true, buddyObj.identity);
 
-        $("#contact-" + buddyObj.identity + "-msg").html("Starting Audio Call...");
-        $("#contact-" + buddyObj.identity + "-timer").show();
+    // Do Nessesary UI Wireup
+    wireupAudioSession(session, buddyObj.type, buddyObj.identity);
 
-        // Invite
-        console.log("INVITE (audio): " + dialledNumber + "@" + wssServer);
-        var session = userAgent.invite("sip:" + dialledNumber + "@" + wssServer, spdOptions);
-
-        var startTime = moment.utc();
-        session.data.calldirection = "outbound";
-        session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
-        session.data.callTimer = window.setInterval(function(){
-            var now = moment.utc();
-            var duration = moment.duration(now.diff(startTime)); 
-            $("#contact-" + buddyObj.identity + "-timer").html(formatShortDuration(duration.asSeconds()));
-        }, 1000);
-        session.data.VideoSourceDevice = null;
-        session.data.AudioSourceDevice = getAudioSrcID();
-        session.data.AudioOutputDevice = getAudioOutputID();
-        session.data.terminateby = "them";
-        session.data.withvideo = false;
-
-        // Add Call to CallSessions
-        // ========================
-        addActiveSession(session, true, buddyObj.identity);
-
-        wireupAudioSession(session, buddyObj.type, buddyObj.identity);
-
-        // List Update
-        // ===========
-        UpdateBuddyActivity(buddy);
-
-    }).catch(function(e){
-        console.error(e);
-    });
+    // List Update
+    UpdateBuddyActivity(buddy);
 }
 
 // Sessions & During Call Activity
@@ -8894,6 +8948,34 @@ function HidePopup(timeout){
         }
     }
 }
+
+// Device Detection
+// ================
+function DetectDevices(){
+    navigator.mediaDevices.enumerateDevices().then(function(deviceInfos){
+        HasVideoDevice = false;
+        HasAudioDevice = false;
+        AudioinputDevices = [];
+        VideoinputDevices = [];
+        for (var i = 0; i < deviceInfos.length; ++i) {
+            if (deviceInfos[i].kind === "audioinput") {
+                HasAudioDevice = true;
+                AudioinputDevices.push(deviceInfos[i]);
+            }
+            else if (deviceInfos[i].kind === "videoinput") {
+                HasVideoDevice = true;
+                VideoinputDevices.push(deviceInfos[i]);
+            }
+        }
+        // console.log(AudioinputDevices, VideoinputDevices);
+    }).catch(function(e){
+        console.error("Error enumerating devices", e);
+    });
+}
+DetectDevices();
+window.setInterval(function(){
+    DetectDevices();
+}, 10000);
 
 // =================================================================================
 // End Of File
