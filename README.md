@@ -48,6 +48,11 @@ This web application is designed to work with Asterisk PBX (v13 & v16). Once loa
 
 > Note: These files will load automatically from CDN.
 
+## Lib Folder Download (Off-line)
+You can download the lib folder containing all related library files: https://dtd6jl0d42sve.cloudfront.net/lib/lib.zip
+
+> Note: These files are provided "as-is" for your convenience. Each library folder may contain its own licence and terms of use please refer to the original license holder for more details.
+
 ## Step-by-step Guide
 
 You can follow the How-to video to achieve the outcome for this project:
