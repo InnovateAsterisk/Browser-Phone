@@ -24,18 +24,29 @@ This web application is designed to work with Asterisk PBX (v13 & v16). Once loa
 - Useful debug messages sent to console.
 - Works on: Chrome (all features work), Edge (same as Chrome), Opera (same as Chrome), Firefox (Most features work), Safari (Most feature work)
 
-## Dependencies
-- Asterisk PBX (with WebRTC and Messaging)
-- sip-0.11.6.js                        : WebRTC and SIP signalling library
-- jquery-3.3.1.min.js                  : JavaScript toolkit
-- jquery.md5-min.js                    : Md5 Hash plug-in (unused)
-- Chart.bundle-2.7.2.js                : Graph and Chart UI
-- dhtmlx.js                            : Windowing & UI Library
-- fabric-2.4.6.min.js                  : Canvas Editing Library
-- moment-with-locales-2.24.0.min.js    : Date & Time Library
-- croppie.min.js                       : Profile Picture Crop Library
+## Requires
+- Asterisk PBX version 13|16|17 (with Websockets and Text Messaging, chan_sip or chan_pjsip)
 
-> Note: These libraries will load automatically from CDN.
+## JavaScript Dependencies
+- sip-0.11.6                    : WebRTC and SIP signalling library
+- jquery-3.3.1                  : JavaScript toolkit
+- jquery.md5                    : Md5 Hash plug-in (unused)
+- Chart-2.7.2                   : Graph and Chart UI
+- dhtmlx-4                      : Windowing & UI Library
+- fabric-2.4.6                  : Canvas Editing Library
+- moment-2.24.0                 : Date & Time Library
+- croppie-2.6.4                 : Profile Picture Crop Library
+
+> Note: These files will load automatically from CDN.
+
+## StyleSheet Dependencies
+- normalize-v8.0.1              : CSS Normalising Stylesheet
+- roboto                        : Roboto Font
+- font-awesome-4.7              : Icon Font library
+- dhtmlx-4                      : For DHTMLX
+- croppie-2.6.4                 : For Croppie
+
+> Note: These files will load automatically from CDN.
 
 ## Step-by-step Guide
 
