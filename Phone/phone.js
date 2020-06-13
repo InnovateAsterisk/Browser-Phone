@@ -104,6 +104,7 @@ var HasVideoDevice = false;
 var HasAudioDevice = false;
 var AudioinputDevices = [];
 var VideoinputDevices = [];
+var Lines = [];
 var lang = {};
 
 // User Settings & Defaults
