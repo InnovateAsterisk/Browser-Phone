@@ -919,6 +919,21 @@ div.dhx_popup_material div.dhx_popup_area {
     border-bottom: 1px solid #333333;
     border-left: 3px solid #d2a70a;
 }
+
+.lineIcon {
+    border-radius: 50px;
+    width: 36px;
+    height: 36px;
+    background-color: #1c8009;
+    border: 1px solid #1c8009;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+    float: left;
+    text-align: center;
+    line-height: 36px;
+    padding: 0px;
+    font-size: 24px;
+    color: #F3F3F3;
+}
 .buddyIcon {
     border-radius: 50px;
     width: 36px;
