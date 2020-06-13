@@ -155,7 +155,7 @@ var CallWaitingPolicy = getDbItem("CallWaitingPolicy", "allow");                
 var CallRecordingPolicy = getDbItem("CallRecordingPolicy", "allow");                    // allow = user can choose | disable = feature is disabled | enalbe = feature is always on
 var EnableAccountSettings = (getDbItem("EnableAccountSettings", "1") == "1");           // Controls the Account tab in Settings
 var EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1");     // Controls the Audio & Video tab in Settings
-var EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "0") == "1");     // Controls the Appearance tab in Settings
+var EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
 var EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
 
 // Upgrade Pataches
