@@ -68,7 +68,7 @@
     "alert_not_found" : "This item was not found",
     "edit" : "Edit",
     "welcome" : "Welcome",
-    "accpet" : "Accept",
+    "accept" : "Accept",
     "error_user_agant" : "Error creating User Agent",
     "registered" : "Registered",
     "registration_failed" : "Registration Failed",

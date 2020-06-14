@@ -68,7 +68,7 @@
     "alert_not_found" : "未找到该项目",
     "edit": "编辑",
     "welcome" : "欢迎您",
-    "accpet": "Accept",
+    "accept": "Accept",
     "error_user_agant" : "创建用户代理时出错",
     "registered" : "已注册",
     "registration_failed" : "注册失败",
