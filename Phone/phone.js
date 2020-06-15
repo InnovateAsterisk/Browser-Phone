@@ -147,12 +147,12 @@ var DidLength = parseInt(getDbItem("DidLength", 6));  // DID length from which t
 // Permission Settings
 var EnableLines = (getDbItem("EnableLines", "1") == "1");                               // Controls the Calling Lines feature
 var EnableBuddies = (getDbItem("EnableBuddies", "1") == "1");                           // Controls the Buddies features. Note: required for Text Messaging
-var EnableTransfer = (getDbItem("EnableTransfer", "1") == "1");                         // Controls Transfering during a call
+var EnableTransfer = (getDbItem("EnableTransfer", "0") == "1");                         // Controls Transfering during a call
 var EnableConference = (getDbItem("EnableConference", "1") == "1");                     // Controls Conference during a call
-var AutoAnswerPolicy = getDbItem("AutoAnswerPolicy", "allow");                          // allow = user can choose | disable = feature is disabled | enalbe = feature is always on
-var DoNotDisturbPolicy = getDbItem("DoNotDisturbPolicy", "allow");                      // allow = user can choose | disable = feature is disabled | enalbe = feature is always on
-var CallWaitingPolicy = getDbItem("CallWaitingPolicy", "allow");                        // allow = user can choose | disable = feature is disabled | enalbe = feature is always on
-var CallRecordingPolicy = getDbItem("CallRecordingPolicy", "allow");                    // allow = user can choose | disable = feature is disabled | enalbe = feature is always on
+var AutoAnswerPolicy = getDbItem("AutoAnswerPolicy", "allow");                          // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
+var DoNotDisturbPolicy = getDbItem("DoNotDisturbPolicy", "allow");                      // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
+var CallWaitingPolicy = getDbItem("CallWaitingPolicy", "allow");                        // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
+var CallRecordingPolicy = getDbItem("CallRecordingPolicy", "allow");                    // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
 var EnableAccountSettings = (getDbItem("EnableAccountSettings", "1") == "1");           // Controls the Account tab in Settings
 var EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1");     // Controls the Audio & Video tab in Settings
 var EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
@@ -1824,20 +1824,21 @@ function ReceiveCall(session) {
     // Setup in-page call notification if you are on me already
     $("#contact-" + buddyObj.identity + "-sipCallId").val(session.id);
 
-    if(DoNotDisturbEnabled) {
+    if(DoNotDisturbEnabled || DoNotDisturbPolicy == "enabled") {
+        console.log("Do Not Disturb Enabled, rejecting call.");
         RejectCall(buddyObj.identity);
-        
         return;
     }
     if(CurrentCalls >= 1){
-        if(CallWaitingEnabled == false){
+        if(CallWaitingEnabled == false || CallWaitingEnabled == "disabled"){
+            console.log("Call Waiting Disabled, rejecting call.");
             RejectCall(buddyObj.identity);
-        
             return;
         }
     }
-    if(AutoAnswerEnabled){
+    if(AutoAnswerEnabled || AutoAnswerPolicy == "enabled"){
         if(CurrentCalls == 0){ // There are no other calls, so you can answer
+            console.log("Auto Answer Call...");
             var buddyId = buddyObj.identity;
             window.setTimeout(function(){
                 // If the call is with video, assume the auto answer is also
@@ -1855,8 +1856,10 @@ function ReceiveCall(session) {
 
             // Select Buddy
             SelectBuddy(buddyObj.identity);
-
             return;
+        }
+        else {
+            console.warn("Could not auto answer call, already on a call.");
         }
     }
     
@@ -2253,7 +2256,7 @@ function wireupAudioSession(session, typeStr, buddy) {
             $("#contact-" + buddy + "-timer").html(formatShortDuration(duration.asSeconds()));
         }, 1000);
 
-        if(RecordAllCalls) StartRecording(buddy);
+        if(RecordAllCalls || CallRecordingPolicy == "enabled") StartRecording(buddy);
 
         $("#contact-" + buddy + "-progress").hide();
         $("#contact-" + buddy + "-VideoCall").hide();
@@ -2439,7 +2442,7 @@ function wireupVideoSession(session, typeStr, buddy) {
             $("#contact-" + buddy + "-timer").html(formatShortDuration(duration.asSeconds()));
         }, 1000);
 
-        if(RecordAllCalls) StartRecording(buddy);
+        if(RecordAllCalls || CallRecordingPolicy == "enabled") StartRecording(buddy);
 
         $("#contact-" + buddy + "-progress").hide();
         $("#contact-" + buddy + "-VideoCall").show();
@@ -4510,6 +4513,11 @@ function getSession(buddy) {
 }
 
 function StartRecording(buddy){
+    if(CallRecordingPolicy == "disabled") {
+        console.warn("Policy Disabled: Call Recording");
+        return;
+    }
+
     $("#contact-"+ buddy +"-btn-start-recording").hide();
     $("#contact-"+ buddy +"-btn-stop-recording").show();
 
@@ -4767,6 +4775,7 @@ function StopRecording(buddy, noConfirm){
     }
 
     if(noConfirm == true){
+        // Called at the end of a caill
         $("#contact-"+ buddy +"-btn-start-recording").show();
         $("#contact-"+ buddy +"-btn-stop-recording").hide();
 
@@ -4786,6 +4795,11 @@ function StopRecording(buddy, noConfirm){
         return;
     } 
     else {
+        // User attempts to end call recording
+        if(CallRecordingPolicy == "enabled"){
+            console.log("Policy Enabled: Call Recording");
+        }
+
         Confirm(lang.confirm_stop_recording, lang.stop_recording, function(){
             $("#contact-"+ buddy +"-btn-start-recording").show();
             $("#contact-"+ buddy +"-btn-stop-recording").hide();
@@ -6239,34 +6253,33 @@ function PopulateBuddyList()
 function UpdateBuddyList(filter){
     $("#myContacts").empty();
 
-    /*
-    for(var l = 0; l < Lines.length; l++) {
-        var classStr = (Lines[l].IsSelected)? "buddySelected" : "buddy";
-        var lineSession = getLine(Lines[l].identity);
-        if(lineSession != null){
-            classStr = (lineSession.local_hold)? "buddyActiveCallHollding" : "buddyActiveCall";
+    if(EnableLines) {
+        for(var l = 0; l < Lines.length; l++) {
+            var classStr = (Lines[l].IsSelected)? "buddySelected" : "buddy";
+            var lineSession = getLine(Lines[l].identity);
+            if(lineSession != null){
+                classStr = (lineSession.local_hold)? "buddyActiveCallHollding" : "buddyActiveCall";
+            }
+            var html = "<div id=\"Line-"+ l +"\" class="+ classStr +" onclick=\"SelectLine('"+ l +"', 'contact')\">";
+            html += "<div class=lineIcon>"+ (l+1) +"</div>";
+            html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ (l+1) +"</div>";
+            html += "<div id=\"Line-"+ l +"-datetime\" class=contactDate>&nbsp;</div>";
+            html += "<div class=presenceText>"+ Lines[l].Status +"</div>";
+            html += "</div>";
+            $("#myContacts").append(html);
         }
-        var html = "<div id=\"Line-"+ l +"\" class="+ classStr +" onclick=\"SelectLine('"+ l +"', 'contact')\">";
+        // Add a New Line
+        var l = Lines.length;
+        var html = "<div id=\"Line-"+ l +"\" class=buddy onclick=\"SelectLine('"+ l +"', 'contact')\">";
         html += "<div class=lineIcon>"+ (l+1) +"</div>";
         html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ (l+1) +"</div>";
         html += "<div id=\"Line-"+ l +"-datetime\" class=contactDate>&nbsp;</div>";
-        html += "<div class=presenceText>"+ Lines[l].Status +"</div>";
+        html += "<div class=presenceText>"+ lang.state_ready +"</div>";
         html += "</div>";
         $("#myContacts").append(html);
+        
+        $("#myContacts").append("<hr style=\"height:1px; background-color:#696969\">");
     }
-    // Add a New Line
-    var l = Lines.length;
-    var html = "<div id=\"Line-"+ l +"\" class=buddy onclick=\"SelectLine('"+ l +"', 'contact')\">";
-    html += "<div class=lineIcon>"+ (l+1) +"</div>";
-    html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ (l+1) +"</div>";
-    html += "<div id=\"Line-"+ l +"-datetime\" class=contactDate>&nbsp;</div>";
-    html += "<div class=presenceText>"+ lang.state_ready +"</div>";
-    html += "</div>";
-    $("#myContacts").append(html);
-    
-    $("#myContacts").append("<hr style=\"height:1px; background-color:#696969\">");
-    */
-
 
     // Sort and shuffle Buddy List
     // ===========================
@@ -6279,74 +6292,76 @@ function UpdateBuddyList(filter){
         return 0;
     });
 
-    for(var b = 0; b < Buddies.length; b++) {
-        var buddyObj = Buddies[b];
+    if(EnableBuddies){
+        for(var b = 0; b < Buddies.length; b++) {
+            var buddyObj = Buddies[b];
 
-        if(filter && filter.length >= 1){
-            // Perform Filter Display
-            var display = false;
-            if(buddyObj.CallerIDName.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
-            if(buddyObj.ExtNo.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
-            if(buddyObj.Desc.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
-            if(!display) continue;
-        }
+            if(filter && filter.length >= 1){
+                // Perform Filter Display
+                var display = false;
+                if(buddyObj.CallerIDName.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
+                if(buddyObj.ExtNo.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
+                if(buddyObj.Desc.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
+                if(!display) continue;
+            }
 
-        var today = moment.utc();
-        var lastActivity = moment.utc(buddyObj.lastActivity.replace(" UTC", ""));
-        var displayDateTime = "";
-        if(lastActivity.isSame(today, 'day'))
-        {
-            displayDateTime = lastActivity.local().format("h:mm:ss A");
-        } 
-        else {
-            displayDateTime = lastActivity.local().format("YYYY-MM-DD");
-        }
+            var today = moment.utc();
+            var lastActivity = moment.utc(buddyObj.lastActivity.replace(" UTC", ""));
+            var displayDateTime = "";
+            if(lastActivity.isSame(today, 'day'))
+            {
+                displayDateTime = lastActivity.local().format("h:mm:ss A");
+            } 
+            else {
+                displayDateTime = lastActivity.local().format("YYYY-MM-DD");
+            }
 
-        var classStr = (buddyObj.IsSelected)? "buddySelected" : "buddy";
-        var buddySession = getSession(buddyObj.identity);
-        if(buddySession != null){
-            classStr = (buddySession.local_hold)? "buddyActiveCallHollding" : "buddyActiveCall";
-        }
+            var classStr = (buddyObj.IsSelected)? "buddySelected" : "buddy";
+            var buddySession = getSession(buddyObj.identity);
+            if(buddySession != null){
+                classStr = (buddySession.local_hold)? "buddyActiveCallHollding" : "buddyActiveCall";
+            }
 
-        if(buddyObj.type == "extension") { 
-            var friendlyState = buddyObj.presence;
-            if (friendlyState == "Unknown") friendlyState = lang.state_unknown;
-            if (friendlyState == "Not online") friendlyState = lang.state_not_online;
-            if (friendlyState == "Ready") friendlyState = lang.state_ready;
-            if (friendlyState == "On the phone") friendlyState = lang.state_on_the_phone;
-            if (friendlyState == "Ringing") friendlyState = lang.state_ringing;
-            if (friendlyState == "On hold") friendlyState = lang.state_on_hold;
-            if (friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
-            // An extension on the same system
-            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
-            html += "<div class=contactNameText><i class=\"fa fa-phone-square\"></i> "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName +"</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText>"+ friendlyState +"</div>";
-            html += "</div>";
-            $("#myContacts").append(html);
-        } else if(buddyObj.type == "contact") { 
-            // An Addressbook Contact
-            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'contact')\">";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">0</span>";
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"contact") +"')\"></div>";
-            html += "<div class=contactNameText><i class=\"fa fa-address-card\"></i> "+ buddyObj.CallerIDName +"</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
-            html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
-            html += "</div>";
-            $("#myContacts").append(html);
-        } else if(buddyObj.type == "group"){ 
-            // A collection of extensions and contacts
-            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'group')\">";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">0</span>";
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"group") +"')\"></div>";
-            html += "<div class=contactNameText><i class=\"fa fa-users\"></i> "+ buddyObj.CallerIDName +"</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
-            html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
-            html += "</div>";
-            $("#myContacts").append(html);
+            if(buddyObj.type == "extension") { 
+                var friendlyState = buddyObj.presence;
+                if (friendlyState == "Unknown") friendlyState = lang.state_unknown;
+                if (friendlyState == "Not online") friendlyState = lang.state_not_online;
+                if (friendlyState == "Ready") friendlyState = lang.state_ready;
+                if (friendlyState == "On the phone") friendlyState = lang.state_on_the_phone;
+                if (friendlyState == "Ringing") friendlyState = lang.state_ringing;
+                if (friendlyState == "On hold") friendlyState = lang.state_on_hold;
+                if (friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
+                // An extension on the same system
+                var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
+                html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
+                html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
+                html += "<div class=contactNameText><i class=\"fa fa-phone-square\"></i> "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName +"</div>";
+                html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
+                html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText>"+ friendlyState +"</div>";
+                html += "</div>";
+                $("#myContacts").append(html);
+            } else if(buddyObj.type == "contact") { 
+                // An Addressbook Contact
+                var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'contact')\">";
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">0</span>";
+                html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"contact") +"')\"></div>";
+                html += "<div class=contactNameText><i class=\"fa fa-address-card\"></i> "+ buddyObj.CallerIDName +"</div>";
+                html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
+                html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
+                html += "</div>";
+                $("#myContacts").append(html);
+            } else if(buddyObj.type == "group"){ 
+                // A collection of extensions and contacts
+                var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'group')\">";
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">0</span>";
+                html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"group") +"')\"></div>";
+                html += "<div class=contactNameText><i class=\"fa fa-users\"></i> "+ buddyObj.CallerIDName +"</div>";
+                html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
+                html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
+                html += "</div>";
+                $("#myContacts").append(html);
+            }
         }
     }
 
@@ -6497,16 +6512,16 @@ function AddBuddyMessageStream(buddyObj) {
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-ShowDtmf\" onclick=\"ShowDtmfMenu(this, '"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.show_key_pad +"\"><i class=\"fa fa-keyboard-o\"></i></button>";
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Mute\" onclick=\"MuteSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.mute +"\"><i class=\"fa fa-microphone-slash\"></i></button>";
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Unmute\" onclick=\"UnmuteSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.unmute +"\" style=\"color: red; display:none\"><i class=\"fa fa-microphone\"></i></button>";
-    if(typeof MediaRecorder != "undefined"){
+    if(typeof MediaRecorder != "undefined" && (CallRecordingPolicy == "allow" || CallRecordingPolicy == "enabled")){
         // Safari: must enable in Develop > Experimental Features > MediaRecorder
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-start-recording\" onclick=\"StartRecording('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.start_call_recording +"\"><i class=\"fa fa-dot-circle-o\"></i></button>";
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-stop-recording\" onclick=\"StopRecording('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.stop_call_recording +"\" style=\"color: red; display:none\"><i class=\"fa fa-circle\"></i></button>";
     }
-    if(true){ // any conditions for transfer
+    if(EnableTransfer){
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Transfer\" onclick=\"StartTransferSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.transfer_call +"\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-CancelTransfer\" onclick=\"CancelTransferSession('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.cancel_transfer +"\" style=\"color: red; display:none\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
     }
-    if(true){ // any conditons for conference
+    if(EnableConference){
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-Conference\" onclick=\"StartConferenceCall('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.conference_call +"\"><i class=\"fa fa-users\"></i></button>";
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-CancelConference\" onclick=\"CancelConference('"+ buddyObj.identity +"')\" class=\"roundButtons inCallButtons\" title=\""+ lang.cancel_conference +"\" style=\"color: red; display:none\"><i class=\"fa fa-users\"></i></button>";
     }
@@ -7664,20 +7679,48 @@ function RefreshRegistration(){
 }
 
 function ToggleAutoAnswer(){
+    if(AutoAnswerPolicy == "disabled"){
+        AutoAnswerEnabled = false;
+        console.warn("Policy AutoAnswer: Disabled");
+        return;
+    }
     AutoAnswerEnabled = (AutoAnswerEnabled == true)? false : true;
+    if(AutoAnswerPolicy == "enabled") AutoAnswerEnabled = true;
     localDB.setItem("AutoAnswerEnabled", (AutoAnswerEnabled == true)? "1" : "0");
+    console.log("AutoAnswer:", AutoAnswerEnabled);
 }
 function ToggleDoNoDisturb(){
+    if(DoNotDisturbPolicy == "disabled"){
+        DoNotDisturbEnabled = false;
+        console.warn("Policy DoNotDisturb: Disabled");
+        return;
+    }
     DoNotDisturbEnabled = (DoNotDisturbEnabled == true)? false : true;
+    if(DoNotDisturbPolicy == "enabled") DoNotDisturbEnabled = true;
     localDB.setItem("DoNotDisturbEnabled", (DoNotDisturbEnabled == true)? "1" : "0");
+    console.log("DoNotDisturb", DoNotDisturbEnabled);
 }
 function ToggleCallWaiting(){
+    if(CallWaitingPolicy == "disabled"){
+        CallWaitingEnabled = false;
+        console.warn("Policy CallWaiting: Disabled");
+        return;
+    }
     CallWaitingEnabled = (CallWaitingEnabled == true)? false : true;
+    if(CallWaitingPolicy == "enabled") CallWaitingPolicy = true;
     localDB.setItem("CallWaitingEnabled", (CallWaitingEnabled == true)? "1" : "0");
+    console.log("CallWaiting", CallWaitingEnabled);
 }
 function ToggleRecordAllCalls(){
+    if(CallRecordingPolicy == "disabled"){
+        RecordAllCalls = false;
+        console.warn("Policy CallRecording: Disabled");
+        return;
+    }
     RecordAllCalls = (RecordAllCalls == true)? false : true;
+    if(CallRecordingPolicy == "enabled") RecordAllCalls = true;
     localDB.setItem("RecordAllCalls", (RecordAllCalls == true)? "1" : "0");
+    console.log("RecordAllCalls", RecordAllCalls);
 }
 
 
