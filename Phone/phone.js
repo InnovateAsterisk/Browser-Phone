@@ -145,7 +145,7 @@ var RecordingLayout = getDbItem("RecordingLayout", "them-pnp");         // The L
 var DidLength = parseInt(getDbItem("DidLength", 6));  // DID length from which to decide if an incoming caller is a "contact" or an "extension".
 
 // Permission Settings
-var EnableLines = (getDbItem("EnableLines", "1") == "1");                               // Controls the Calling Lines feature
+var EnableLines = (getDbItem("EnableLines", "0") == "1");                               // Controls the Calling Lines feature
 var EnableBuddies = (getDbItem("EnableBuddies", "1") == "1");                           // Controls the Buddies features. Note: required for Text Messaging
 var EnableTransfer = (getDbItem("EnableTransfer", "0") == "1");                         // Controls Transfering during a call
 var EnableConference = (getDbItem("EnableConference", "1") == "1");                     // Controls Conference during a call
