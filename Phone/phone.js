@@ -45,7 +45,7 @@ Extended & Non-standard Features:
 // Global Settings
 // ===============
 var enabledExtendedServices = false;   // Send: Image, Recording, Video, SMS, Email
-var enabledGroupServices = true;      // Group calling functionality - requires Asterisks config 
+var enabledGroupServices = false;      // Group calling functionality - requires Asterisks config 
 // Set the following to null to disable
 var welcomeScreen = "<div class=\"UiWindowField scroller\"><pre style=\"font-size: 12px\">";
 welcomeScreen += "===========================================================================\n";
