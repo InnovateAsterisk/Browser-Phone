@@ -924,8 +924,8 @@ div.dhx_popup_material div.dhx_popup_area {
     border-radius: 50px;
     width: 36px;
     height: 36px;
-    background-color: #1c8009;
-    border: 1px solid #1c8009;
+    background-color: #cc9009;
+    border: 1px solid #3e3e3e;
     box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
     float: left;
     text-align: center;
@@ -1019,6 +1019,12 @@ div.dhx_popup_material div.dhx_popup_area {
     margin-top: 10px;
 }
 
+.dialCall {
+    text-align: center;
+    padding: 25px;
+    margin-top: 10px;
+}
+
 .progressCall {
     text-align: center;
     padding: 25px;
@@ -1032,12 +1038,11 @@ div.dhx_popup_material div.dhx_popup_area {
 .stream {
     display: none;
 }
-
 .streamSelected {
     height: 100%;
-    width: 100%
-}
+    width: 100%;
 
+}
 .streamSection {
     padding: 5px;
     background-color: #292929;
@@ -1914,3 +1919,28 @@ div.dhx_popup_material div.dhx_popup_area {
     padding-right: 0px !important;
 }
 
+.dialTextInput{
+    font-size: 16px;
+    text-align: center;
+    border-radius: 10px;
+    border: none;
+    background-color: transparent;
+    outline-color: #cbe4ff;
+}
+.dialButtons{
+    font-size: 24px; 
+    border: none;
+    color: #333333;
+}
+.dialButtons:hover{
+    color: #f3f3f3;
+    background-color: #333333;
+}
+.dialButtons:disabled{
+    color: #666666;
+}
+.dialButtons:disabled:hover{
+    color: #666666;
+    background-color: transparent;
+    border: none;
+}
