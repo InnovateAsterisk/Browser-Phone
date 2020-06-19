@@ -242,6 +242,10 @@ body {
 /* ScrollBar Styling */
 .scroller {
     overflow-y: auto;
+
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: #516896 transparent;
 }
 
 .scroller::-webkit-scrollbar {
@@ -856,6 +860,11 @@ div.dhx_popup_material div.dhx_popup_area {
     background-color: transparent;
 }
 
+.cleanScroller{
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: #a6a6a6 transparent;
+}
 .cleanScroller::-webkit-scrollbar {
     width: 10px;
 }
@@ -872,7 +881,16 @@ div.dhx_popup_material div.dhx_popup_area {
 .contactArea {
     height: 100%;
     overflow-y: auto;
-    overflow-x: hidden
+    overflow-x: hidden;
+
+    /* For Firefox */
+    position: absolute;
+    top:0;
+    left:0;
+    width:100%;
+    z-index: 1;
+    padding: 5px;
+    box-sizing: border-box;
 }
 
 .buddy {
@@ -1049,6 +1067,7 @@ div.dhx_popup_material div.dhx_popup_area {
     border-radius: 5px;
     border: 1px solid #404040;
     vertical-align: top;
+    position:relative;
 }
 
 .streamSectionBackground {
@@ -1059,14 +1078,19 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .chatHistory {
-    min-height: 100px;
-    /* Scroll screen if this condition is met */
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    /* padding-left: 1%; */
-    /* padding-right: 1%; */
     user-select: none;
+
+    /* For Firefox */
+    position:absolute;
+    top:0px;
+    left:0px;
+    width:100%;
+    z-index: 1;
+    padding: 5px;
+    box-sizing: border-box;
 }
 
 .roundButtons {
