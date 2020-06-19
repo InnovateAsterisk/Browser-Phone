@@ -2179,7 +2179,7 @@ function AnswerVideoCall(buddy) {
 
 function RejectCall(buddy) {
     var session = getSession(buddy);
-    if (session = null) {
+    if (session == null) {
         console.warn("Reject failed, null session");
         $("#contact-" + buddy + "-msg").html(lang.call_failed);
         $("#contact-" + buddy + "-AnswerCall").hide();
