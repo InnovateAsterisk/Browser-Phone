@@ -986,6 +986,11 @@ div.dhx_popup_material div.dhx_popup_area {
     margin-top: 3px;
     font-size: 14px;
     color: #cdcdcd;
+
+    margin-right: 55px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .contactDate {
@@ -998,7 +1003,11 @@ div.dhx_popup_material div.dhx_popup_area {
     margin-left: 50px;
     margin-top: 0px;
     font-size: 11px;
-    color: #999999
+    color: #999999;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .searchClean {
@@ -1685,23 +1694,41 @@ div.dhx_popup_material div.dhx_popup_area {
 
 .missedNotifyer {
     background-color: #ff0000;
-    border: 1px solid #b90000;
+    border: 1px solid #640000;
     position: absolute;
-    width: 12px;
-    height: 12px;
-    line-height: 12px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
     font-weight: bold;
     border-radius: 20px;
     color: #FFFFFF;
     min-width: 0px;
     padding: 0px;
-    right: 10px;
-    top: 10px;
-    font-size: 9px;
+    right: 2px;
+    top: 5px;
+    font-size: 12px;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
     text-align: center;
+}
+.quickDial{
+    border-radius: 100px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border: 1px solid #404040;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
+    background-color: #2a2a2a;
+    padding: 0px;
+    font-size: 10px;
+    color: #dcdcdc;
+    min-width: 0px;
+    
+    position: absolute;
+    top: 5px;
 }
 
 .startDragDrop {
@@ -1967,4 +1994,32 @@ div.dhx_popup_material div.dhx_popup_area {
     color: #666666;
     background-color: transparent;
     border: none;
+}
+
+.timelineMessage{
+    margin-left: 20%;
+    color: #F3F3F3;
+    border-left: 3px solid #3c5e82;
+}
+.timelineMessageDot{
+    position: relative;
+    left: -6.5px;
+    color: #3c5e82;
+}
+.timelineMessageArea{
+    color: #F3F3F3;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 0px;
+}
+.timelineMessageDate{
+    color: #d0d0d0;
+    font-size: 12px;
+}
+.timelineMessageText{
+    color: #bdbdbd;
+    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    margin-left: 10px;
 }
