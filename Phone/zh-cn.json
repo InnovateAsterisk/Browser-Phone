@@ -235,5 +235,21 @@
     "select_video" : "选择视频",
     "ok" : "确定",
     "device_settings" : "设备设置",
-    "call_stats" : "通话统计"
+    "call_stats" : "通话统计",
+    "you_received_a_call_from" : "您接到了一个电话",
+    "you_made_a_call_to" : "您致电了",
+    "you_answered_after" : "你接听之后",
+    "they_answered_after" : "他们接听之后",
+    "with_video" : "带视频",
+    "you_started_a_blind_transfer_to" : "您发起了盲接呼叫转移到",
+    "you_started_an_attended_transfer_to" : "您发起了在席呼叫转移到",
+    "the_call_was_completed" : "通话已完成。",
+    "the_call_was_not_completed" : "通话未完成。",
+    "you_put_the_call_on_mute" : "您将通话置于静音状态。",
+    "you_took_the_call_off_mute" : "您取消了静音状态。",
+    "you_put_the_call_on_hold" : "您将呼叫置于等待状态。",
+    "you_took_the_call_off_hold" : "您从呼叫等待返回通话。",
+    "call_is_being_recorded" : "正在对通话录音",
+    "now_stopped" : "现在已停止",
+    "you_started_a_conference_call_to" : "您发起了电话会议到"
 }
