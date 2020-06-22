@@ -251,5 +251,17 @@
     "you_took_the_call_off_hold" : "保留状態から戻った",
     "call_is_being_recorded" : "通話を録音中",
     "now_stopped" : "只今停止された",
-    "you_started_a_conference_call_to" : "電話会議を開始された。会議対象"
+    "you_started_a_conference_call_to" : "電話会議を開始された。会議対象",
+    "show_call_detail_record" : "通話詳細記録を表示",
+    "call_detail_record" : "通話詳細記録",
+    "call_direction" : "通話方向",
+    "call_date_and_time" : "通話日時",
+    "ring_time" : "呼び出し時間",
+    "talk_time" : "連続通話時間",
+    "call_duration" : "通話時間",
+    "flagged" : "フラグ付き",
+    "call_tags" : "呼び出しタグ",
+    "call_notes" : "通話メモ",
+    "activity_timeline" : "活動タイムライン",
+    "call_recordings" : "通話録音"
 }

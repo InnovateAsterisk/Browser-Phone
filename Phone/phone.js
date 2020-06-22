@@ -105,7 +105,7 @@ var VideoinputDevices = [];
 var SpeakerDevices = [];
 var Lines = [];
 var lang = {};
-var availableLang = ["ja", "zh-hans", "zh-cn", "zh"];
+var availableLang = ["ja", "zh-hans", "zh"];
 // Note: more specific lanagauge must be first. ie: "zh-hans" should be before "zh". 
 
 // User Settings & Defaults

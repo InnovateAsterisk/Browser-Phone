@@ -251,5 +251,17 @@
     "you_took_the_call_off_hold" : "您取消了保留通话。",
     "call_is_being_recorded" : "正在通话记录。",
     "now_stopped" : "现在已停止",
-    "you_started_a_conference_call_to" : "您发起了电话会议"
+    "you_started_a_conference_call_to" : "您发起了电话会议",
+    "show_call_detail_record" : "显示通话详细记录",
+    "call_detail_record" : "通话明细记录",
+    "call_direction" : "通话方向",
+    "call_date_and_time" : "通话日期和时间",
+    "ring_time" : "振铃时间",
+    "talk_time" : "谈话时间",
+    "call_duration" : "通话时间",
+    "flagged" : "已标记",
+    "call_tags" : "通话标签",
+    "call_notes" : "通话记录",
+    "activity_timeline" : "活动时间表",
+    "call_recordings" : "通话录音"
 }
