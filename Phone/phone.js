@@ -105,6 +105,7 @@ var VideoinputDevices = [];
 var SpeakerDevices = [];
 var Lines = [];
 var lang = {};
+var availabeLang = ["zh-hans"];
 
 // User Settings & Defaults
 // ========================
@@ -157,6 +158,7 @@ var EnableAccountSettings = (getDbItem("EnableAccountSettings", "1") == "1");   
 var EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1");     // Controls the Audio & Video tab in Settings
 var EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
 var EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
+var EnableAlphanumericDial = (getDbItem("EnableNotificationSettings", "1") == "1");     // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
 
 // Upgrade Pataches
 // ================
@@ -242,13 +244,49 @@ function formatBytes(bytes, decimals=2) {
 }
 function UserLocale(){
     var language = window.navigator.userLanguage || window.navigator.language; // "en", "en-US", "fr", "fr-FR", "es-ES", etc.
-    language = language.toLowerCase();
-    if(language.indexOf("-") > -1){
-        return language.split("-")[1];
+    // langtag = language["-"script]["-" region] *("-" variant) *("-" extension) ["-" privateuse]
+    // TODO Needs work
+    langtag = language.split('-');
+    if(langtag.length == 1){
+        return ""; 
     } 
-    else {
-        return language;
+    else if(langtag.length == 2) {
+        return langtag[1].toLowerCase();  // en-US => us
     }
+    else if(langtag.length >= 3) {
+        return langtag[1].toLowerCase();  // en-US => us
+    }
+}
+function IsUserLangAvaialbe(){
+    var language = window.navigator.userLanguage || window.navigator.language; // "en", "en-US", "fr", "fr-FR", "es-ES", etc.
+    // langtag = language["-"script]["-" region] *("-" variant) *("-" extension) ["-" privateuse]
+    // Testing: 
+/*
+    language = "zh-Hans-CN";
+    language = "zh-cmn-Hans-CN";
+    language = "zh-Hant";
+    language = "de";
+    language = "de-DE";
+    language = "en";
+    language = "en-US";
+    language = "fr";
+    language = "fr-FR";
+    language = "es-ES";
+    language = "sl-IT-nedis";
+    language = "hy-Latn-IT-arevela";
+*/
+    language = language.toLowerCase();
+
+    // English is already loaded
+    if(language == "en" || language.indexOf("en-") == 0) return "";
+
+    for(l = 0; l < availabeLang.length; l++){
+        if(language.indexOf(availabeLang[l].toLowerCase()) == 0){
+            console.log("Alternate Language detected: ", language);
+            return availabeLang[l].toLowerCase();
+        }
+    }
+    return "";
 }
 function getFilter(filter, keyword){
     if(filter.indexOf(",", filter.indexOf(keyword +": ") + keyword.length + 2) != -1){
@@ -1446,7 +1484,6 @@ function EditBuddyWindow(buddy){
                 Alert(lang.alert_single_file, lang.error);
             }
         });
-
     });
 }
 
@@ -1455,21 +1492,20 @@ function EditBuddyWindow(buddy){
 $(document).ready(function () {
     // Load Langauge File
     // ==================
-    var userLang = navigator.language || navigator.userLanguage;
-    userLang = userLang.split('-')[0].toLowerCase();
-    // userLang = "ch"; // <- testing override
     $.getJSON(hostingPrefex + "en.json", function (data){
         lang = data;
-        if(userLang != "en"){
+        var userLang = IsUserLangAvaialbe();
+        if(userLang != ""){
+        // if(userLang != "en" && availabeLang.includes(userLang)){
             $.getJSON(hostingPrefex + userLang +".json", function (altdata){
                 lang = altdata;
             }).always(function() {
-                console.log("Lanaguage Pack Loaded: ", lang);
+                console.log("Alternate Lanaguage Pack loaded: ", lang);
                 InitUi();
             });
         }
         else {
-            console.log("Lanaguage Pack Loaded: ", lang);
+            console.log("Lanaguage Pack already loaded: ", lang);
             InitUi();
         }
     });
@@ -1553,7 +1589,7 @@ function InitUi(){
     $("#UserProfile").on('click', function(event){
         ShowMyProfileMenu(this);
     });
-    
+
     UpdateUI();
     
     // Check if you account is created
@@ -6097,7 +6133,12 @@ function ShowDial(obj){
     dhtmlxPopup.show(x, y, w, h);
 }
 function handleDialInput(obj, event){
-    $("#dialText").val($("#dialText").val().replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength));
+    if(EnableAlphanumericDial){
+        $("#dialText").val($("#dialText").val().replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0,MaxDidLength));
+    }
+    else {
+        $("#dialText").val($("#dialText").val().replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength));
+    }
     $("#dialVideo").prop('disabled', ($("#dialText").val().length >= DidLength));
 }
 function KeyPress(num){
@@ -6106,7 +6147,12 @@ function KeyPress(num){
 }
 function DialByLine(type, buddy, numToDial){
     var numDial = (numToDial)? numToDial : $("#dialText").val();
-    numDial = numDial.replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength)
+    if(EnableAlphanumericDial){
+        numDial = numDial.replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0,MaxDidLength)
+    } 
+    else {
+        numDial = numDial.replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength)
+    }
     if(numDial.length == 0) {
         console.warn("Enter number to dial");
         return;
@@ -6479,14 +6525,14 @@ function RefreshLineActivity(lineNum){
         dstCallerID = session.remoteIdentity.uri.user;
     }
 
-    var withVideo = (session.data.withvideo)? "(with video)" : "";
-    var startCallMessage = (session.data.calldirection == "inbound")? "You received a call from " + srcCallerID  +" "+ withVideo: "You made a call to " + dstCallerID +" "+ withVideo;
+    var withVideo = (session.data.withvideo)? "("+ lang.with_video +")" : "";
+    var startCallMessage = (session.data.calldirection == "inbound")? lang.you_received_a_call_from + " " + srcCallerID  +" "+ withVideo : lang.you_made_a_call_to + " " + dstCallerID +" "+ withVideo;
     callDetails.push({ 
         Message: startCallMessage,
         TimeStr : CallStart
     });
     if(CallAnswer){
-        var answerCallMessage = (session.data.calldirection == "inbound")? "You answered after " + ringTime + " " + lang.seconds_plural : "They answered after " + ringTime + " " + lang.seconds_plural;
+        var answerCallMessage = (session.data.calldirection == "inbound")? lang.you_answered_after + " " + ringTime + " " + lang.seconds_plural : lang.they_answered_after + " " + ringTime + " " + lang.seconds_plural;
         callDetails.push({ 
             Message: answerCallMessage,
             TimeStr : CallAnswer
@@ -6495,12 +6541,12 @@ function RefreshLineActivity(lineNum){
 
     var Transfers = (session.data.transfer)? session.data.transfer : [];
     $.each(Transfers, function(item, transfer){
-        var msg = (transfer.type == "Blind")? "You started a blind transfer to "+ transfer.to +". " : "You started a attended transfer to "+ transfer.to +". ";
+        var msg = (transfer.type == "Blind")? lang.you_started_a_blind_transfer_to +" "+ transfer.to +". " : lang.you_started_an_attended_transfer_to + " "+ transfer.to +". ";
         if(transfer.accept && transfer.accept.complete == true){
-            msg += "The call was accepted."
+            msg += lang.the_call_was_completed
         }
         else if(transfer.accept.disposition != "") {
-            msg += "The call was not accepted. ("+ transfer.accept.disposition +")"
+            msg += lang.the_call_was_not_completed +" ("+ transfer.accept.disposition +")"
         }
         callDetails.push({
             Message : msg,
@@ -6510,22 +6556,22 @@ function RefreshLineActivity(lineNum){
     var Mutes = (session.data.mute)? session.data.mute : []
     $.each(Mutes, function(item, mute){
         callDetails.push({
-            Message : (mute.event == "mute")? "You put the call on mute." : "You took the call off mute.",
+            Message : (mute.event == "mute")? lang.you_put_the_call_on_mute : lang.you_took_the_call_off_mute,
             TimeStr : mute.eventTime
         });
     });
     var Holds = (session.data.hold)? session.data.hold : []
     $.each(Holds, function(item, hold){
         callDetails.push({
-            Message : (hold.event == "hold")? "You put the call on hold." : "You took the call off hold.",
+            Message : (hold.event == "hold")? lang.you_put_the_call_on_hold : lang.you_took_the_call_off_hold,
             TimeStr : hold.eventTime
         });
     });
     var Recordings = (session.data.recordings)? session.data.recordings : []
     $.each(Recordings, function(item, recording){
-        var msg = "Call is being Recorded.";
+        var msg = lang.call_is_being_recorded;
         if(recording.startTime != recording.stopTime){
-            msg += "(Now Stopped)"
+            msg += "("+ lang.now_stopped +")"
         }
         callDetails.push({
             Message : msg,
@@ -6534,12 +6580,12 @@ function RefreshLineActivity(lineNum){
     });
     var ConfCalls = (session.data.confcalls)? session.data.confcalls : []
     $.each(ConfCalls, function(item, confCall){
-        var msg = "You started a conference call to "+ confCall.to +". ";
+        var msg = lang.you_started_a_conference_call_to +" "+ confCall.to +". ";
         if(confCall.accept && confCall.accept.complete == true){
-            msg += "The call was accepted."
+            msg += lang.the_call_was_completed
         }
         else if(confCall.accept.disposition != "") {
-            msg += "The call was not accepted. ("+ confCall.accept.disposition +")"
+            msg += lang.the_call_was_not_completed +" ("+ confCall.accept.disposition +")"
         }
         callDetails.push({
             Message : msg,
@@ -6757,8 +6803,8 @@ function UpdateBuddyList(){
             // An extension on the same system
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onmouseenter=\"ShowBuddyDial(this, '"+ buddyObj.identity +"')\" onmouseleave=\"HideBuddyDial(this, '"+ buddyObj.identity +"')\" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
             html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 44px; display:none\" title="+ lang.audio_call +" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\"><i class=\"fa fa-phone\"></i></span>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-video-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.video_call +" onclick=\"QuickDialVideo('"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"')\"><i class=\"fa fa-video-camera\"></i></span>";
+            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 44px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
+            html += "<span id=\"contact-"+ buddyObj.identity +"-video-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.video_call +" onclick=\"QuickDialVideo('"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"', event)\"><i class=\"fa fa-video-camera\"></i></span>";
             html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
             html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
             html += "<div class=contactNameText><i class=\"fa fa-phone-square\"></i> "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName +"</div>";
@@ -6769,7 +6815,7 @@ function UpdateBuddyList(){
         } else if(buddyObj.type == "contact") { 
             // An Addressbook Contact
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onmouseenter=\"ShowBuddyDial(this, '"+ buddyObj.identity +"')\" onmouseleave=\"HideBuddyDial(this, '"+ buddyObj.identity +"')\" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'contact')\">";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.audio_call +" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\"><i class=\"fa fa-phone\"></i></span>";
+            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
             html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">0</span>";
             html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"contact") +"')\"></div>";
             html += "<div class=contactNameText><i class=\"fa fa-address-card\"></i> "+ buddyObj.CallerIDName +"</div>";
@@ -6780,7 +6826,7 @@ function UpdateBuddyList(){
         } else if(buddyObj.type == "group"){ 
             // A collection of extensions and contacts
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onmouseenter=\"ShowBuddyDial(this, '"+ buddyObj.identity +"')\" onmouseleave=\"HideBuddyDial(this, '"+ buddyObj.identity +"')\" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'group')\">";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.audio_call +" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\"><i class=\"fa fa-phone\"></i></span>";
+            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
             // html += "<span id=\"contact-"+ buddyObj.identity +"-video-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.video_call +"><i class=\"fa fa-video-camera\"></i></span>";
             html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">0</span>";
             html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"group") +"')\"></div>";
@@ -7430,7 +7476,12 @@ function HideBuddyDial(obj, buddy){
     $("#contact-"+ buddy +"-audio-dial").hide();
     $("#contact-"+ buddy +"-video-dial").hide();
 }
-function QuickDialVideo(buddy, ExtNo){
+function QuickDialAudio(buddy, obj, event){
+    AudioCallMenu(buddy, obj);
+    event.stopPropagation();
+}
+function QuickDialVideo(buddy, ExtNo, event){
+    event.stopPropagation();
     window.setTimeout(function(){
         DialByLine('video', buddy, ExtNo);
     }, 300);
@@ -8323,8 +8374,10 @@ function ChangeSettings(lineNum, obj){
         $("#DeviceSelector").append(speakerSelect);
     }
     // Camera
-    $("#DeviceSelector").append("<div style=\"margin-top:20px\">"+ lang.camera +": </div>");
-    $("#DeviceSelector").append(videoSelect);
+    if(session.data.withvideo == true){
+        $("#DeviceSelector").append("<div style=\"margin-top:20px\">"+ lang.camera +": </div>");
+        $("#DeviceSelector").append(videoSelect);
+    }
 
     // Show Menu
     dhtmlxPopup.show(x, y, w, h);
