@@ -1932,6 +1932,19 @@ div.dhx_popup_material div.dhx_popup_area {
 .tags .tagText::before{
     content: "\f067";
 }
+.cdrTag{
+    margin-right: 10px;
+}
+.cdrTag::before {
+    content: "\f02b";
+    font-family: FontAwesome;
+    width: 16px;
+    display: inline-block;
+    line-height: 16px;
+    height: 16px;
+    vertical-align: middle;
+    text-align: center;
+}
 
 .messageReadMore{
     text-align: left;

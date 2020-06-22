@@ -105,7 +105,8 @@ var VideoinputDevices = [];
 var SpeakerDevices = [];
 var Lines = [];
 var lang = {};
-var availableLang = ["zh-hans"];
+var availableLang = ["ja", "zh-hans", "zh-cn", "zh"];
+// Note: more specific lanagauge must be first. ie: "zh-hans" should be before "zh". 
 
 // User Settings & Defaults
 // ========================
@@ -2905,13 +2906,14 @@ function StartRemoteAudioMediaMonitoring(lineNum, session) {
             var instPercent = level * 100;
 
             $("#line-" + lineNum + "-Speaker").css("height", instPercent.toFixed(2) +"%");
-        }, 200);
+        }, 50);
         soundMeter.networkInterval = window.setInterval(function (){
             // Calculate Network Conditions
             if(audioReceiver != null) {
                 audioReceiver.getStats().then(function(stats) {
                     stats.forEach(function(report){
 
+                        var theMoment = utcDateNow();
                         var ReceiveBitRateChart = soundMeter.ReceiveBitRateChart;
                         var ReceivePacketRateChart = soundMeter.ReceivePacketRateChart;
                         var ReceivePacketLossChart = soundMeter.ReceivePacketLossChart;
@@ -2939,6 +2941,7 @@ function StartRemoteAudioMediaMonitoring(lineNum, session) {
                             ReceiveBitRateChart.lastValueTimestamp = report.timestamp;
                             ReceiveBitRateChart.lastValueBytesReceived = report.bytesReceived;
 
+                            soundMeter.ReceiveBitRate.push({ value: kbitsPerSec, timestamp : theMoment});
                             ReceiveBitRateChart.data.datasets[0].data.push(kbitsPerSec);
                             ReceiveBitRateChart.data.labels.push("");
                             if(ReceiveBitRateChart.data.datasets[0].data.length > maxDataLength) {
@@ -2953,6 +2956,7 @@ function StartRemoteAudioMediaMonitoring(lineNum, session) {
                             ReceivePacketRateChart.lastValueTimestamp = report.timestamp;
                             ReceivePacketRateChart.lastValuePacketReceived = report.packetsReceived;
 
+                            soundMeter.ReceivePacketRate.push({ value: PacketsPerSec, timestamp : theMoment});
                             ReceivePacketRateChart.data.datasets[0].data.push(PacketsPerSec);
                             ReceivePacketRateChart.data.labels.push("");
                             if(ReceivePacketRateChart.data.datasets[0].data.length > maxDataLength) {
@@ -2967,6 +2971,7 @@ function StartRemoteAudioMediaMonitoring(lineNum, session) {
                             ReceivePacketLossChart.lastValueTimestamp = report.timestamp;
                             ReceivePacketLossChart.lastValuePacketLoss = report.packetsLost;
 
+                            soundMeter.ReceivePacketLoss.push({ value: PacketsLost, timestamp : theMoment});
                             ReceivePacketLossChart.data.datasets[0].data.push(PacketsLost);
                             ReceivePacketLossChart.data.labels.push("");
                             if(ReceivePacketLossChart.data.datasets[0].data.length > maxDataLength) {
@@ -2976,6 +2981,7 @@ function StartRemoteAudioMediaMonitoring(lineNum, session) {
                             ReceivePacketLossChart.update();
 
                             // Receive Jitter
+                            soundMeter.ReceiveJitter.push({ value: report.jitter, timestamp : theMoment});
                             ReceiveJitterChart.data.datasets[0].data.push(report.jitter);
                             ReceiveJitterChart.data.labels.push("");
                             if(ReceiveJitterChart.data.datasets[0].data.length > maxDataLength) {
@@ -2987,7 +2993,8 @@ function StartRemoteAudioMediaMonitoring(lineNum, session) {
                         if(report.type == "track") {
 
                             // Receive Audio Levels
-                            var levelPercent = (report.audioLevel * 100)
+                            var levelPercent = (report.audioLevel * 100);
+                            soundMeter.ReceiveLevels.push({ value: levelPercent, timestamp : theMoment});
                             ReceiveLevelsChart.data.datasets[0].data.push(levelPercent);
                             ReceiveLevelsChart.data.labels.push("");
                             if(ReceiveLevelsChart.data.datasets[0].data.length > maxDataLength)
@@ -3100,7 +3107,7 @@ function StartLocalAudioMediaMonitoring(lineNum, session) {
             if (level > 1) level = 1;
             var instPercent = level * 100;
             $("#line-" + lineNum + "-Mic").css("height", instPercent.toFixed(2) +"%");
-        }, 200);
+        }, 50);
         soundMeter.networkInterval = window.setInterval(function (){
             // Calculate Network Conditions
             // Sending Audio Track
@@ -3108,6 +3115,7 @@ function StartLocalAudioMediaMonitoring(lineNum, session) {
                 audioSender.getStats().then(function(stats) {
                     stats.forEach(function(report){
 
+                        var theMoment = utcDateNow();
                         var SendBitRateChart = soundMeter.SendBitRateChart;
                         var SendPacketRateChart = soundMeter.SendPacketRateChart;
                         var elapsedSec = Math.floor((Date.now() - soundMeter.startTime)/1000);
@@ -3128,6 +3136,7 @@ function StartLocalAudioMediaMonitoring(lineNum, session) {
                             SendBitRateChart.lastValueTimestamp = report.timestamp;
                             SendBitRateChart.lastValueBytesSent = report.bytesSent;
 
+                            soundMeter.SendBitRate.push({ value: kbitsPerSec, timestamp : theMoment});
                             SendBitRateChart.data.datasets[0].data.push(kbitsPerSec);
                             SendBitRateChart.data.labels.push("");
                             if(SendBitRateChart.data.datasets[0].data.length > maxDataLength) {
@@ -3142,6 +3151,7 @@ function StartLocalAudioMediaMonitoring(lineNum, session) {
                             SendPacketRateChart.lastValueTimestamp = report.timestamp;
                             SendPacketRateChart.lastValuePacketSent = report.packetsSent;
 
+                            soundMeter.SendPacketRate.push({ value: PacketsPerSec, timestamp : theMoment});
                             SendPacketRateChart.data.datasets[0].data.push(PacketsPerSec);
                             SendPacketRateChart.data.labels.push("");
                             if(SendPacketRateChart.data.datasets[0].data.length > maxDataLength) {
@@ -3173,7 +3183,7 @@ class SoundMeter {
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
             audioContext = new AudioContext();
         }
-        catch (e) {
+        catch(e) {
             console.warn("AudioContext() LocalAudio not available... its fine.");
         }
         if (audioContext == null) return null;
@@ -3184,12 +3194,19 @@ class SoundMeter {
         this.networkInterval = null;
         this.startTime = 0;
         this.ReceiveBitRateChart = null;
+        this.ReceiveBitRate = [];
         this.ReceivePacketRateChart = null;
+        this.ReceivePacketRate = [];
         this.ReceivePacketLossChart = null;
+        this.ReceivePacketLoss = [];
         this.ReceiveJitterChart = null;
+        this.ReceiveJitter = [];
         this.ReceiveLevelsChart = null;
+        this.ReceiveLevels = [];
         this.SendBitRateChart = null;
+        this.SendBitRate = [];
         this.SendPacketRateChart = null;
+        this.SendPacketRate = [];
         this.context = audioContext;
         this.instant = 0.0;
         this.script = audioContext.createScriptProcessor(2048, 1, 1);
@@ -3213,7 +3230,7 @@ class SoundMeter {
             this.script.connect(this.context.destination);
             callback(null);
         }
-        catch (e) {
+        catch(e) {
             console.error(e); // Probably not audio track
             callback(e);
         }
@@ -3224,12 +3241,12 @@ class SoundMeter {
             window.clearInterval(this.levelsInterval);
             this.levelsInterval = null;
         }
-        catch (e) { }
+        catch(e) { }
         try {
             window.clearInterval(this.networkInterval);
             this.networkInterval = null;
         }
-        catch (e) { }
+        catch(e) { }
         this.mic.disconnect();
         this.script.disconnect();
         this.mic = null;
@@ -3237,8 +3254,21 @@ class SoundMeter {
         try {
             this.context.close();
         }
-        catch (e) { }
+        catch(e) { }
         this.context = null;
+
+        // Save to IndexDb
+        var lineObj = FindLineByNumber(this.lineNum);
+        var QosData = {
+            ReceiveBitRate: this.ReceiveBitRate,
+            ReceivePacketRate: this.ReceivePacketRate,
+            ReceivePacketLoss: this.ReceivePacketLoss,
+            ReceiveJitter: this.ReceiveJitter,
+            ReceiveLevels: this.ReceiveLevels,
+            SendBitRate: this.SendBitRate,
+            SendPacketRate: this.SendPacketRate,
+        }
+        SaveQosData(QosData, this.sessionId, lineObj.BuddyObj.identity);
     }
 }
 function MeterSettingsOutput(audioStream, objectId, direction, interval){
@@ -3260,6 +3290,339 @@ function MeterSettingsOutput(audioStream, objectId, direction, interval){
     });
 
     return soundMeter;
+}
+
+// QOS
+// ===
+function SaveQosData(QosData, sessionId, buddy){
+    var indexedDB = window.indexedDB;
+    var request = indexedDB.open("CallQosData");
+    request.onerror = function(event) {
+        console.error("IndexDB Request Error:", event);
+    }
+    request.onupgradeneeded = function(event) {
+        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
+        var IDB = event.target.result;
+
+        // Create Object Store
+        if(IDB.objectStoreNames.contains("CallQos") == false){
+            var objectStore = IDB.createObjectStore("CallQos", { keyPath: "uID" });
+            objectStore.createIndex("sessionid", "sessionid", { unique: false });
+            objectStore.createIndex("buddy", "buddy", { unique: false });
+            objectStore.createIndex("QosData", "QosData", { unique: false });
+        }
+        else {
+            console.warn("IndexDB requested upgrade, but object store was in place");
+        }
+    }
+    request.onsuccess = function(event) {
+        console.log("IndexDB connected to CallQosData");
+
+        var IDB = event.target.result;
+        if(IDB.objectStoreNames.contains("CallQos") == false){
+            console.warn("IndexDB CallQosData.CallQos does not exists");
+            return;
+        }
+        IDB.onerror = function(event) {
+            console.error("IndexDB Error:", event);
+        };
+
+        // Prepare data to write
+        var data = {
+            uID: uID(),
+            sessionid: sessionId,
+            buddy: buddy,
+            QosData: QosData
+        }
+        // Commit Transaction
+        var transaction = IDB.transaction(["CallQos"], "readwrite");
+        var objectStoreAdd = transaction.objectStore("CallQos").add(data);
+        objectStoreAdd.onsuccess = function(event) {
+            console.log("Call CallQos Sucess: ", sessionId);
+        }
+    }
+}
+function DisplayQosData(sessionId){
+    var indexedDB = window.indexedDB;
+    var request = indexedDB.open("CallQosData");
+    request.onerror = function(event) {
+        console.error("IndexDB Request Error:", event);
+    }
+    request.onupgradeneeded = function(event) {
+        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
+    }
+    request.onsuccess = function(event) {
+        console.log("IndexDB connected to CallQosData");
+
+        var IDB = event.target.result;
+        if(IDB.objectStoreNames.contains("CallQos") == false){
+            console.warn("IndexDB CallQosData.CallQos does not exists");
+            return;
+        } 
+
+        var transaction = IDB.transaction(["CallQos"]);
+        var objectStoreGet = transaction.objectStore("CallQos").index('sessionid').getAll(sessionId);
+        objectStoreGet.onerror = function(event) {
+            console.error("IndexDB Get Error:", event);
+        };
+        objectStoreGet.onsuccess = function(event) {
+            if(event.target.result && event.target.result.length == 2){
+                // This is the correct data
+
+                var QosData0 = event.target.result[0].QosData;
+                // ReceiveBitRate: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+                // ReceiveJitter: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+                // ReceiveLevels: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+                // ReceivePacketLoss: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+                // ReceivePacketRate: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+                // SendBitRate: []
+                // SendPacketRate: []
+                var QosData1 = event.target.result[1].QosData;
+                // ReceiveBitRate: []
+                // ReceiveJitter: []
+                // ReceiveLevels: []
+                // ReceivePacketLoss: []
+                // ReceivePacketRate: []
+                // SendBitRate: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+                // SendPacketRate: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+
+                Chart.defaults.global.defaultFontSize = 12;
+
+                var ChatHistoryOptions = { 
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        yAxes: [{
+                            ticks: { beginAtZero: true } //, min: 0, max: 100
+                        }],
+                        xAxes: [{
+                            display: false
+                        }]
+                    }, 
+                }
+
+
+                // ReceiveBitRateChart
+                var labelset = [];
+                var dataset = [];
+                var data = (QosData0.ReceiveBitRate.length > 0)? QosData0.ReceiveBitRate : QosData1.ReceiveBitRate;
+                $.each(data, function(i,item){
+                    labelset.push(item.timestamp);
+                    dataset.push(item.value);
+                });
+                var ReceiveBitRateChart = new Chart($("#cdr-AudioReceiveBitRate"), {
+                    type: 'line',
+                    data: {
+                        labels: labelset,
+                        datasets: [{
+                            label: lang.receive_kilobits_per_second,
+                            data: dataset,
+                            backgroundColor: 'rgba(168, 0, 0, 0.5)',
+                            borderColor: 'rgba(168, 0, 0, 1)',
+                            borderWidth: 1,
+                            pointRadius: 1
+                        }]
+                    },
+                    options: ChatHistoryOptions
+                });
+
+                // ReceivePacketRateChart
+                var labelset = [];
+                var dataset = [];
+                var data = (QosData0.ReceivePacketRate.length > 0)? QosData0.ReceivePacketRate : QosData1.ReceivePacketRate;
+                $.each(data, function(i,item){
+                    labelset.push(item.timestamp);
+                    dataset.push(item.value);
+                });
+                var ReceivePacketRateChart = new Chart($("#cdr-AudioReceivePacketRate"), {
+                    type: 'line',
+                    data: {
+                        labels: labelset,
+                        datasets: [{
+                            label: lang.receive_packets_per_second,
+                            data: dataset,
+                            backgroundColor: 'rgba(168, 0, 0, 0.5)',
+                            borderColor: 'rgba(168, 0, 0, 1)',
+                            borderWidth: 1,
+                            pointRadius: 1
+                        }]
+                    },
+                    options: ChatHistoryOptions
+                });
+
+                // AudioReceivePacketLossChart
+                var labelset = [];
+                var dataset = [];
+                var data = (QosData0.ReceivePacketLoss.length > 0)? QosData0.ReceivePacketLoss : QosData1.ReceivePacketLoss;
+                $.each(data, function(i,item){
+                    labelset.push(item.timestamp);
+                    dataset.push(item.value);
+                });
+                var AudioReceivePacketLossChart = new Chart($("#cdr-AudioReceivePacketLoss"), {
+                    type: 'line',
+                    data: {
+                        labels: labelset,
+                        datasets: [{
+                            label: lang.receive_packet_loss,
+                            data: dataset,
+                            backgroundColor: 'rgba(168, 99, 0, 0.5)',
+                            borderColor: 'rgba(168, 99, 0, 1)',
+                            borderWidth: 1,
+                            pointRadius: 1
+                        }]
+                    },
+                    options: ChatHistoryOptions
+                });
+
+                // AudioReceiveJitterChart
+                var labelset = [];
+                var dataset = [];
+                var data = (QosData0.ReceiveJitter.length > 0)? QosData0.ReceiveJitter : QosData1.ReceiveJitter;
+                $.each(data, function(i,item){
+                    labelset.push(item.timestamp);
+                    dataset.push(item.value);
+                });
+                var AudioReceiveJitterChart = new Chart($("#cdr-AudioReceiveJitter"), {
+                    type: 'line',
+                    data: {
+                        labels: labelset,
+                        datasets: [{
+                            label: lang.receive_jitter,
+                            data: dataset,
+                            backgroundColor: 'rgba(0, 38, 168, 0.5)',
+                            borderColor: 'rgba(0, 38, 168, 1)',
+                            borderWidth: 1,
+                            pointRadius: 1
+                        }]
+                    },
+                    options: ChatHistoryOptions
+                });
+                
+                // AudioReceiveLevelsChart
+                var labelset = [];
+                var dataset = [];
+                var data = (QosData0.ReceiveLevels.length > 0)? QosData0.ReceiveLevels : QosData1.ReceiveLevels;
+                $.each(data, function(i,item){
+                    labelset.push(item.timestamp);
+                    dataset.push(item.value);
+                });
+                var AudioReceiveLevelsChart = new Chart($("#cdr-AudioReceiveLevels"), {
+                    type: 'line',
+                    data: {
+                        labels: labelset,
+                        datasets: [{
+                            label: lang.receive_audio_levels,
+                            data: dataset,
+                            backgroundColor: 'rgba(140, 0, 168, 0.5)',
+                            borderColor: 'rgba(140, 0, 168, 1)',
+                            borderWidth: 1,
+                            pointRadius: 1
+                        }]
+                    },
+                    options: ChatHistoryOptions
+                });
+                
+                // SendPacketRateChart
+                var labelset = [];
+                var dataset = [];
+                var data = (QosData0.SendPacketRate.length > 0)? QosData0.SendPacketRate : QosData1.SendPacketRate;
+                $.each(data, function(i,item){
+                    labelset.push(item.timestamp);
+                    dataset.push(item.value);
+                });
+                var SendPacketRateChart = new Chart($("#cdr-AudioSendPacketRate"), {
+                    type: 'line',
+                    data: {
+                        labels: labelset,
+                        datasets: [{
+                            label: lang.send_packets_per_second,
+                            data: dataset,
+                            backgroundColor: 'rgba(0, 121, 19, 0.5)',
+                            borderColor: 'rgba(0, 121, 19, 1)',
+                            borderWidth: 1,
+                            pointRadius: 1
+                        }]
+                    },
+                    options: ChatHistoryOptions
+                });
+
+                // AudioSendBitRateChart
+                var labelset = [];
+                var dataset = [];
+                var data = (QosData0.SendBitRate.length > 0)? QosData0.SendBitRate : QosData1.SendBitRate;
+                $.each(data, function(i,item){
+                    labelset.push(item.timestamp);
+                    dataset.push(item.value);
+                });
+                var AudioSendBitRateChart = new Chart($("#cdr-AudioSendBitRate"), {
+                    type: 'line',
+                    data: {
+                        labels: labelset,
+                        datasets: [{
+                            label: lang.send_kilobits_per_second,
+                            data: dataset,
+                            backgroundColor: 'rgba(0, 121, 19, 0.5)',
+                            borderColor: 'rgba(0, 121, 19, 1)',
+                            borderWidth: 1,
+                            pointRadius: 1
+                        }]
+                    },
+                    options: ChatHistoryOptions
+                });
+
+            } else{
+                console.warn("Result not expected", event.target.result);
+            }
+        }
+    }
+}
+function DeleteQosData(buddy){
+    var indexedDB = window.indexedDB;
+    var request = indexedDB.open("CallQosData");
+    request.onerror = function(event) {
+        console.error("IndexDB Request Error:", event);
+    }
+    request.onupgradeneeded = function(event) {
+        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
+        // If this is the case, there will be no call recordings
+    }
+    request.onsuccess = function(event) {
+        console.log("IndexDB connected to CallQosData");
+
+        var IDB = event.target.result;
+        if(IDB.objectStoreNames.contains("CallQos") == false){
+            console.warn("IndexDB CallQosData.CallQos does not exists");
+            return;
+        }
+        IDB.onerror = function(event) {
+            console.error("IndexDB Error:", event);
+        };
+
+        // Loop and Delete
+        console.log("Deleting CallQosData: ", buddy);
+        var transaction = IDB.transaction(["CallQos"], "readwrite");
+        var objectStore = transaction.objectStore("CallQos");
+        var objectStoreGet = objectStore.index('buddy').getAll(buddy);
+
+        objectStoreGet.onerror = function(event) {
+            console.error("IndexDB Get Error:", event);
+        }
+        objectStoreGet.onsuccess = function(event) {
+            if(event.target.result && event.target.result.length > 0){
+                // There sre some rows to delete
+                $.each(event.target.result, function(i, item){
+                    // console.log("Delete: ", item.uID);
+                    try{
+                        objectStore.delete(item.uID);
+                    } catch(e){
+                        console.log("Call CallQosData Delete failed: ", e);
+                    }
+                });
+            }
+        }
+
+    }
 }
 
 // Presence / Subscribe
@@ -6147,10 +6510,10 @@ function KeyPress(num){
 function DialByLine(type, buddy, numToDial){
     var numDial = (numToDial)? numToDial : $("#dialText").val();
     if(EnableAlphanumericDial){
-        numDial = numDial.replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0,MaxDidLength)
+        numDial = numDial.replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0,MaxDidLength);
     } 
     else {
-        numDial = numDial.replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength)
+        numDial = numDial.replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength);
     }
     if(numDial.length == 0) {
         console.warn("Enter number to dial");
@@ -6496,10 +6859,9 @@ function RefreshLineActivity(lineNum){
     if(lineObj == null || lineObj.SipSession == null) {
         return;
     }
+    var session = lineObj.SipSession;
 
     $("#line-"+ lineNum +"-CallDetails").empty();
-
-    var session = lineObj.SipSession;
 
     var callDetails = [];
 
@@ -6518,9 +6880,8 @@ function RefreshLineActivity(lineNum){
     var dstCallerID = "";
     if(session.data.calldirection == "inbound") {
         srcCallerID = "<"+ session.remoteIdentity.uri.user +"> "+ session.remoteIdentity.displayName;
-        dstCallerID = "<"+ profileUser +"> "+ profileName;
-    } else if(session.data.calldirection == "outbound") {
-        srcCallerID = "<"+ profileUser+"> "+ profileName;
+    } 
+    else if(session.data.calldirection == "outbound") {
         dstCallerID = session.remoteIdentity.uri.user;
     }
 
@@ -7018,6 +7379,9 @@ function RemoveBuddyMessageStream(buddyObj){
     if(stream && stream.DataCollection && stream.DataCollection.length >= 1){
         DeleteCallRecordings(buddyObj.identity, stream);
     }
+    
+    // Remove QOS Data
+    DeleteQosData(buddyObj.identity);
 }
 function DeleteCallRecordings(buddy, stream){
     var indexedDB = window.indexedDB;
@@ -7609,7 +7973,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
         var TagState = $("#cdr-flagged-"+ cdrId).is(":visible");
         var TagText = (TagState)? lang.clear_flag : lang.flag_call;
         menu = [
-            // { id: 1, name: "<i class=\"fa fa-external-link\"></i> Show Call Detail Record" },
+            { id: 1, name: "<i class=\"fa fa-external-link\"></i> "+ lang.show_call_detail_record },
             { id: 2, name: "<i class=\"fa fa-tags\"></i> "+ lang.tag_call },
             { id: 3, name: "<i class=\"fa fa-flag\"></i> "+ TagText },
             { id: 4, name: "<i class=\"fa fa-quote-left\"></i> "+ lang.edit_comment },
@@ -7629,8 +7993,272 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
     dhtmlxPopup.attachEvent("onClick", function(id){
         HidePopup();
 
+        // CDR messages
         if(id == 1){
-            // Open CDR Details Window
+
+            var cdr = null;
+            var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
+            if(currentStream != null || currentStream.DataCollection != null){
+                $.each(currentStream.DataCollection, function (i, item) {
+                    if (item.ItemType == "CDR" && item.CdrId == cdrId) {
+                        // Found
+                        cdr = item;
+                        return false;
+                    }
+                });
+            }
+            if(cdr == null) return;
+
+            var callDetails = [];
+            var html = "<div class=\"UiWindowField scroller\">";
+
+            // Billsec: 2.461
+            // CallAnswer: "2020-06-22 09:47:52 UTC"
+            // CallDirection: "outbound"
+            // CallEnd: "2020-06-22 09:47:54 UTC"
+            // CdrId: "15928192748351E9D"
+            // ConfCalls: []
+            // Dst: "*65"
+            // DstUserId: "15919450411467CC"
+            // Holds: []
+            // ItemDate: "2020-06-22 09:47:50 UTC"
+            // ItemType: "CDR"
+            // MessageData: null
+            // Mutes: []
+            // QOS: []
+            // ReasonCode: 16
+            // ReasonText: "Normal Call clearing"
+            // Recordings: [{…}]
+            // RingTime: 2.374
+            // SessionId: "67sv8o86msa7df23bulpnjrca7fton"
+            // Src: "<100> Conrad de Wet"
+            // SrcUserId: "17186D5983F"
+            // Tags: []
+            // Terminate: "us"
+            // TotalDuration: 4.835
+            // Transfers: []
+            // WithVideo: false
+
+            var CallDate = moment.utc(cdr.ItemDate.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss");
+            var CallAnswer = (cdr.CallAnswer)? moment.utc(cdr.CallAnswer.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss") : null ;
+            var ringTime = (cdr.RingTime)? cdr.RingTime : 0 ;
+            var CallEnd = moment.utc(cdr.CallEnd.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss");
+
+            var srcCallerID = "";
+            var dstCallerID = "";
+            if(cdr.CallDirection == "inbound") {
+                srcCallerID = cdr.Src;
+            } 
+            else if(cdr.CallDirection == "outbound") {
+                dstCallerID = cdr.Dst;
+            }
+            html += "<div class=UiText><b>"+ lang.call_direction +"</b> : "+ cdr.CallDirection +"</div>";
+            html += "<div class=UiText><b>"+ lang.call_date_and_time +"</b> : "+ CallDate +"</div>";
+            html += "<div class=UiText><b>"+ lang.ring_time +"</b> : "+ formatDuration(ringTime) +" ("+ ringTime +")</div>";
+            html += "<div class=UiText><b>"+ lang.talk_time +"</b> : " + formatDuration(cdr.Billsec) +" ("+ cdr.Billsec +")</div>";
+            html += "<div class=UiText><b>"+ lang.call_duration +"</b> : "+ formatDuration(cdr.TotalDuration) +" ("+ cdr.TotalDuration +")</div>";
+            html += "<div class=UiText><b>"+ lang.video_call +"</b> : "+ ((cdr.WithVideo)? lang.yes : lang.no) +"</div>";
+            html += "<div class=UiText><b>"+ lang.flagged +"</b> : "+ ((cdr.Flagged)? "<i class=\"fa fa-flag FlagCall\"></i> " + lang.yes : lang.no)  +"</div>";
+            html += "<hr>";
+            html += "<h2 style=\"font-size: 16px\">"+ lang.call_tags +"</h2>";
+            html += "<hr>";
+            $.each(cdr.Tags, function(item, tag){
+                html += "<span class=cdrTag>"+ tag.value +"</span>"
+            });
+
+            html += "<h2 style=\"font-size: 16px\">"+ lang.call_notes +"</h2>";
+            html += "<hr>";
+            if(cdr.MessageData){
+                html += "\"" + cdr.MessageData + "\"";
+            }
+
+            html += "<h2 style=\"font-size: 16px\">"+ lang.activity_timeline +"</h2>";
+            html += "<hr>";
+
+            var withVideo = (cdr.WithVideo)? "("+ lang.with_video +")" : "";
+            var startCallMessage = (cdr.CallDirection == "inbound")? lang.you_received_a_call_from + " " + srcCallerID  +" "+ withVideo : lang.you_made_a_call_to + " " + dstCallerID +" "+ withVideo;
+            callDetails.push({ 
+                Message: startCallMessage,
+                TimeStr: cdr.ItemDate
+            });
+            if(CallAnswer){
+                var answerCallMessage = (cdr.CallDirection == "inbound")? lang.you_answered_after + " " + ringTime + " " + lang.seconds_plural : lang.they_answered_after + " " + ringTime + " " + lang.seconds_plural;
+                callDetails.push({ 
+                    Message: answerCallMessage,
+                    TimeStr: cdr.CallAnswer
+                });
+            }
+            $.each(cdr.Transfers, function(item, transfer){
+                var msg = (transfer.type == "Blind")? lang.you_started_a_blind_transfer_to +" "+ transfer.to +". " : lang.you_started_an_attended_transfer_to + " "+ transfer.to +". ";
+                if(transfer.accept && transfer.accept.complete == true){
+                    msg += lang.the_call_was_completed
+                }
+                else if(transfer.accept.disposition != "") {
+                    msg += lang.the_call_was_not_completed +" ("+ transfer.accept.disposition +")"
+                }
+                callDetails.push({
+                    Message : msg,
+                    TimeStr : transfer.transferTime
+                });
+            });
+            $.each(cdr.Mutes, function(item, mute){
+                callDetails.push({
+                    Message : (mute.event == "mute")? lang.you_put_the_call_on_mute : lang.you_took_the_call_off_mute,
+                    TimeStr : mute.eventTime
+                });
+            });
+            $.each(cdr.Holds, function(item, hold){
+                callDetails.push({
+                    Message : (hold.event == "hold")? lang.you_put_the_call_on_hold : lang.you_took_the_call_off_hold,
+                    TimeStr : hold.eventTime
+                });
+            });
+            $.each(cdr.ConfCalls, function(item, confCall){
+                var msg = lang.you_started_a_conference_call_to +" "+ confCall.to +". ";
+                if(confCall.accept && confCall.accept.complete == true){
+                    msg += lang.the_call_was_completed
+                }
+                else if(confCall.accept.disposition != "") {
+                    msg += lang.the_call_was_not_completed +" ("+ confCall.accept.disposition +")"
+                }
+                callDetails.push({
+                    Message : msg,
+                    TimeStr : confCall.startTime
+                });
+            });
+            $.each(cdr.Recordings, function(item, recording){
+                var StartTime = moment.utc(recording.startTime.replace(" UTC", "")).local();
+                var StopTime = moment.utc(recording.stopTime.replace(" UTC", "")).local();
+                var recordingDuration = moment.duration(StopTime.diff(StartTime));
+
+                var msg = lang.call_is_being_recorded;
+                if(recording.startTime != recording.stopTime){
+                    msg += "("+ formatShortDuration(recordingDuration.asSeconds()) +")"
+                }
+                callDetails.push({
+                    Message : msg,
+                    TimeStr : recording.startTime
+                });
+            });
+            callDetails.push({
+                Message: (cdr.Terminate == "us")? "You ended the call." : "They ended the call",
+                TimeStr : cdr.CallEnd
+            });
+
+            callDetails.sort(function(a, b){
+                var aMo = moment.utc(a.TimeStr.replace(" UTC", ""));
+                var bMo = moment.utc(b.TimeStr.replace(" UTC", ""));
+                if (aMo.isSameOrAfter(bMo, "second")) {
+                    return 1;
+                } else return -1;
+                return 0;
+            });
+            $.each(callDetails, function(item, detail){
+                var Time = moment.utc(detail.TimeStr.replace(" UTC", "")).local().format("h:mm:ss A");
+                var messageString = "<table class=timelineMessage cellspacing=0 cellpadding=0><tr>"
+                messageString += "<td class=timelineMessageArea>"
+                messageString += "<div class=timelineMessageDate style=\"color: #333333\"><i class=\"fa fa-circle timelineMessageDot\"></i>"+ Time +"</div>"
+                messageString += "<div class=timelineMessageText style=\"color: #000000\">"+ detail.Message +"</div>"
+                messageString += "</td>"
+                messageString += "</tr></table>";
+                html += messageString;
+            });
+
+            html += "<h2 style=\"font-size: 16px\">"+ lang.call_recordings +"</h2>";
+            html += "<hr>";
+            var recordingsHtml = "";
+            $.each(cdr.Recordings, function(r, recording){
+                if(recording.uID){
+                    var StartTime = moment.utc(recording.startTime.replace(" UTC", "")).local();
+                    var StopTime = moment.utc(recording.stopTime.replace(" UTC", "")).local();
+                    var recordingDuration = moment.duration(StopTime.diff(StartTime));
+                    recordingsHtml += "<div>";
+                    if(cdr.WithVideo){
+                        recordingsHtml += "<div><video id=\"callrecording-video-"+ recording.uID +"\" controls style=\"width: 100%\"></div>";
+                    } 
+                    else {
+                        recordingsHtml += "<div><audio id=\"callrecording-audio-"+ recording.uID +"\" controls style=\"width: 100%\"></div>";
+                    } 
+                    recordingsHtml += "<div>"+ lang.started +": "+ StartTime.format("h:mm:ss A") +" <i class=\"fa fa-long-arrow-right\"></i> "+ lang.stopped +": "+ StopTime.format("h:mm:ss A") +"</div>";
+                    recordingsHtml += "<div>"+ lang.recording_duration +": "+ formatShortDuration(recordingDuration.asSeconds()) +"</div>";
+                    recordingsHtml += "</div>";
+                }
+            });
+            html += recordingsHtml;
+
+            html += "<h2 style=\"font-size: 16px\">"+ lang.send_statistics +"</h2>";
+            html += "<hr>";
+            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioSendBitRate\"></canvas></div>";
+            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioSendPacketRate\"></canvas></div>";
+
+            html += "<h2 style=\"font-size: 16px\">"+ lang.receive_statistics +"</h2>";
+            html += "<hr>";
+            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveBitRate\"></canvas></div>";
+            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceivePacketRate\"></canvas></div>";
+            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceivePacketLoss\"></canvas></div>";
+            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveJitter\"></canvas></div>";
+            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveLevels\"></canvas></div>";
+
+            html += "<br><br></div>";
+            OpenWindow(html, lang.call_detail_record, 480, 640, false, true, null, null, lang.cancel, function(){
+                CloseWindow();
+            }, function(){
+                // Queue video and audio
+                $.each(cdr.Recordings, function(r, recording){
+                    var mediaObj = null;
+                    if(cdr.WithVideo){
+                        mediaObj = $("#callrecording-video-"+ recording.uID).get(0);
+                    }
+                    else {
+                        mediaObj = $("#callrecording-audio-"+ recording.uID).get(0);
+                    }
+
+                    // Playback device
+                    var sinkId = getAudioOutputID();
+                    if (typeof mediaObj.sinkId !== 'undefined') {
+                        mediaObj.setSinkId(sinkId).then(function(){
+                            console.log("sinkId applied: "+ sinkId);
+                        }).catch(function(e){
+                            console.warn("Error using setSinkId: ", e);
+                        });
+                    } else {
+                        console.warn("setSinkId() is not possible using this browser.")
+                    }
+
+                    // Get Call Recording
+                    var indexedDB = window.indexedDB;
+                    var request = indexedDB.open("CallRecordings");
+                    request.onerror = function(event) {
+                        console.error("IndexDB Request Error:", event);
+                    }
+                    request.onupgradeneeded = function(event) {
+                        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
+                    }
+                    request.onsuccess = function(event) {
+                        console.log("IndexDB connected to CallRecordings");
+
+                        var IDB = event.target.result;
+                        if(IDB.objectStoreNames.contains("Recordings") == false){
+                            console.warn("IndexDB CallRecordings.Recordings does not exists");
+                            return;
+                        } 
+
+                        var transaction = IDB.transaction(["Recordings"]);
+                        var objectStoreGet = transaction.objectStore("Recordings").get(recording.uID);
+                        objectStoreGet.onerror = function(event) {
+                            console.error("IndexDB Get Error:", event);
+                        }
+                        objectStoreGet.onsuccess = function(event) {
+                            mediaObj.src = window.URL.createObjectURL(event.target.result.mediaBlob);
+                        }
+                    }
+
+                });
+
+                // Display QOS data
+                DisplayQosData(cdr.SessionId);
+
+            });
         }
         if(id == 2){
             $("#cdr-tags-"+ cdrId).show();

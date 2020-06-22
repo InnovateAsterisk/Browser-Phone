@@ -250,6 +250,18 @@
     "you_put_the_call_on_hold" : "You put the call on hold.",
     "you_took_the_call_off_hold" : "You took the call off hold.",
     "call_is_being_recorded" : "Call is being recorded.",
-    "new_stopped" : "Now Stopped",
-    "you_started_a_conference_call_to" : "You started a conference call to"
+    "now_stopped" : "Now Stopped",
+    "you_started_a_conference_call_to" : "You started a conference call to",
+    "show_call_detail_record" : "Show Call Detail Record",
+    "call_detail_record" : "Call Detail Record",
+    "call_direction" : "Call Direction",
+    "call_date_and_time" : "Call Date & Time",
+    "ring_time" : "Ring Time",
+    "talk_time" : "Talk Time",
+    "call_duration" : "Call Duration",
+    "flagged" : "Flagged",
+    "call_tags" : "Call Tags",
+    "call_notes" : "Call Notes",
+    "activity_timeline" : "Activity Timeline",
+    "call_recordings" : "Call Recordings"
 }
