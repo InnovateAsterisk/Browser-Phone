@@ -105,7 +105,7 @@ var VideoinputDevices = [];
 var SpeakerDevices = [];
 var Lines = [];
 var lang = {};
-var availabeLang = ["zh-hans"];
+var availableLang = ["zh-hans"];
 
 // User Settings & Defaults
 // ========================
@@ -257,7 +257,7 @@ function UserLocale(){
         return langtag[1].toLowerCase();  // en-US => us
     }
 }
-function IsUserLangAvaialbe(){
+function GetAlternateLanguage(){
     var language = window.navigator.userLanguage || window.navigator.language; // "en", "en-US", "fr", "fr-FR", "es-ES", etc.
     // langtag = language["-"script]["-" region] *("-" variant) *("-" extension) ["-" privateuse]
     // Testing: 
@@ -280,10 +280,10 @@ function IsUserLangAvaialbe(){
     // English is already loaded
     if(language == "en" || language.indexOf("en-") == 0) return "";
 
-    for(l = 0; l < availabeLang.length; l++){
-        if(language.indexOf(availabeLang[l].toLowerCase()) == 0){
+    for(l = 0; l < availableLang.length; l++){
+        if(language.indexOf(availableLang[l].toLowerCase()) == 0){
             console.log("Alternate Language detected: ", language);
-            return availabeLang[l].toLowerCase();
+            return availableLang[l].toLowerCase();
         }
     }
     return "";
@@ -1494,9 +1494,8 @@ $(document).ready(function () {
     // ==================
     $.getJSON(hostingPrefex + "en.json", function (data){
         lang = data;
-        var userLang = IsUserLangAvaialbe();
+        var userLang = GetAlternateLanguage();
         if(userLang != ""){
-        // if(userLang != "en" && availabeLang.includes(userLang)){
             $.getJSON(hostingPrefex + userLang +".json", function (altdata){
                 lang = altdata;
             }).always(function() {
@@ -2060,7 +2059,7 @@ function AnswerAudioCall(buddy) {
     }
     // Check devices
     if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-        console.warn("The audio device you used before is no longer availabe, default settings applied.");
+        console.warn("The audio device you used before is no longer available, default settings applied.");
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
         localDB.setItem("AudioSrcId", "default"); // resets for later and subsequent calls
     }
@@ -2165,7 +2164,7 @@ function AnswerVideoCall(buddy) {
     }
     // Check devices
     if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-        console.warn("The audio device you used before is no longer availabe, default settings applied.");
+        console.warn("The audio device you used before is no longer available, default settings applied.");
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
         localDB.setItem("AudioSrcId", "default"); // resets for later and subsequent calls
     }
@@ -2193,7 +2192,7 @@ function AnswerVideoCall(buddy) {
     spdOptions.sessionDescriptionHandlerOptions.constraints.video =  {deviceId: (currentVideoDevice != "default")?  { exact: currentVideoDevice } : "default" }
     // Check Video devices
     if(currentVideoDevice != "default" && !confirmedVideoDevice) {
-        console.warn("The video device you used before is no longer availabe, default settings applied.");
+        console.warn("The video device you used before is no longer available, default settings applied.");
         spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = "default";
         ocalDB.setItem("VideoSrcId", "default"); // resets for later and subsequent calls
     }
@@ -4115,7 +4114,7 @@ function VideoCall(lineObj, dialledNumber) {
     }
     // Check Audio devices
     if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-        console.warn("The audio device you used before is no longer availabe, default settings applied.");
+        console.warn("The audio device you used before is no longer available, default settings applied.");
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
         localDB.setItem("AudioSrcId", "default"); // resets for later and subsequent calls
     }
@@ -4143,7 +4142,7 @@ function VideoCall(lineObj, dialledNumber) {
     spdOptions.sessionDescriptionHandlerOptions.constraints.video =  {deviceId: (currentVideoDevice != "default")?  { exact: currentVideoDevice } : "default" }
     // Check Video devices
     if(currentVideoDevice != "default" && !confirmedVideoDevice) {
-        console.warn("The video device you used before is no longer availabe, default settings applied.");
+        console.warn("The video device you used before is no longer available, default settings applied.");
         spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = "default";
         localDB.setItem("VideoSrcId", "default"); // resets for later and subsequent calls
     }
@@ -4265,7 +4264,7 @@ function AudioCall(lineObj, dialledNumber) {
     }
     // Check devices
     if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-        console.warn("The audio device you used before is no longer availabe, default settings applied.");
+        console.warn("The audio device you used before is no longer available, default settings applied.");
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
         localDB.setItem("AudioSrcId", "default"); // resets for later and subsequent calls
     }
