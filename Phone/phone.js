@@ -39,13 +39,12 @@ Extended & Non-standard Features:
 =================================
     ✅ Extended Services Send: Image, Recording, Video, FAX, SMS, Email
     ✅ Preview : File, Image, Video, YouTube, Audio
-
 */
 
 // Global Settings
 // ===============
-var enabledExtendedServices = false;   // Send: Image, Recording, Video, SMS, Email
-var enabledGroupServices = false;      // Group calling functionality - requires Asterisks config 
+var enabledExtendedServices = false;   // TODO: Send: Image, Recording, Video, SMS, Email
+var enabledGroupServices = false;      // TODO: Group calling functionality - requires Asterisks config 
 // Set the following to null to disable
 var welcomeScreen = "<div class=\"UiWindowField scroller\"><pre style=\"font-size: 12px\">";
 welcomeScreen += "===========================================================================\n";
@@ -77,50 +76,35 @@ welcomeScreen += "\n";
 welcomeScreen += "============================================================================\n</pre>";
 welcomeScreen += "</div>";
 
-// Rather don't fiddle with anything beyond this point
-// -------------------------------------------------------------------------------------------------------------------------
-
-// System variables
-// ================
-var localDB = window.localStorage;
-var userAgent = null;
-var voicemailSubs = null;
-var BlfSubs = new Array();
-var CanvasCollection = new Array();
-var Buddies = new Array();
-var isReRegister = false;
-var dhtmlxPopup = null;
-var selectedBuddy = null;
-var selectedLine = null;
-var alertObj = null;
-var confirmObj = null;
-var promptObj = null;
-var windowsCollection = null;
-var messagingCollection = null;
-var HasVideoDevice = false;
-var HasAudioDevice = false;
-var HasSpeakerDevice = false;
-var AudioinputDevices = [];
-var VideoinputDevices = [];
-var SpeakerDevices = [];
-var Lines = [];
-var lang = {};
+// Lanaguage Packs (.json)
+// ===============
+// Note: The following should correspond to files on your server. 
+// eg: If you list "fr" then you need to add the file "fr.json".
+// Use the "en.json" as a template.
+// More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
+// "en.json" is always loaded by default
 var availableLang = ["ja", "zh-hans", "zh"];
-// Note: more specific lanagauge must be first. ie: "zh-hans" should be before "zh". 
 
 // User Settings & Defaults
 // ========================
-var wssServer = localDB.getItem("wssServer");           // eg: raspberrypi.local
-var profileUserID = localDB.getItem("profileUserID");   // Internal reference ID. (DON'T CHANGE THIS!)
-var profileUser = localDB.getItem("profileUser");       // eg: 100
-var profileName = localDB.getItem("profileName");       // eg: Keyla James
-var WebSocketPort = localDB.getItem("WebSocketPort");   // eg: 444 | 4443
-var ServerPath = localDB.getItem("ServerPath");         // eg: /ws
-var SipUsername = localDB.getItem("SipUsername");       // eg: webrtc
-var SipPassword = localDB.getItem("SipPassword");       // eg: webrtc
+var wssServer = getDbItem("wssServer", null);           // eg: raspberrypi.local
+var profileUserID = getDbItem("profileUserID", null);   // Internal reference ID. (DON'T CHANGE THIS!)
+var profileUser = getDbItem("profileUser", null);       // eg: 100
+var profileName = getDbItem("profileName", null);       // eg: Keyla James
+var WebSocketPort = getDbItem("WebSocketPort", null);   // eg: 444 | 4443
+var ServerPath = getDbItem("ServerPath", null);         // eg: /ws
+var SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
+var SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
+
+var TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));        // The timeout in seconds for the initial connection to make on the web socket port
+var TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 99));  // The number of times to attempt to reconnect to a WebSocket when the connection drops.
+var TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 15));    // The time in seconds to wait between WebSocket reconnection attempts.
 
 var userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (SipJS - 0.11.6)");   // Set this to whatever you want.
 var hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
+var RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
+var WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
+var IpInContact = (getDbItem("IpInContact", "1") == "1");                           // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
 
 var AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
 var DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");   // Rejects any inbound call, while allowing outbound calls
@@ -147,6 +131,7 @@ var DidLength = parseInt(getDbItem("DidLength", 6));                 // DID leng
 var MaxDidLength = parseInt(getDbItem("maximumNumberLength", 16));   // Maximum langth of any DID number including international dialled numbers.
 
 // Permission Settings
+var EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");               // Enables the Text Messaging
 var DisableFreeDial = (getDbItem("DisableFreeDial", "0") == "1");                       // Removes the Dial icon in the profile area, users will need to add buddies in order to dial.
 var DisableBuddies = (getDbItem("DisableBuddies", "0") == "1");                         // Removes the Add Someone menu item and icon from the profile area. Buddies will still be created automatically. 
 var EnableTransfer = (getDbItem("EnableTransfer", "1") == "1");                         // Controls Transfering during a call
@@ -160,6 +145,36 @@ var EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1
 var EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
 var EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
 var EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
+
+// ===================================================
+// Rather don't fiddle with anything beyond this point
+// ===================================================
+
+// System variables
+// ================
+var localDB = window.localStorage;
+var userAgent = null;
+var voicemailSubs = null;
+var BlfSubs = [];
+var CanvasCollection = [];
+var Buddies = [];
+var isReRegister = false;
+var dhtmlxPopup = null;
+var selectedBuddy = null;
+var selectedLine = null;
+var alertObj = null;
+var confirmObj = null;
+var promptObj = null;
+var windowsCollection = null;
+var messagingCollection = null;
+var HasVideoDevice = false;
+var HasAudioDevice = false;
+var HasSpeakerDevice = false;
+var AudioinputDevices = [];
+var VideoinputDevices = [];
+var SpeakerDevices = [];
+var Lines = [];
+var lang = {};
 
 // Upgrade Pataches
 // ================
@@ -180,6 +195,7 @@ function utcDateNow(){
     return moment().utc().format("YYYY-MM-DD HH:mm:ss UTC");
 }
 function getDbItem(itemIndex, defaultValue){
+    var localDB = window.localStorage;
     if(localDB.getItem(itemIndex) != null) return localDB.getItem(itemIndex);
     return defaultValue;
 }
@@ -1527,21 +1543,23 @@ function InitUi(){
     var leftHTML = "<table style=\"height:100%; width:100%\" cellspacing=5 cellpadding=0>";
     leftHTML += "<tr><td class=streamSection style=\"height: 77px\">";
     // Profile User
-    leftHTML += "<div class=contact id=UserProfile style=\"margin-bottom:5px; display: inline-block;\">";
+    leftHTML += "<div class=profileContainer>";
+    leftHTML += "<div class=contact id=UserProfile style=\"margin-bottom:5px;\">";
     leftHTML += "<div id=UserProfilePic class=buddyIcon></div>";
     leftHTML += "<span id=reglink class=dotOffline></span>";
     leftHTML += "<span id=dereglink class=dotOnline style=\"display:none\"><i class=\"fa fa-wifi\" style=\"line-height: 14px; text-align: center; display: block;\"></i></span>";
     leftHTML += "<span id=WebRtcFailed class=dotFailed style=\"display:none\"><i class=\"fa fa-cross\" style=\"line-height: 14px; text-align: center; display: block;\"></i></span>";
-    leftHTML += "<div class=contactNameText><i class=\"fa fa-phone-square\"></i> <span id=UserDID></span> - <span id=UserCallID></span></div>";
+    leftHTML += "<div class=contactNameText style=\"margin-right: 0px;\"><i class=\"fa fa-phone-square\"></i> <span id=UserDID></span> - <span id=UserCallID></span></div>";
     leftHTML += "<div id=regStatus class=presenceText>&nbsp;</div>";
     leftHTML += "</div>";
     // Search / Add Buddies
-    leftHTML += "<div>";
+    leftHTML += "<div style=\"padding-left:5px\">";
     leftHTML += "<span class=searchClean><INPUT id=txtFindBuddy type=text autocomplete=none style=\"width:160px;\"></span>";
     leftHTML += "&nbsp;";
     leftHTML += "<button id=BtnFreeDial><i class=\"fa fa-phone\"></i></button>";
     leftHTML += "<button id=BtnAddSomeone><i class=\"fa fa-user-plus\"></i></button>";
     leftHTML += "<button id=BtnCreateGroup><i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i></button>";
+    leftHTML += "</div>";
     leftHTML += "</div>";
     leftHTML += "</td></tr>";
     // Lines & Buddies
@@ -1631,17 +1649,16 @@ function CreateUserAgent() {
             transportOptions: {
                 wsServers: "wss://" + wssServer + ":"+ WebSocketPort +""+ ServerPath,
                 traceSip: false,
-                connectionTimeout: 15,
-                maxReconnectionAttempts: 99,
-                reconnectionTimeout: 15,
+                connectionTimeout: TransportConnectionTimeout,
+                maxReconnectionAttempts: TransportReconnectionAttempts,
+                reconnectionTimeout: TransportReconnectionTimeout,
             },
             authorizationUser: SipUsername,
             password: SipPassword,
-            registerExpires: 300,
-            hackWssInTransport: true, // makes it transport=wss in Contact (Required for Asterisk as it doesnt support Path)
-            hackIpInContact: true, // makes the contact field up from a random ip address (as it porbably doesnt know its own ip at this point... why would it)
+            registerExpires: RegisterExpires,
+            hackWssInTransport: WssInTransport,
+            hackIpInContact: IpInContact,
             userAgentString: userAgentStr,
-            keepAliveInterval: 59,
             autostart: false,
             register: false,
         });
@@ -3408,7 +3425,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceiveBitRate.length > 0)? QosData0.ReceiveBitRate : QosData1.ReceiveBitRate;
                 $.each(data, function(i,item){
-                    labelset.push(item.timestamp);
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
                     dataset.push(item.value);
                 });
                 var ReceiveBitRateChart = new Chart($("#cdr-AudioReceiveBitRate"), {
@@ -3432,7 +3449,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceivePacketRate.length > 0)? QosData0.ReceivePacketRate : QosData1.ReceivePacketRate;
                 $.each(data, function(i,item){
-                    labelset.push(item.timestamp);
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
                     dataset.push(item.value);
                 });
                 var ReceivePacketRateChart = new Chart($("#cdr-AudioReceivePacketRate"), {
@@ -3456,7 +3473,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceivePacketLoss.length > 0)? QosData0.ReceivePacketLoss : QosData1.ReceivePacketLoss;
                 $.each(data, function(i,item){
-                    labelset.push(item.timestamp);
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
                     dataset.push(item.value);
                 });
                 var AudioReceivePacketLossChart = new Chart($("#cdr-AudioReceivePacketLoss"), {
@@ -3480,7 +3497,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceiveJitter.length > 0)? QosData0.ReceiveJitter : QosData1.ReceiveJitter;
                 $.each(data, function(i,item){
-                    labelset.push(item.timestamp);
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
                     dataset.push(item.value);
                 });
                 var AudioReceiveJitterChart = new Chart($("#cdr-AudioReceiveJitter"), {
@@ -3504,7 +3521,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceiveLevels.length > 0)? QosData0.ReceiveLevels : QosData1.ReceiveLevels;
                 $.each(data, function(i,item){
-                    labelset.push(item.timestamp);
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
                     dataset.push(item.value);
                 });
                 var AudioReceiveLevelsChart = new Chart($("#cdr-AudioReceiveLevels"), {
@@ -3528,7 +3545,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.SendPacketRate.length > 0)? QosData0.SendPacketRate : QosData1.SendPacketRate;
                 $.each(data, function(i,item){
-                    labelset.push(item.timestamp);
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
                     dataset.push(item.value);
                 });
                 var SendPacketRateChart = new Chart($("#cdr-AudioSendPacketRate"), {
@@ -3552,7 +3569,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.SendBitRate.length > 0)? QosData0.SendBitRate : QosData1.SendBitRate;
                 $.each(data, function(i,item){
-                    labelset.push(item.timestamp);
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
                     dataset.push(item.value);
                 });
                 var AudioSendBitRateChart = new Chart($("#cdr-AudioSendBitRate"), {
@@ -4352,8 +4369,9 @@ function updateLineScroll(lineNum) {
     element.scrollTop = element.scrollHeight;
 }
 function updateScroll(buddy) {
-    var element = $("#contact-"+ buddy +"-ChatHistory").get(0);
-    element.scrollTop = element.scrollHeight;
+    var history = $("#contact-"+ buddy +"-ChatHistory");
+    if(history.children().length > 0) history.children().last().get(0).scrollIntoView(false);
+    history.get(0).scrollTop = history.get(0).scrollHeight;
 }
 function PreviewImage(obj){
     OpenWindow(obj.src, "Preview Image", 600, 800, false, true); //no close, no resize
@@ -5127,7 +5145,9 @@ function PlayVideoCallRecording(obj, cdrId, uID, buddy){
             // Play
             videoObj.src = window.URL.createObjectURL(event.target.result.mediaBlob);
             videoObj.oncanplaythrough = function(){
-                videoObj.scrollIntoViewIfNeeded(false);
+                try{
+                    videoObj.scrollIntoViewIfNeeded(false);
+                } catch(e){}
                 videoObj.play().then(function(){
                     console.log("Playback started");
                 }).catch(function(e){
@@ -6545,6 +6565,10 @@ function DialByLine(type, buddy, numToDial){
     else {
         VideoCall(lineObj, numDial);
     }
+
+    try{
+        $("#line-" + newLineNumber).get(0).scrollIntoViewIfNeeded();
+    } catch(e){}
 }
 function SelectLine(lineNum){
     var lineObj = FindLineByNumber(lineNum);
@@ -7304,7 +7328,7 @@ function AddBuddyMessageStream(buddyObj) {
     html += "</div>";
 
     html += "</td></tr>";
-    if(buddyObj.type == "extension" || buddyObj.type == "group") {
+    if((buddyObj.type == "extension" || buddyObj.type == "group") && EnableTextMessaging) {
         html += "<tr><td  class=streamSection style=\"height:80px\">";
 
         // Send Paste Image
@@ -7425,6 +7449,38 @@ function DeleteCallRecordings(buddy, stream){
     }
 }
 
+function MakeUpName(){
+    var shortname = 4;
+    var longName = 12;
+    var letters = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
+    var rtn = "";
+    rtn += letters[Math.floor(Math.random() * letters.length)];
+    for(var n=0; n<Math.floor(Math.random() * longName) + shortname; n++){
+        rtn += letters[Math.floor(Math.random() * letters.length)].toLowerCase();
+    }
+    rtn += " ";
+    rtn += letters[Math.floor(Math.random() * letters.length)];
+    for(var n=0; n<Math.floor(Math.random() * longName) + shortname; n++){
+        rtn += letters[Math.floor(Math.random() * letters.length)].toLowerCase();
+    }
+    return rtn;
+}
+function MakeUpNumber(){
+    var numbers = ["0","1","2","3","4","5","6","7","8","9","0"];
+    var rtn = "0";
+    for(var n=0; n<9; n++){
+        rtn += numbers[Math.floor(Math.random() * numbers.length)];
+    }
+    return rtn;
+}
+function MakeUpBuddies(int){
+    for(var i=0; i<int; i++){
+        var buddyObj = new Buddy("contact", uID(), MakeUpName(), "", "", MakeUpNumber(), "", utcDateNow(), "Testing", "");
+        AddBuddy(buddyObj, false, false);
+    }
+    UpdateBuddyList();
+}
+
 function SelectBuddy(buddy) {
     var buddyObj = FindBuddyByIdentity(buddy);
     if(buddyObj == null) return;
@@ -7460,6 +7516,8 @@ function SelectBuddy(buddy) {
         var classStr = (Buddies[b].identity == buddy)? "buddySelected" : "buddy";
         $("#contact-" + Buddies[b].identity).prop('class', classStr);
 
+        $("#contact-"+ Buddies[b].identity +"-ChatHistory").empty();
+
         Buddies[b].IsSelected = (Buddies[b].identity == buddy);
     }
 
@@ -7469,6 +7527,10 @@ function SelectBuddy(buddy) {
     // Refresh Stream
     // console.log("Refreshing Stream for you(" + profileUserID + ") and : " + buddyObj.identity);
     RefreshStream(buddyObj);
+
+    try{
+        $("#contact-" + buddy).get(0).scrollIntoViewIfNeeded();
+    } catch(e){}
 
     // Save Selected
     localDB.setItem("SelectedBuddy", buddy);
@@ -7816,7 +7878,12 @@ function RefreshStream(buddyObj, filter) {
             // TODO
         }
     });
+
+    // For some reason, the first time this fires, it doesnt always work
     updateScroll(buddyObj.identity);
+    window.setTimeout(function(){
+        updateScroll(buddyObj.identity);
+    }, 300);
 }
 function ShowChatMenu(obj){
     $(obj).children("span").show();
@@ -9298,9 +9365,10 @@ function getPicture(buddyId, typestr){
     }
     if(dbImg == null || dbImg == "null" || dbImg == "") return hostingPrefex + "default.png";
 
-    // return URL.createObjectURL(base64toBlob(dbImg, 'image/png'));
-
-    return dbImg;
+    // Use createObjectURL
+    return URL.createObjectURL(base64toBlob(dbImg, 'image/png'));
+    // or Base64
+    // return dbImg;
 }
 
 // Image Editor

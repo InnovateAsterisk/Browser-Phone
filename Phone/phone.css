@@ -972,11 +972,19 @@ div.dhx_popup_material div.dhx_popup_area {
     display: inline-block;
 }
 
+.profileContainer{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1;
+}
+
 .contact {
     padding: 5px;
     height: 38px;
     color: #4c4c4c;
-    border-left: 3px solid transparent;
+    /* border-left: 3px solid transparent; */
     position: relative;
     cursor: pointer;
 }
