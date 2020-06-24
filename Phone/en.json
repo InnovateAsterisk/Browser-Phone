@@ -263,5 +263,7 @@
     "call_tags" : "Call Tags",
     "call_notes" : "Call Notes",
     "activity_timeline" : "Activity Timeline",
-    "call_recordings" : "Call Recordings"
+    "call_recordings" : "Call Recordings",
+    "save_as" : "Save As",
+    "right_click_and_select_save_link_as" : "Right click and select Save Link As"
 }

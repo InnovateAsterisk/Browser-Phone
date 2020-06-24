@@ -145,6 +145,7 @@ var EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1
 var EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
 var EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
 var EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
+var EnableVideoCalling = (getDbItem("EnableVideoCalling", "0") == "1");                 // Enables Video during a call
 
 // ===================================================
 // Rather don't fiddle with anything beyond this point
@@ -6508,7 +6509,9 @@ function ShowDial(obj){
     html += "</table>";
     html += "<div style=\"text-align: center; margin-bottom:15px\">";
     html += "<button class=\"roundButtons dialButtons\" id=dialAudio style=\"width:48px; height:48px;\" title=\""+ lang.audio_call  +"\" onclick=\"DialByLine('audio')\"><i class=\"fa fa-phone\"></i></button>";
-    html += "<button class=\"roundButtons dialButtons\" id=dialVideo style=\"width:48px; height:48px; margin-left:20px\" title=\""+ lang.video_call +"\" onclick=\"DialByLine('video')\"><i class=\"fa fa-video-camera\"></i></button>";
+    if(EnableVideoCalling){
+        html += "<button class=\"roundButtons dialButtons\" id=dialVideo style=\"width:48px; height:48px; margin-left:20px\" title=\""+ lang.video_call +"\" onclick=\"DialByLine('video')\"><i class=\"fa fa-video-camera\"></i></button>";
+    }
     html += "</div>";
 
     dhtmlxPopup.attachHTML(html);
@@ -7192,8 +7195,13 @@ function UpdateBuddyList(){
             // An extension on the same system
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onmouseenter=\"ShowBuddyDial(this, '"+ buddyObj.identity +"')\" onmouseleave=\"HideBuddyDial(this, '"+ buddyObj.identity +"')\" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
             html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 44px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-video-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.video_call +" onclick=\"QuickDialVideo('"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"', event)\"><i class=\"fa fa-video-camera\"></i></span>";
+            if(EnableVideoCalling){
+                html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 44px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
+                html += "<span id=\"contact-"+ buddyObj.identity +"-video-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.video_call +" onclick=\"QuickDialVideo('"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"', event)\"><i class=\"fa fa-video-camera\"></i></span>";
+            }
+            else {
+                html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
+            }
             html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
             html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
             html += "<div class=contactNameText><i class=\"fa fa-phone-square\"></i> "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName +"</div>";
@@ -7290,7 +7298,7 @@ function AddBuddyMessageStream(buddyObj) {
     // Action Buttons
     html += "<div style=\"float:right; line-height: 46px;\">";
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-audioCall\" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\" class=roundButtons title=\""+ lang.audio_call +"\"><i class=\"fa fa-phone\"></i></button> ";
-    if(buddyObj.type == "extension") {
+    if(buddyObj.type == "extension" && EnableVideoCalling) {
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-videoCall\" onclick=\"DialByLine('video', '"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"');\" class=roundButtons title=\""+ lang.video_call +"\"><i class=\"fa fa-video-camera\"></i></button> ";
     }
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-search\" onclick=\"FindSomething('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.find_something +"\"><i class=\"fa fa-search\"></i></button> ";
@@ -7311,7 +7319,7 @@ function AddBuddyMessageStream(buddyObj) {
     html += "<div id=\"contact-"+ buddyObj.identity +"-AnswerCall\" class=answerCall style=\"display:none\">";
     html += "<div>";
     html += "<button onclick=\"AnswerAudioCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button> ";
-    if(buddyObj.type == "extension") {
+    if(buddyObj.type == "extension" && EnableVideoCalling) {
         html += "<button id=\"contact-"+ buddyObj.identity +"-answer-video\" onclick=\"AnswerVideoCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button> ";
     }
     html += "<button onclick=\"RejectCall('"+ buddyObj.identity +"')\" class=hangupButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.reject_call +"</button> ";
@@ -8124,6 +8132,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
             else if(cdr.CallDirection == "outbound") {
                 dstCallerID = cdr.Dst;
             }
+            html += "<div class=UiText><b>SIP CallID</b> : "+ cdr.SessionId +"</div>";
             html += "<div class=UiText><b>"+ lang.call_direction +"</b> : "+ cdr.CallDirection +"</div>";
             html += "<div class=UiText><b>"+ lang.call_date_and_time +"</b> : "+ CallDate +"</div>";
             html += "<div class=UiText><b>"+ lang.ring_time +"</b> : "+ formatDuration(ringTime) +" ("+ ringTime +")</div>";
@@ -8253,6 +8262,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                     } 
                     recordingsHtml += "<div>"+ lang.started +": "+ StartTime.format("h:mm:ss A") +" <i class=\"fa fa-long-arrow-right\"></i> "+ lang.stopped +": "+ StopTime.format("h:mm:ss A") +"</div>";
                     recordingsHtml += "<div>"+ lang.recording_duration +": "+ formatShortDuration(recordingDuration.asSeconds()) +"</div>";
+                    recordingsHtml += "<div><a id=\"download-"+ recording.uID +"\">"+ lang.save_as +"</a> ("+ lang.right_click_and_select_save_link_as +")</div>";
                     recordingsHtml += "</div>";
                 }
             });
@@ -8284,6 +8294,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                     else {
                         mediaObj = $("#callrecording-audio-"+ recording.uID).get(0);
                     }
+                    var downloadURL = $("#download-"+ recording.uID);
 
                     // Playback device
                     var sinkId = getAudioOutputID();
@@ -8321,7 +8332,17 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                             console.error("IndexDB Get Error:", event);
                         }
                         objectStoreGet.onsuccess = function(event) {
-                            mediaObj.src = window.URL.createObjectURL(event.target.result.mediaBlob);
+                            var mediaBlobUrl = window.URL.createObjectURL(event.target.result.mediaBlob);
+                            mediaObj.src = mediaBlobUrl;
+
+                            // Download Link
+                            if(cdr.WithVideo){
+                                downloadURL.prop("download",  "Video-Call-Recording-"+ recording.uID +".webm");
+                            }
+                            else {
+                                downloadURL.prop("download",  "Audio-Call-Recording-"+ recording.uID +".webm");
+                            }
+                            downloadURL.prop("href", mediaBlobUrl);
                         }
                     }
 
@@ -8329,7 +8350,6 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
 
                 // Display QOS data
                 DisplayQosData(cdr.SessionId);
-
             });
         }
         if(id == 2){
