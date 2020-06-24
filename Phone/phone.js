@@ -145,7 +145,7 @@ var EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1
 var EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
 var EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
 var EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
-var EnableVideoCalling = (getDbItem("EnableVideoCalling", "0") == "1");                 // Enables Video during a call
+var EnableVideoCalling = (getDbItem("EnableVideoCalling", "1") == "1");                 // Enables Video during a call
 
 // ===================================================
 // Rather don't fiddle with anything beyond this point
