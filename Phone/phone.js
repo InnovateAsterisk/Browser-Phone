@@ -6528,6 +6528,11 @@ function KeyPress(num){
     $("#dialVideo").prop('disabled', ($("#dialText").val().length >= DidLength));
 }
 function DialByLine(type, buddy, numToDial){
+    if(userAgent == null || userAgent.isRegistered()==false){
+        ConfigureExtensionWindow();
+        return;
+    }
+
     var numDial = (numToDial)? numToDial : $("#dialText").val();
     if(EnableAlphanumericDial){
         numDial = numDial.replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0,MaxDidLength);
