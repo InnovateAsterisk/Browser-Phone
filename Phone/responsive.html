@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>My Own Site</title>
+        <style>
+            html, body{
+                margin: 0px;
+                padding: 0px;
+                height: 100%;
+                background-color: #222222;
+            }
+            .container{
+                max-width: 1024px;
+                margin-left: auto;
+                margin-right: auto;
+                height: 100%;
+            }
+            .topSection{
+                height: 80px;
+                text-align: center;
+                color: #F3F3F3;
+                font-size: 16px;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+            .mainSection{
+                height: calc(100% - 80px);
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class=container>
+            <div class=topSection>This is a sample of how the phone can be loaded into you own web site.</div>
+            <div class=mainSection><iframe src="index.html" style="width:100%; height:100%; border: none;"></iframe></div>
+        </div>
+    </body>
+</html>

@@ -76,7 +76,7 @@ welcomeScreen += "\n";
 welcomeScreen += "============================================================================\n</pre>";
 welcomeScreen += "</div>";
 
-// Lanaguage Packs (.json)
+// Lanaguage Packs (lang/xx.json)
 // ===============
 // Note: The following should correspond to files on your server. 
 // eg: If you list "fr" then you need to add the file "fr.json".
@@ -997,7 +997,7 @@ function ConfigureExtensionWindow(){
         window.SettingsOutputStreamMeter = null;
 
         // Load Sample
-        var audioObj = new Audio(hostingPrefex + "speech_orig.mp3"); //speech_orig.wav: this file failes to play using the Asteriks MiniServer
+        var audioObj = new Audio(hostingPrefex + "media/speech_orig.mp3"); //speech_orig.wav: this file failes to play using the Asteriks MiniServer
         audioObj.onplay = function(){
             var outputStream = new MediaStream();
             if (typeof audioObj.captureStream !== 'undefined') {
@@ -1510,11 +1510,11 @@ function EditBuddyWindow(buddy){
 $(document).ready(function () {
     // Load Langauge File
     // ==================
-    $.getJSON(hostingPrefex + "en.json", function (data){
+    $.getJSON(hostingPrefex + "lang/en.json", function (data){
         lang = data;
         var userLang = GetAlternateLanguage();
         if(userLang != ""){
-            $.getJSON(hostingPrefex + userLang +".json", function (altdata){
+            $.getJSON(hostingPrefex +"lang/"+ userLang +".json", function (altdata){
                 lang = altdata;
             }).always(function() {
                 console.log("Alternate Lanaguage Pack loaded: ", lang);
@@ -1926,7 +1926,7 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        rinnger.src = hostingPrefex + "Tone_CallWaiting.mp3";
+        rinnger.src = hostingPrefex + "media/Tone_CallWaiting.mp3";
         session.data.rinngerObj = rinnger;
     } else {
         // Play Ring Tone
@@ -1947,7 +1947,7 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        rinnger.src = hostingPrefex + "Ringtone_1.mp3";
+        rinnger.src = hostingPrefex + "media/Ringtone_1.mp3";
         session.data.rinngerObj = rinnger;
     }
 
@@ -2281,18 +2281,18 @@ function wireupAudioSession(lineObj) {
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            var soundFile = hostingPrefex + "Tone_EarlyMedia-European.mp3";
+            var soundFile = hostingPrefex + "media/Tone_EarlyMedia-European.mp3";
             if(UserLocale().indexOf("us") > -1){
-                soundFile = hostingPrefex + "Tone_EarlyMedia-US.mp3";
+                soundFile = hostingPrefex + "media/Tone_EarlyMedia-US.mp3";
             }
             if(UserLocale().indexOf("gb") > -1){
-                soundFile = hostingPrefex + "Tone_EarlyMedia-UK.mp3";
+                soundFile = hostingPrefex + "media/Tone_EarlyMedia-UK.mp3";
             }
             if(UserLocale().indexOf("au") > -1){
-                soundFile = hostingPrefex + "Tone_EarlyMedia-Australia.mp3";
+                soundFile = hostingPrefex + "media/Tone_EarlyMedia-Australia.mp3";
             }
             if(UserLocale().indexOf("jp") > -1){
-                soundFile = hostingPrefex + "Tone_EarlyMedia-Japan.mp3";
+                soundFile = hostingPrefex + "media/Tone_EarlyMedia-Japan.mp3";
             }
             earlyMedia.src = soundFile;
             session.data.earlyMedia = earlyMedia;
@@ -2492,18 +2492,18 @@ function wireupVideoSession(lineObj) {
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            var soundFile = hostingPrefex + "Tone_EarlyMedia-European.mp3";
+            var soundFile = hostingPrefex + "media/Tone_EarlyMedia-European.mp3";
             if(UserLocale().indexOf("us") > -1){
-                soundFile = hostingPrefex + "Tone_EarlyMedia-US.mp3";
+                soundFile = hostingPrefex + "media/Tone_EarlyMedia-US.mp3";
             }
             if(UserLocale().indexOf("gb") > -1){
-                soundFile = hostingPrefex + "Tone_EarlyMedia-UK.mp3";
+                soundFile = hostingPrefex + "media/Tone_EarlyMedia-UK.mp3";
             }
             if(UserLocale().indexOf("au") > -1){
-                soundFile = hostingPrefex + "Tone_EarlyMedia-Australia.mp3";
+                soundFile = hostingPrefex + "media/Tone_EarlyMedia-Australia.mp3";
             }
             if(UserLocale().indexOf("jp") > -1){
-                soundFile = hostingPrefex + "Tone_EarlyMedia-Japan.mp3";
+                soundFile = hostingPrefex + "media/Tone_EarlyMedia-Japan.mp3";
             }
             earlyMedia.src = soundFile;
             session.data.earlyMedia = earlyMedia;
@@ -4145,7 +4145,7 @@ function ReceiveMessage(message) {
                 console.warn("Unable to play audio file.", e);
             });
         }
-        rinnger.src = hostingPrefex + "Alert.mp3";
+        rinnger.src = hostingPrefex + "media/Alert.mp3";
         message.data.rinngerObj = rinnger; // Will be attached to this object until its disposed.
     } else {
         // Message window is active.
@@ -7650,9 +7650,9 @@ function RefreshStream(buddyObj, filter) {
     // Filter
     if(filter && filter != ""){
         // TODO: Maybe some room for improvement here
-        console.log("Rows: ", json.DataCollection.length);
+        console.log("Rows without filter ("+ filter +"): ", json.DataCollection.length);
         json.DataCollection = json.DataCollection.filter(function(item){
-            if(filter.indexOf("date : ") != -1){
+            if(filter.indexOf("date: ") != -1){
                 // Apply Date Filter
                 var dateFilter = getFilter(filter, "date");
                 if(dateFilter != "" && item.ItemDate.indexOf(dateFilter) != -1) return true;
@@ -7660,7 +7660,7 @@ function RefreshStream(buddyObj, filter) {
             if(item.MessageData && item.MessageData.length > 1){
                 if(item.MessageData.toLowerCase().indexOf(filter.toLowerCase()) != -1) return true;
                 if(filter.toLowerCase().indexOf(item.MessageData.toLowerCase()) != -1) return true;
-            }            
+            }
             if (item.ItemType == "MSG") {
                 // Special search??
             } 

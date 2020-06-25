@@ -197,6 +197,10 @@
 
 /* CSS_TabPageTemplate */
 
+audio{
+    outline: none;
+}
+
 html {
     margin: 0px;
     padding: 0px;
