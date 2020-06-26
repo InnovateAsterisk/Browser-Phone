@@ -1409,16 +1409,25 @@ function EditBuddyWindow(buddy){
         buddyObj.ContactNumber2 = $("#AddSomeone_Num2").val();
 
         // Update Image
-        var constraints = { type: 'base64', size: 'viewport', format: 'png', quality: 1, circle: false }
+        var constraints = { 
+            type: 'base64', 
+            size: 'viewport', 
+            format: 'png', 
+            quality: 1, 
+            circle: false 
+        }
         $("#ImageCanvas").croppie('result', constraints).then(function(base64) {
             if(buddyObj.Type == "extension"){
                 localDB.setItem("img-"+ buddyObj.uID +"-extension", base64);
+                $("#contact-"+ buddyObj.uID +"-picture-main").css("background-image", 'url('+ getPicture(buddyObj.uID, 'extension') +')');
             }
             else if(buddyObj.Type == "contact") {
                 localDB.setItem("img-"+ buddyObj.cID +"-contact", base64);
+                $("#contact-"+ buddyObj.cID +"-picture-main").css("background-image", 'url('+ getPicture(buddyObj.cID, 'contact') +')');
             }
             else if(buddyObj.Type == "group") {
                 localDB.setItem("img-"+ buddyObj.gID +"-group", base64);
+                $("#contact-"+ buddyObj.gID +"-picture-main").css("background-image", 'url('+ getPicture(buddyObj.gID, 'group') +')');
             }
             // Update
             UpdateBuddyList();
@@ -1431,16 +1440,17 @@ function EditBuddyWindow(buddy){
         localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
 
         // Update the Memory Array, so that the UpdateBuddyList can make the changes
-        for(var b = 0; b < Buddies.length; b++)
-        {
+        for(var b = 0; b < Buddies.length; b++) {
             if(buddyObj.Type == "extension"){
                 if(buddyObj.uID == Buddies[b].identity){
+                    Buddies[b].lastActivity = buddyObj.LastActivity;
                     Buddies[b].CallerIDName = buddyObj.DisplayName;
                     Buddies[b].Desc = buddyObj.Position;
                 }                
             }
             else if(buddyObj.Type == "contact") {
                 if(buddyObj.cID == Buddies[b].identity){
+                    Buddies[b].lastActivity = buddyObj.LastActivity;
                     Buddies[b].CallerIDName = buddyObj.DisplayName;
                     Buddies[b].Desc = buddyObj.Description;
                 }                
@@ -4248,8 +4258,6 @@ function SendImageDataMessage(buddy, ImgDataUrl) {
         + "<div class=messageDate>" + DateTime + "</div>"
         + "</td><td>"
         + "<div class=ourChatMessageText>" + formattedMessage + "</div>"
-        + "</td><td style=\"width: 30px\">"
-        + "<div class=buddyIconSmall style=\"margin-right: 3px; float:right; background-image: url('"+ getPicture("profilePicture") +"')\"></div>"
         + "</td></tr></table>";
     $("#contact-" + buddy + "-ChatHistory").append(messageString);
     updateScroll(buddy);
@@ -4351,8 +4359,6 @@ function SendFileDataMessage(buddy, FileDataUrl, fileName, fileSize) {
         + "<div class=messageDate>" + DateTime + "</div>"
         + "</td><td>"
         + "<div class=ourChatMessageText>" + formattedMessage + "</div>"
-        + "</td><td style=\"width: 30px\">"
-        + "<div class=buddyIconSmall style=\"margin-right: 3px; float:right; background-image: url('"+ getPicture("profilePicture") +"')\"></div>"
         + "</td></tr></table>";
     $("#contact-" + buddy + "-ChatHistory").append(messageString);
     updateScroll(buddy);
@@ -7023,6 +7029,7 @@ var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactN
     this.presence = "Unknown";
     this.missed = 0;
     this.IsSelected = false;
+    this.imageObjectURL = "";
 }
 function InitUserBuddies(){
     var template = { TotalRows:0, DataCollection:[] }
@@ -7260,7 +7267,7 @@ function AddBuddyMessageStream(buddyObj) {
     }
 
     if(buddyObj.type == "extension") {
-        html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
+        html += "<div id=\"contact-"+ buddyObj.identity +"-picture-main\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
     }
     else if(buddyObj.type == "contact") {
         html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"contact") +"')\"></div>";
@@ -9379,21 +9386,33 @@ function ReformatMessage(str) {
     });
     return msg;
 }
-function getPicture(buddyId, typestr){
+function getPicture(buddy, typestr){
+    if(buddy == "profilePicture"){
+        // Special handling for profile image
+        var dbImg = localDB.getItem("profilePicture");
+        if(dbImg == null){
+            return hostingPrefex + "default.png";
+        }
+        else {
+            return dbImg; 
+            // return URL.createObjectURL(base64toBlob(dbImg, 'image/png'));
+        }
+    }
+
     typestr = (typestr)? typestr : "extension";
-    var dbImg;
-    if(buddyId == "profilePicture"){
-        dbImg = localDB.getItem("profilePicture");
+    var buddyObj = FindBuddyByIdentity(buddy);
+    if(buddyObj.imageObjectURL != ""){
+        // Use Cache
+        return buddyObj.imageObjectURL;
+    }
+    var dbImg = localDB.getItem("img-"+ buddy +"-"+ typestr);
+    if(dbImg == null){
+        return hostingPrefex + "default.png";
     }
     else {
-        dbImg = localDB.getItem("img-"+ buddyId +"-"+ typestr);
+        buddyObj.imageObjectURL = URL.createObjectURL(base64toBlob(dbImg, 'image/png'));
+        return buddyObj.imageObjectURL;
     }
-    if(dbImg == null || dbImg == "null" || dbImg == "") return hostingPrefex + "default.png";
-
-    // Use createObjectURL
-    return URL.createObjectURL(base64toBlob(dbImg, 'image/png'));
-    // or Base64
-    // return dbImg;
 }
 
 // Image Editor
