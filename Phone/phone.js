@@ -2069,31 +2069,35 @@ function AnswerAudioCall(buddy) {
     SelectLine(newLineNumber);
     UpdateBuddyList();
 
-    var currentAudioDevice = getAudioSrcID();
-    var confirmedAudioDevice = false;
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
             constraints: {
-                audio: {
-                    deviceId: (currentAudioDevice != "default")? { exact: currentAudioDevice } : "default"
-                },
+                audio: { deviceId : "default" },
                 video: false
             }
         }
     }
-    for (var i = 0; i < AudioinputDevices.length; ++i) {
-        if(currentAudioDevice != "default" && currentAudioDevice == AudioinputDevices[i].deviceId) {
-            confirmedAudioDevice = true;
+
+    // Configure Audio
+    var currentAudioDevice = getAudioSrcID();
+    if(currentAudioDevice != "default"){
+        var confirmedAudioDevice = false;
+        for (var i = 0; i < AudioinputDevices.length; ++i) {
+            if(currentAudioDevice == AudioinputDevices[i].deviceId) {
+                confirmedAudioDevice = true;
+                break;
+            }
+        }
+        if(confirmedAudioDevice) {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: currentAudioDevice }
+        }
+        else {
+            console.warn("The audio device you used before is no longer available, default settings applied.");
+            localDB.setItem("AudioSrcId", "default");
         }
     }
-    // Check devices
-    if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-        console.warn("The audio device you used before is no longer available, default settings applied.");
-        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
-        localDB.setItem("AudioSrcId", "default"); // resets for later and subsequent calls
-    }
     // Add additional Constraints
-    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     if(supportedConstraints.autoGainControl) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
     }
@@ -2174,31 +2178,35 @@ function AnswerVideoCall(buddy) {
     SelectLine(newLineNumber);
     UpdateBuddyList();
 
-    var currentAudioDevice = getAudioSrcID();
-    var confirmedAudioDevice = false;
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
             constraints: {
-                audio: {
-                    deviceId: (currentAudioDevice != "default")? { exact: currentAudioDevice } : "default"
-                },
-                video: false
+                audio: { deviceId : "default" },
+                video: { deviceId : "default" }
             }
         }
     }
-    for (var i = 0; i < AudioinputDevices.length; ++i) {
-        if(currentAudioDevice != "default" && currentAudioDevice == AudioinputDevices[i].deviceId) {
-            confirmedAudioDevice = true;
+
+    // Configure Audio
+    var currentAudioDevice = getAudioSrcID();
+    if(currentAudioDevice != "default"){
+        var confirmedAudioDevice = false;
+        for (var i = 0; i < AudioinputDevices.length; ++i) {
+            if(currentAudioDevice == AudioinputDevices[i].deviceId) {
+                confirmedAudioDevice = true;
+                break;
+            }
+        }
+        if(confirmedAudioDevice) {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: currentAudioDevice }
+        }
+        else {
+            console.warn("The audio device you used before is no longer available, default settings applied.");
+            localDB.setItem("AudioSrcId", "default");
         }
     }
-    // Check devices
-    if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-        console.warn("The audio device you used before is no longer available, default settings applied.");
-        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
-        localDB.setItem("AudioSrcId", "default"); // resets for later and subsequent calls
-    }
     // Add additional Constraints
-    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     if(supportedConstraints.autoGainControl) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
     }
@@ -2211,24 +2219,32 @@ function AnswerVideoCall(buddy) {
 
     // Configure Video
     var currentVideoDevice = getVideoSrcID();
-    var confirmedVideoDevice = false;
-    for (var i = 0; i < VideoinputDevices.length; ++i) {
-        if(currentVideoDevice != "default" && currentVideoDevice == VideoinputDevices[i].deviceId) {
-            confirmedVideoDevice = true;
+    if(currentVideoDevice != "default"){
+        var confirmedVideoDevice = false;
+        for (var i = 0; i < VideoinputDevices.length; ++i) {
+            if(currentVideoDevice == VideoinputDevices[i].deviceId) {
+                confirmedVideoDevice = true;
+                break;
+            }
+        }
+        if(confirmedVideoDevice){
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = { exact: currentVideoDevice }
+        }
+        else {
+            console.warn("The video device you used before is no longer available, default settings applied.");
+            localDB.setItem("VideoSrcId", "default"); // resets for later and subsequent calls
         }
     }
-    // The user has a camera
-    spdOptions.sessionDescriptionHandlerOptions.constraints.video =  {deviceId: (currentVideoDevice != "default")?  { exact: currentVideoDevice } : "default" }
-    // Check Video devices
-    if(currentVideoDevice != "default" && !confirmedVideoDevice) {
-        console.warn("The video device you used before is no longer available, default settings applied.");
-        spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = "default";
-        ocalDB.setItem("VideoSrcId", "default"); // resets for later and subsequent calls
-    }
     // Add additional Constraints
-    if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
-    if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
-    if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    if(supportedConstraints.frameRate && maxFrameRate != "") {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+    }
+    if(supportedConstraints.height && videoHeight != "") {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+    }
+    if(supportedConstraints.aspectRatio && videoAspectRatio != "") {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    }
 
     // Send Answer
     lineObj.SipSession.accept(spdOptions);
@@ -4482,32 +4498,35 @@ function VideoCall(lineObj, dialledNumber) {
         return;
     }
 
-    var currentAudioDevice = getAudioSrcID();
-    var confirmedAudioDevice = false;
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
             constraints: {
-                audio: {
-                    deviceId: (currentAudioDevice != "default")? { exact: currentAudioDevice } : "default"
-                },
-                video: false
+                audio: { deviceId : "default" },
+                video: { deviceId : "default" }
             }
         }
     }
+
     // Configure Audio
-    for (var i = 0; i < AudioinputDevices.length; ++i) {
-        if(currentAudioDevice != "default" && currentAudioDevice == AudioinputDevices[i].deviceId) {
-            confirmedAudioDevice = true;
+    var currentAudioDevice = getAudioSrcID();
+    if(currentAudioDevice != "default"){
+        var confirmedAudioDevice = false;
+        for (var i = 0; i < AudioinputDevices.length; ++i) {
+            if(currentAudioDevice == AudioinputDevices[i].deviceId) {
+                confirmedAudioDevice = true;
+                break;
+            }
+        }
+        if(confirmedAudioDevice) {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: currentAudioDevice }
+        }
+        else {
+            console.warn("The audio device you used before is no longer available, default settings applied.");
+            localDB.setItem("AudioSrcId", "default");
         }
     }
-    // Check Audio devices
-    if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-        console.warn("The audio device you used before is no longer available, default settings applied.");
-        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
-        localDB.setItem("AudioSrcId", "default"); // resets for later and subsequent calls
-    }
-    // Additional Constaints
-    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+    // Add additional Constraints
     if(supportedConstraints.autoGainControl) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
     }
@@ -4520,30 +4539,41 @@ function VideoCall(lineObj, dialledNumber) {
 
     // Configure Video
     var currentVideoDevice = getVideoSrcID();
-    var confirmedVideoDevice = false;
-    for (var i = 0; i < VideoinputDevices.length; ++i) {
-        if(currentVideoDevice != "default" && currentVideoDevice == VideoinputDevices[i].deviceId) {
-            confirmedVideoDevice = true;
+    if(currentVideoDevice != "default"){
+        var confirmedVideoDevice = false;
+        for (var i = 0; i < VideoinputDevices.length; ++i) {
+            if(currentVideoDevice == VideoinputDevices[i].deviceId) {
+                confirmedVideoDevice = true;
+                break;
+            }
+        }
+        if(confirmedVideoDevice){
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = { exact: currentVideoDevice }
+        }
+        else {
+            console.warn("The video device you used before is no longer available, default settings applied.");
+            localDB.setItem("VideoSrcId", "default"); // resets for later and subsequent calls
         }
     }
-    // The user has a camera
-    spdOptions.sessionDescriptionHandlerOptions.constraints.video =  {deviceId: (currentVideoDevice != "default")?  { exact: currentVideoDevice } : "default" }
-    // Check Video devices
-    if(currentVideoDevice != "default" && !confirmedVideoDevice) {
-        console.warn("The video device you used before is no longer available, default settings applied.");
-        spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = "default";
-        localDB.setItem("VideoSrcId", "default"); // resets for later and subsequent calls
-    }
     // Add additional Constraints
-    if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
-    if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
-    if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    if(supportedConstraints.frameRate && maxFrameRate != "") {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+    }
+    if(supportedConstraints.height && videoHeight != "") {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+    }
+    console.log(supportedConstraints)
+    console.log(supportedConstraints.aspectRatio)
+    console.log(videoAspectRatio)
+    if(supportedConstraints.aspectRatio && videoAspectRatio != "") {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    }
 
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.starting_video_call);
     $("#line-" + lineObj.LineNumber + "-timer").show();
 
     // Invite
-    console.log("INVITE (video): " + dialledNumber + "@" + wssServer);
+    console.log("INVITE (video): " + dialledNumber + "@" + wssServer, spdOptions);
     lineObj.SipSession = userAgent.invite("sip:" + dialledNumber + "@" + wssServer, spdOptions);
 
     var startTime = moment.utc();
@@ -4633,31 +4663,36 @@ function AudioCall(lineObj, dialledNumber) {
         return;
     }
 
-    var currentAudioDevice = getAudioSrcID();
-    var confirmedAudioDevice = false;
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
             constraints: {
-                audio: {
-                    deviceId: (currentAudioDevice != "default")? { exact: currentAudioDevice } : "default"
-                },
+                audio: { deviceId : "default" },
                 video: false
             }
         }
     }
-    for (var i = 0; i < AudioinputDevices.length; ++i) {
-        if(currentAudioDevice != "default" && currentAudioDevice == AudioinputDevices[i].deviceId) {
-            confirmedAudioDevice = true;
+
+    // Configure Audio
+    var currentAudioDevice = getAudioSrcID();
+    if(currentAudioDevice != "default"){
+        var confirmedAudioDevice = false;
+        for (var i = 0; i < AudioinputDevices.length; ++i) {
+            if(currentAudioDevice == AudioinputDevices[i].deviceId) {
+                confirmedAudioDevice = true;
+                break;
+            }
+        }
+        if(confirmedAudioDevice) {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: currentAudioDevice }
+        }
+        else {
+            console.warn("The audio device you used before is no longer available, default settings applied.");
+            localDB.setItem("AudioSrcId", "default");
         }
     }
-    // Check devices
-    if(currentAudioDevice != "default" && !confirmedAudioDevice) {
-        console.warn("The audio device you used before is no longer available, default settings applied.");
-        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = "default";
-        localDB.setItem("AudioSrcId", "default"); // resets for later and subsequent calls
-    }
     // Add additional Constraints
-    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     if(supportedConstraints.autoGainControl) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
     }
@@ -5450,31 +5485,46 @@ function AttendedTransfer(lineNum){
     updateLineScroll(lineNum);
 
     // SDP options
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
             constraints: {
-                audio: {
-                    deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
-                },
+                audio: { deviceId : "default" },
                 video: false
             }
         }
     }
-    // Not sure if its possible to transfer a Video call???
-    if(session.data.withvideo){
-        spdOptions.constraints.video = {
-            deviceId: (session.data.VideoSourceDevice != "default")? { exact: session.data.VideoSourceDevice } : "default"
-        }
-        // Add additional Constraints
-        if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
-        if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
-        if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    if(session.data.AudioSourceDevice != "default"){
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: session.data.AudioSourceDevice }
+    }
+    // Add additional Constraints
+    if(supportedConstraints.autoGainControl) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    }
+    if(supportedConstraints.echoCancellation) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    }
+    if(supportedConstraints.noiseSuppression) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
     }
 
-    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
-    if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
-    if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
-    if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+    // Not sure if its possible to transfer a Video call???
+    if(session.data.withvideo){
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video = true;
+        if(session.data.VideoSourceDevice != "default"){
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = { exact: session.data.VideoSourceDevice }
+        }
+        // Add additional Constraints
+        if(supportedConstraints.frameRate && maxFrameRate != "") {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+        }
+        if(supportedConstraints.height && videoHeight != "") {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+        }
+        if(supportedConstraints.aspectRatio && videoAspectRatio != "") {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+        }
+    }
 
     // Create new call session
     console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
@@ -5729,31 +5779,46 @@ function ConferenceDail(lineNum){
     updateLineScroll(lineNum);
 
     // SDP options
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
             constraints: {
-                audio: {
-                    deviceId: (session.data.AudioSourceDevice != "default")? { exact: session.data.AudioSourceDevice } : "default"
-                },
+                audio: { deviceId : "default" },
                 video: false
             }
         }
     }
-    // Unlikely this will work
-    if(session.data.withvideo){
-        spdOptions.constraints.video = {
-            deviceId: (session.data.VideoSourceDevice != "default")? { exact: session.data.VideoSourceDevice } : "default"
-        }
-        // Add additional Constraints
-        if(maxFrameRate != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
-        if(videoHeight != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
-        if(videoAspectRatio != "") spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    if(session.data.AudioSourceDevice != "default"){
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: session.data.AudioSourceDevice }
+    }
+    // Add additional Constraints
+    if(supportedConstraints.autoGainControl) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
+    }
+    if(supportedConstraints.echoCancellation) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
+    }
+    if(supportedConstraints.noiseSuppression) {
+        spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
     }
 
-    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
-    if(supportedConstraints.autoGainControl) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.autoGainControl = AutoGainControl;
-    if(supportedConstraints.echoCancellation) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.echoCancellation = EchoCancellation;
-    if(supportedConstraints.noiseSuppression) spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+    // Unlikely this will work
+    if(session.data.withvideo){
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video = true;
+        if(session.data.VideoSourceDevice != "default"){
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = { exact: session.data.VideoSourceDevice }
+        }
+        // Add additional Constraints
+        if(supportedConstraints.frameRate && maxFrameRate != "") {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.frameRate = maxFrameRate;
+        }
+        if(supportedConstraints.height && videoHeight != "") {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
+        }
+        if(supportedConstraints.aspectRatio && videoAspectRatio != "") {
+            spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+        }
+    }
 
     // Create new call session
     console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
@@ -6065,17 +6130,25 @@ function switchVideoSource(lineNum, srcId){
 
     $("#line-" + lineNum + "-msg").html(lang.switching_video_source);
 
+    var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     var constraints = { 
-        audio: false,
-        video: {
-            deviceId: (srcId != "default")? { exact: srcId } : "default",
-        }
+        audio: false, 
+        video: { deviceId: "default" }
+    }
+    if(srcId != "default"){
+        constraints.video.deviceId = { exact: srcId }
     }
 
     // Add additional Constraints
-    if(maxFrameRate != "") constraints.video.frameRate = maxFrameRate;
-    if(videoHeight != "") constraints.video.height = videoHeight;
-    if(videoAspectRatio != "") constraints.video.aspectRatio = videoAspectRatio;
+    if(supportedConstraints.frameRate && maxFrameRate != "") {
+        constraints.video.frameRate = maxFrameRate;
+    }
+    if(supportedConstraints.height && videoHeight != "") {
+        constraints.video.height = videoHeight;
+    }
+    if(supportedConstraints.aspectRatio && videoAspectRatio != "") {
+        constraints.video.aspectRatio = videoAspectRatio;
+    }
 
     session.data.VideoSourceDevice = srcId;
 
@@ -6699,7 +6772,7 @@ function AddLineHtml(lineObj){
         html += "<div id=\"line-"+ lineObj.LineNumber +"-stage-container\" class=StageContainer>";
         html += "<video id=\"line-"+ lineObj.LineNumber +"-remoteVideo\" muted></video>"; // Default Display
         html += "<div id=\"line-"+ lineObj.LineNumber +"-scratchpad-container\" style=\"display:none\"></div>";
-        html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted style=\"display:none\"></video>";
+        html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted style=\"display:none; object-fit: contain;\"></video>";
         html += "</div>";
 
         html += "</div>";
@@ -6760,7 +6833,7 @@ function AddLineHtml(lineObj){
     html += "</div>";
     
     // Monitoring
-    html += "<div style=\"margin-top:10px\">";
+    html += "<div  id=\"line-"+ lineObj.LineNumber +"-monitoring\" style=\"margin-top:10px\">";
     html += "<span style=\"vertical-align: middle\"><i class=\"fa fa-microphone\"></i></span> ";
     html += "<span class=meterContainer title=\""+ lang.microphone_levels +"\">";
     html += "<span id=\"line-"+ lineObj.LineNumber +"-Mic\" class=meterLevel style=\"height:0%\"></span>";
@@ -7949,6 +8022,8 @@ function ExpandVideoArea(lineNum){
 
     $("#line-" + lineNum + "-restore").show();
     $("#line-" + lineNum + "-expand").hide();
+
+    $("#line-" + lineNum + "-monitoring").hide();    
 }
 function RestoreVideoArea(lineNum){
     $("#line-" + lineNum + "-ActiveCall").prop("class","");
@@ -7960,6 +8035,8 @@ function RestoreVideoArea(lineNum){
 
     $("#line-" + lineNum + "-restore").hide();
     $("#line-" + lineNum + "-expand").show();
+
+    $("#line-" + lineNum + "-monitoring").show();
 }
 function MuteSession(lineNum){
     $("#line-"+ lineNum +"-btn-Unmute").show();

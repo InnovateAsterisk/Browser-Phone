@@ -185,7 +185,7 @@
     color: #222222;
     width: 40px;
     height: 40px;
-    
+
     border: 1px solid #efefef;
 }
 .dtmfButtons:hover{
@@ -1480,7 +1480,13 @@ div.dhx_popup_material div.dhx_popup_area {
 
 .PreviewContainer{
     text-align: left;
-    margin-top: 5px;
+    /* margin-top: 5px; */
+
+    margin-top: 15px;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    z-index: 10;
 }
 .PreviewContainer VIDEO{
     margin-left: 10px;
@@ -1490,7 +1496,8 @@ div.dhx_popup_material div.dhx_popup_area {
     width: 15%;
 }
 .PreviewContainer_FS{
-    height: calc(18%);
+    height: calc(10%);
+    position: absolute;
 }
 .PreviewContainer_FS VIDEO{
     height: 100% !important;
@@ -1504,6 +1511,7 @@ div.dhx_popup_material div.dhx_popup_area {
     background-color: #000000;
     margin-top: 10px;
     text-align: center;
+    z-index: 9;
 }
 .StageContainer VIDEO{
     border-radius: 0px;
@@ -1515,9 +1523,10 @@ div.dhx_popup_material div.dhx_popup_area {
     width: 100%;
     /* max-width: 640px; */
     max-width: 898px;
+    object-fit: contain;
 }
 .StageContainer_FS{
-    height: calc(100% - 18% - 55px) !important;
+    height: calc(100% - 55px) !important;
     max-height: initial !important;
 }
 .StageContainer_FS VIDEO{
@@ -1525,6 +1534,8 @@ div.dhx_popup_material div.dhx_popup_area {
     width: 100% !important;
     max-height: 100% !important;
     max-width: 100% !important;
+
+    object-fit: cover;
 }
 
 .canvas-container{
