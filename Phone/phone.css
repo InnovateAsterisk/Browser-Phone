@@ -185,6 +185,8 @@
     color: #222222;
     width: 40px;
     height: 40px;
+    
+    border: 1px solid #efefef;
 }
 .dtmfButtons:hover{
     color: #FFFFFF;
@@ -193,6 +195,20 @@
 .dtmfButtons:active{
     color: #cccccc;
     background-color: #000000;
+}
+
+.dtmfButtons div{
+    font-size: 20px;
+    line-height: 9px;
+    margin: 0px;
+    margin-top: 7px;
+    padding: 0px;
+}
+.dtmfButtons span{
+    font-size: 9px;
+    line-height: 9px;
+    margin: 0px;
+    padding: 0px;
 }
 
 /* CSS_TabPageTemplate */
