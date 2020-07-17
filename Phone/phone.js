@@ -83,7 +83,7 @@ welcomeScreen += "</div>";
 // Use the "en.json" as a template.
 // More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
 // "en.json" is always loaded by default
-var availableLang = ["ja", "zh-hans", "zh", "ru", "tr"];
+var availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl"];
 
 // User Settings & Defaults
 // ========================
