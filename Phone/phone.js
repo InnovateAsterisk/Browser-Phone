@@ -110,6 +110,7 @@ var AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // A
 var DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");   // Rejects any inbound call, while allowing outbound calls
 var CallWaitingEnabled = (getDbItem("CallWaitingEnabled", "1") == "1");     // Rejects any inbound call if you are on a call already.
 var RecordAllCalls = (getDbItem("RecordAllCalls", "0") == "1");             // Starts Call Recording when a call is established.
+var StartVideoFullScreen = (getDbItem("StartVideoFullScreen", "1") == "1"); // Starts a vdeo call in the full screen (browser screen, not dektop)
 
 var AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");       // Attempts to adjust the microphone volume to a good audio level. (OS may be better at this)
 var EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");     // Attemots to remove echo over the line.
@@ -2259,6 +2260,8 @@ function AnswerVideoCall(buddy) {
 
     // Clear Answer Buttons
     $("#contact-" + buddy + "-AnswerCall").hide();
+
+    if(StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
 }
 
 function RejectCall(buddy) {
@@ -4597,6 +4600,8 @@ function VideoCall(lineObj, dialledNumber) {
 
     // Do Nessesary UI Wireup
     wireupVideoSession(lineObj);
+
+    if(StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
 }
 function AudioCallMenu(buddy, obj){
     var x = window.dhx4.absLeft(obj);
