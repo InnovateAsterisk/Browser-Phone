@@ -25,6 +25,34 @@
         <link rel="stylesheet" type="text/css" href="https://dtd6jl0d42sve.cloudfront.net/lib/Croppie/Croppie-2.6.4/croppie.css"/>        
         <link rel="stylesheet" type="text/css" href="phone.css"/>
 
+        <script type="text/javascript">
+            var web_hook_on_register = function(ua){
+                console.warn("web_hook_on_register", ua);
+            }
+            var web_hook_on_registrationFailed = function(e){
+                console.warn("web_hook_on_registrationFailed", e);
+            }
+            var web_hook_on_unregistered = function(){
+                console.warn("web_hook_on_unregistered");
+            }
+            var web_hook_on_invite = function(session){
+                console.warn("web_hook_on_invite", session);
+            }
+            var web_hook_on_message = function(message){
+                console.warn("web_hook_on_message", message);
+            }
+            var web_hook_on_modify = function(action, session){
+                console.warn("web_hook_on_modify", action, session);
+            }
+            var web_hook_on_dtmf = function(item, session){
+                console.warn("web_hook_on_dtmf", item, session);
+            }
+            var web_hook_on_terminate = function(session){
+                console.warn("web_hook_on_terminate", session);
+            }
+
+        </script>
+
         <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery-3.3.1.min.js"></script>
         <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery.md5-min.js"></script>
         <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/Chart/Chart.bundle-2.7.2.js"></script>

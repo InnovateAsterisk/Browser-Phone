@@ -999,6 +999,7 @@ function ConfigureExtensionWindow(){
 
         // Load Sample
         var audioObj = new Audio(hostingPrefex + "media/speech_orig.mp3"); //speech_orig.wav: this file failes to play using the Asteriks MiniServer
+        audioObj.preload = "auto";
         audioObj.onplay = function(){
             var outputStream = new MediaStream();
             if (typeof audioObj.captureStream !== 'undefined') {
@@ -1696,6 +1697,9 @@ function CreateUserAgent() {
             SubscribeAll();
         }
         isReRegister = true;
+
+        // Custom Web hook
+        if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
     });
     userAgent.on('registrationFailed', function (cause) {
         console.log("Registration Failed: " + cause);
@@ -1703,6 +1707,9 @@ function CreateUserAgent() {
 
         $("#reglink").show();
         $("#dereglink").hide();
+
+        // Custom Web hook
+        if(typeof web_hook_on_registrationFailed !== 'undefined') web_hook_on_registrationFailed(cause);
     });
     userAgent.on('unregistered', function () {
         console.log("Unregistered, bye!");
@@ -1710,6 +1717,9 @@ function CreateUserAgent() {
 
         $("#reglink").show();
         $("#dereglink").hide();
+
+        // Custom Web hook
+        if(typeof web_hook_on_unregistered !== 'undefined') web_hook_on_unregistered();
     });
 
     // UA transport
@@ -1741,11 +1751,17 @@ function CreateUserAgent() {
     // Inbound Calls
     userAgent.on("invite", function (session) {
         ReceiveCall(session);
+
+        // Custom Web hook
+        if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(session);
     });
 
     // Inbound Text Message
     userAgent.on('message', function (message) {
         ReceiveMessage(message);
+
+        // Custom Web hook
+        if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(message);
     });
 
     // Start the WebService Connection loop
@@ -1835,6 +1851,9 @@ function ReceiveCall(session) {
         console.log("Call rejected: " + cause);
 
         AddCallMessage(buddy, session, response.status_code, cause);
+
+        // Custom Web hook
+        if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
     });
     // They cancelled (Gets called regardless)
     session.on('terminated', function(response, cause) {
@@ -1921,6 +1940,7 @@ function ReceiveCall(session) {
     if(CurrentCalls >= 1){
         // Play Alert
         var rinnger = new Audio();
+        rinnger.preload = "auto";
         rinnger.loop = false;
         rinnger.oncanplaythrough = function(e) {
             if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
@@ -1942,6 +1962,7 @@ function ReceiveCall(session) {
     } else {
         // Play Ring Tone
         var rinnger = new Audio();
+        rinnger.preload = "auto";
         rinnger.loop = true;
         rinnger.oncanplaythrough = function(e) {
             if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
@@ -2295,6 +2316,7 @@ function wireupAudioSession(lineObj) {
             $(MessageObjId).html(lang.ringing);
             // Play Early Media
             var earlyMedia = new Audio();
+            earlyMedia.preload = "auto";
             earlyMedia.loop = true;
             earlyMedia.oncanplaythrough = function(e) {
                 if (typeof earlyMedia.sinkId !== 'undefined' && getAudioOutputID() != "default") {
@@ -2328,6 +2350,9 @@ function wireupAudioSession(lineObj) {
         } else {
             $(MessageObjId).html(response.reason_phrase + "...");
         }
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", session);
     });
     session.on('trackAdded', function () {
         var pc = session.sessionDescriptionHandler.peerConnection;
@@ -2351,6 +2376,9 @@ function wireupAudioSession(lineObj) {
             }
             remoteAudio.play();
         }
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", session);
     });
     session.on('accepted', function (data) {
 
@@ -2382,6 +2410,9 @@ function wireupAudioSession(lineObj) {
         $(MessageObjId).html(lang.call_in_progress);
 
         updateLineScroll(lineObj.LineNumber);
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("accepted", session);
     });
     session.on('rejected', function (response, cause) {
         // Should only apply befor answer
@@ -2416,6 +2447,9 @@ function wireupAudioSession(lineObj) {
     session.on('directionChanged', function() {
         var direction = session.sessionDescriptionHandler.getDirection();
         console.log("Direction Change: ", direction);
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("directionChanged", session);
     });
 
     $("#line-" + lineObj.LineNumber + "-btn-settings").removeAttr('disabled');
@@ -2497,6 +2531,9 @@ function wireupVideoSession(lineObj) {
                 localVideo.play();
             }
         }, 1000);
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", session);
     });
     session.on('progress', function (response) {
         // Provisional 1xx
@@ -2506,6 +2543,7 @@ function wireupVideoSession(lineObj) {
             $(MessageObjId).html(lang.ringing);
             // Play Early Media
             var earlyMedia = new Audio();
+            earlyMedia.preload = "auto";
             earlyMedia.loop = true;
             earlyMedia.oncanplaythrough = function(e) {
                 if (typeof earlyMedia.sinkId !== 'undefined' && getAudioOutputID() != "default") {
@@ -2539,6 +2577,9 @@ function wireupVideoSession(lineObj) {
         } else {
             $(MessageObjId).html(response.reason_phrase + "...");
         }
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", session);
     });
     session.on('accepted', function (data) {
         
@@ -2585,6 +2626,11 @@ function wireupVideoSession(lineObj) {
         lineObj.RemoteSoundMeter = StartRemoteAudioMediaMonitoring(lineObj.LineNumber, session);
 
         $(MessageObjId).html(lang.call_in_progress);
+
+        if(StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("accepted", session);
     });
     session.on('rejected', function (response, cause) {
         // Should only apply befor answer
@@ -2619,6 +2665,9 @@ function wireupVideoSession(lineObj) {
     session.on('directionChanged', function() {
         var direction = session.sessionDescriptionHandler.getDirection();
         console.log("Direction Change: ", direction);
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("directionChanged", session);
     });
 
     $("#line-" + lineObj.LineNumber + "-btn-settings").removeAttr('disabled');
@@ -2695,6 +2744,9 @@ function teardownSession(lineObj, reasonCode, reasonText) {
 
     UpdateBuddyList();
     UpdateUI();
+
+    // Custom Web hook
+    if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
 }
 
 // Conference Monitor
@@ -3972,6 +4024,7 @@ function SendChatMessage(buddy) {
         var chatBuddy = buddyObj.ExtNo + "@" + wssServer;
         console.log("MESSAGE: "+ chatBuddy + " (extension)");
         var messageObj = userAgent.message(chatBuddy, message);
+        messageObj.data.direction = "outbound";
         messageObj.data.messageId = messageId;
         messageObj.on("accepted", function (response, cause){
             if(response.status_code == 202) {
@@ -4010,6 +4063,9 @@ function SendChatMessage(buddy) {
                 }                
             }
         });
+
+        // Custom Web hook
+        if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(messageObj);
     } 
 
     // Update Stream
@@ -4052,6 +4108,8 @@ function ReceiveMessage(message) {
     var did = message.remoteIdentity.uri.user;
 
     console.log("New Incoming Message!", "\""+ callerID +"\" <"+ did +">");
+
+    message.data.direction = "inbound";
 
     if(did.length > DidLength) {
         // Contacts cannot receive Test Messages, because they cannot reply
@@ -4158,6 +4216,7 @@ function ReceiveMessage(message) {
         }
         // Play Alert
         var rinnger = new Audio();
+        rinnger.preload = "auto";
         rinnger.loop = false;
         rinnger.oncanplaythrough = function(e) {
             if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
@@ -4601,7 +4660,8 @@ function VideoCall(lineObj, dialledNumber) {
     // Do Nessesary UI Wireup
     wireupVideoSession(lineObj);
 
-    if(StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
+    // Custom Web hook
+    if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(lineObj.SipSession);
 }
 function AudioCallMenu(buddy, obj){
     var x = window.dhx4.absLeft(obj);
@@ -4736,6 +4796,9 @@ function AudioCall(lineObj, dialledNumber) {
 
     // Do Nessesary UI Wireup
     wireupAudioSession(lineObj);
+
+    // Custom Web hook
+    if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(lineObj.SipSession);
 }
 
 // Sessions & During Call Activity
@@ -6124,6 +6187,9 @@ function sendDTMF(lineNum, itemStr) {
     $("#line-" + lineNum + "-msg").html(lang.send_dtmf + ": "+ itemStr);
 
     updateLineScroll(lineNum);
+
+    // Custom Web hook
+    if(typeof web_hook_on_dtmf !== 'undefined') web_hook_on_dtmf(itemStr, lineObj.SipSession);
 }
 function switchVideoSource(lineNum, srcId){
     var lineObj = FindLineByNumber(lineNum);
@@ -8074,6 +8140,9 @@ function MuteSession(lineNum){
     $("#line-" + lineNum + "-msg").html(lang.call_on_mute);
 
     updateLineScroll(lineNum);
+
+    // Custom Web hook
+    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("mute", session);
 }
 function UnmuteSession(lineNum){
     $("#line-"+ lineNum +"-btn-Unmute").hide();
@@ -8106,6 +8175,9 @@ function UnmuteSession(lineNum){
     $("#line-" + lineNum + "-msg").html(lang.call_off_mute);
 
     updateLineScroll(lineNum);
+
+    // Custom Web hook
+    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("unmute", session);
 }
 function ShowDtmfMenu(obj, lineNum){
     var x = window.dhx4.absLeft(obj);
