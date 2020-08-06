@@ -105,6 +105,10 @@ var hostingPrefex = getDbItem("HostingPrefex", "");                             
 var RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
 var WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
 var IpInContact = (getDbItem("IpInContact", "1") == "1");                           // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
+var IceStunServerProtocol = getDbItem("IceStunServerProtocol", "stun");             // Set the ICE/STUN server protocol. Either 'stun', 'turn' or 'turns'
+var IceStunServerAddress = getDbItem("IceStunServerAddress", "stun.l.google.com");  // Set the URL for the ICE/STUN Server
+var IceStunServerPort = getDbItem("IceStunServerPort", "19302");                    // Set the ICE/STUN server port
+var IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));          // Set amount of time in milliseconds to wait for the ICE/STUN server
 
 var AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
 var DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");   // Rejects any inbound call, while allowing outbound calls
@@ -177,6 +181,8 @@ var VideoinputDevices = [];
 var SpeakerDevices = [];
 var Lines = [];
 var lang = {};
+var audioBlobs = {};
+
 
 // Upgrade Pataches
 // ================
@@ -998,7 +1004,8 @@ function ConfigureExtensionWindow(){
         window.SettingsOutputStreamMeter = null;
 
         // Load Sample
-        var audioObj = new Audio(hostingPrefex + "media/speech_orig.mp3"); //speech_orig.wav: this file failes to play using the Asteriks MiniServer
+        console.log("Audio:", audioBlobs.speech_orig.url);
+        var audioObj = new Audio(audioBlobs.speech_orig.blob);
         audioObj.preload = "auto";
         audioObj.onplay = function(){
             var outputStream = new MediaStream();
@@ -1648,7 +1655,40 @@ function InitUi(){
         }
     }
 
-    CreateUserAgent()
+    PreloadAudioFiles();
+
+    CreateUserAgent();
+}
+
+function PreloadAudioFiles(){
+    audioBlobs.Alert = { file : "Alert.mp3", url : hostingPrefex +"media/Alert.mp3" };
+    audioBlobs.Ringtone = { file : "Ringtone_1.mp3", url : hostingPrefex +"media/Ringtone_1.mp3" };
+    audioBlobs.speech_orig = { file : "speech_orig.mp3", url : hostingPrefex +"media/speech_orig.mp3" };
+    audioBlobs.Busy_UK = { file : "Tone_Busy-UK.mp3", url : hostingPrefex +"media/Tone_Busy-UK.mp3" };
+    audioBlobs.Busy_US = { file : "Tone_Busy-US.mp3", url : hostingPrefex +"media/Tone_Busy-US.mp3" };
+    audioBlobs.CallWaiting = { file : "Tone_CallWaiting.mp3", url : hostingPrefex +"media/Tone_CallWaiting.mp3" };
+    audioBlobs.Congestion_UK = { file : "Tone_Congestion-UK.mp3", url : hostingPrefex +"media/Tone_Congestion-UK.mp3" };
+    audioBlobs.Congestion_US = { file : "Tone_Congestion-US.mp3", url : hostingPrefex +"media/Tone_Congestion-US.mp3" };
+    audioBlobs.EarlyMedia_Australia = { file : "Tone_EarlyMedia-Australia.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-Australia.mp3" };
+    audioBlobs.EarlyMedia_European = { file : "Tone_EarlyMedia-European.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-European.mp3" };
+    audioBlobs.EarlyMedia_Japan = { file : "Tone_EarlyMedia-Japan.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-Japan.mp3" };
+    audioBlobs.EarlyMedia_UK = { file : "Tone_EarlyMedia-UK.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-UK.mp3" };
+    audioBlobs.EarlyMedia_US = { file : "Tone_EarlyMedia-US.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-US.mp3" };
+    
+    $.each(audioBlobs, function (i, item) {
+        var oReq = new XMLHttpRequest();
+        oReq.open("GET", item.url, true);
+        oReq.responseType = "blob";
+        oReq.onload = function(oEvent) {
+            var reader = new FileReader();
+            reader.readAsDataURL(oReq.response);
+            reader.onload = function() {
+                item.blob = reader.result;
+            };
+        };
+        oReq.send();
+    });
+    // console.log(audioBlobs);
 }
 
 // Create User Agent
@@ -1665,6 +1705,17 @@ function CreateUserAgent() {
                 connectionTimeout: TransportConnectionTimeout,
                 maxReconnectionAttempts: TransportReconnectionAttempts,
                 reconnectionTimeout: TransportReconnectionTimeout,
+            },
+            sessionDescriptionHandlerFactoryOptions:{
+                peerConnectionOptions :{
+                    alwaysAcquireMediaFirst: true, // Better for firefox, but seems to have no effect on others
+                    iceCheckingTimeout: IceStunCheckTimeout,
+                    rtcConfiguration: { 
+                        iceServers : [
+                            { urls: IceStunServerProtocol + ":"+ IceStunServerAddress +":"+ IceStunServerPort }
+                        ]
+                    }
+                }
             },
             authorizationUser: SipUsername,
             password: SipPassword,
@@ -1814,7 +1865,8 @@ function ReceiveCall(session) {
 
     console.log("New Incoming Call!", "\""+ callerID +"\" <"+ did +">");
 
-    var CurrentCalls = userAgent.sessions.length;
+    var CurrentCalls = countSessions(session.id);
+    console.log("Current Call Count:", CurrentCalls);
 
     var buddyObj = FindBuddyByDid(did);
     // Make new contact of its not there
@@ -1939,7 +1991,8 @@ function ReceiveCall(session) {
     // Play Ring Tone if not on the phone
     if(CurrentCalls >= 1){
         // Play Alert
-        var rinnger = new Audio();
+        console.log("Audio:", audioBlobs.CallWaiting.url);
+        var rinnger = new Audio(audioBlobs.CallWaiting.blob);
         rinnger.preload = "auto";
         rinnger.loop = false;
         rinnger.oncanplaythrough = function(e) {
@@ -1957,11 +2010,11 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        rinnger.src = hostingPrefex + "media/Tone_CallWaiting.mp3";
         session.data.rinngerObj = rinnger;
     } else {
         // Play Ring Tone
-        var rinnger = new Audio();
+        console.log("Audio:", audioBlobs.Ringtone.url);
+        var rinnger = new Audio(audioBlobs.Ringtone.blob);
         rinnger.preload = "auto";
         rinnger.loop = true;
         rinnger.oncanplaythrough = function(e) {
@@ -1979,7 +2032,6 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        rinnger.src = hostingPrefex + "media/Ringtone_1.mp3";
         session.data.rinngerObj = rinnger;
     }
 
@@ -2314,8 +2366,16 @@ function wireupAudioSession(lineObj) {
             $(MessageObjId).html(lang.trying);
         } else if(response.status_code == 180){
             $(MessageObjId).html(lang.ringing);
+            
+            var soundFile = audioBlobs.EarlyMedia_European;
+            if(UserLocale().indexOf("us") > -1) soundFile = audioBlobs.EarlyMedia_US;
+            if(UserLocale().indexOf("gb") > -1) soundFile = audioBlobs.EarlyMedia_UK;
+            if(UserLocale().indexOf("au") > -1) soundFile = audioBlobs.EarlyMedia_Australia;
+            if(UserLocale().indexOf("jp") > -1) soundFile = audioBlobs.EarlyMedia_Japan;
+
             // Play Early Media
-            var earlyMedia = new Audio();
+            console.log("Audio:", soundFile.url);
+            var earlyMedia = new Audio(soundFile.blob);
             earlyMedia.preload = "auto";
             earlyMedia.loop = true;
             earlyMedia.oncanplaythrough = function(e) {
@@ -2332,20 +2392,6 @@ function wireupAudioSession(lineObj) {
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            var soundFile = hostingPrefex + "media/Tone_EarlyMedia-European.mp3";
-            if(UserLocale().indexOf("us") > -1){
-                soundFile = hostingPrefex + "media/Tone_EarlyMedia-US.mp3";
-            }
-            if(UserLocale().indexOf("gb") > -1){
-                soundFile = hostingPrefex + "media/Tone_EarlyMedia-UK.mp3";
-            }
-            if(UserLocale().indexOf("au") > -1){
-                soundFile = hostingPrefex + "media/Tone_EarlyMedia-Australia.mp3";
-            }
-            if(UserLocale().indexOf("jp") > -1){
-                soundFile = hostingPrefex + "media/Tone_EarlyMedia-Japan.mp3";
-            }
-            earlyMedia.src = soundFile;
             session.data.earlyMedia = earlyMedia;
         } else {
             $(MessageObjId).html(response.reason_phrase + "...");
@@ -2541,8 +2587,16 @@ function wireupVideoSession(lineObj) {
             $(MessageObjId).html(lang.trying);
         } else if(response.status_code == 180){
             $(MessageObjId).html(lang.ringing);
+
+            var soundFile = audioBlobs.EarlyMedia_European;
+            if(UserLocale().indexOf("us") > -1) soundFile = audioBlobs.EarlyMedia_US;
+            if(UserLocale().indexOf("gb") > -1) soundFile = audioBlobs.EarlyMedia_UK;
+            if(UserLocale().indexOf("au") > -1) soundFile = audioBlobs.EarlyMedia_Australia;
+            if(UserLocale().indexOf("jp") > -1) soundFile = audioBlobs.EarlyMedia_Japan;
+
             // Play Early Media
-            var earlyMedia = new Audio();
+            console.log("Audio:", soundFile.url);
+            var earlyMedia = new Audio(soundFile.blob);
             earlyMedia.preload = "auto";
             earlyMedia.loop = true;
             earlyMedia.oncanplaythrough = function(e) {
@@ -2559,20 +2613,6 @@ function wireupVideoSession(lineObj) {
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            var soundFile = hostingPrefex + "media/Tone_EarlyMedia-European.mp3";
-            if(UserLocale().indexOf("us") > -1){
-                soundFile = hostingPrefex + "media/Tone_EarlyMedia-US.mp3";
-            }
-            if(UserLocale().indexOf("gb") > -1){
-                soundFile = hostingPrefex + "media/Tone_EarlyMedia-UK.mp3";
-            }
-            if(UserLocale().indexOf("au") > -1){
-                soundFile = hostingPrefex + "media/Tone_EarlyMedia-Australia.mp3";
-            }
-            if(UserLocale().indexOf("jp") > -1){
-                soundFile = hostingPrefex + "media/Tone_EarlyMedia-Japan.mp3";
-            }
-            earlyMedia.src = soundFile;
             session.data.earlyMedia = earlyMedia;
         } else {
             $(MessageObjId).html(response.reason_phrase + "...");
@@ -4118,7 +4158,7 @@ function ReceiveMessage(message) {
         return;
     }
 
-    var CurrentCalls = userAgent.sessions.length;
+    var CurrentCalls = countSessions("0");
 
     var buddyObj = FindBuddyByDid(did);
     // Make new contact of its not there
@@ -4215,7 +4255,8 @@ function ReceiveMessage(message) {
             }
         }
         // Play Alert
-        var rinnger = new Audio();
+        console.log("Audio:", audioBlobs.Alert.url);
+        var rinnger = new Audio(audioBlobs.Alert.blob);
         rinnger.preload = "auto";
         rinnger.loop = false;
         rinnger.oncanplaythrough = function(e) {
@@ -4233,7 +4274,6 @@ function ReceiveMessage(message) {
                 console.warn("Unable to play audio file.", e);
             });
         }
-        rinnger.src = hostingPrefex + "media/Alert.mp3";
         message.data.rinngerObj = rinnger; // Will be attached to this object until its disposed.
     } else {
         // Message window is active.
@@ -4738,7 +4778,6 @@ function AudioCall(lineObj, dialledNumber) {
             }
         }
     }
-
     // Configure Audio
     var currentAudioDevice = getAudioSrcID();
     if(currentAudioDevice != "default"){
@@ -4767,6 +4806,9 @@ function AudioCall(lineObj, dialledNumber) {
     if(supportedConstraints.noiseSuppression) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
     }
+
+    // Set ICE/STUN Server
+    // spdOptions.sessionDescriptionHandlerOptions.options.peerConnectionOptions.rtcConfiguration.iceServers = [{urls: 'stun:stun.l.google.com:9999'}]
 
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.starting_audio_call);
     $("#line-" + lineObj.LineNumber + "-timer").show();
@@ -4822,7 +4864,17 @@ function getSession(buddy) {
     });
     return rtnSession;
 }
-
+function countSessions(id){
+    var rtn = 0;
+    if(userAgent == null) {
+        console.warn("userAgent is null");
+        return 0;
+    }
+    $.each(userAgent.sessions, function (i, session) {
+        if(id != session.id) rtn ++;
+    });
+    return rtn;
+}
 function StartRecording(lineNum){
     if(CallRecordingPolicy == "disabled") {
         console.warn("Policy Disabled: Call Recording");
