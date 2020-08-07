@@ -1988,7 +1988,7 @@ function ReceiveCall(session) {
     }
     
     // Show the Answer Thingy
-    $("#contact-" + buddyObj.identity + "-msg").html(lang.incomming_call_from +" " + callerID);
+    $("#contact-" + buddyObj.identity + "-msg").html(lang.incomming_call_from +" " + callerID +" &lt;"+ did +"&gt;");
     $("#contact-" + buddyObj.identity + "-msg").show();
     if(videoInvite){
         $("#contact-"+ buddyObj.identity +"-answer-video").show();
@@ -2057,6 +2057,9 @@ function ReceiveCall(session) {
         // Show Call Answer Window
         var callAnswerHtml = "<div class=\"UiWindowField scroller\" style=\"text-align:center\">"
         callAnswerHtml += "<div style=\"font-size: 18px; margin-top:05px\">"+ callerID + "<div>";
+        if(callerID != did) {
+            callAnswerHtml += "<div style=\"font-size: 18px; margin-top:05px\">&lt;"+ did + "&gt;<div>";
+        }
         callAnswerHtml += "<div class=callAnswerBuddyIcon style=\"background-image: url("+ getPicture(buddyObj.identity) +"); margin-top:15px\"></div>";
         callAnswerHtml += "<div style=\"margin-top:5px\"><button onclick=\"AnswerAudioCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button></div>";
         if(videoInvite) {
@@ -2079,7 +2082,7 @@ function ReceiveCall(session) {
         // =================
         if ("Notification" in window) {
             if (Notification.permission === "granted") {
-                var noticeOptions = { body: lang.incomming_call_from +" " + callerID, icon: getPicture(buddyObj.identity) }
+                var noticeOptions = { body: lang.incomming_call_from +" " + callerID +" <"+ did +">", icon: getPicture(buddyObj.identity) }
                 var inComingCallNotification = new Notification(lang.incomming_call, noticeOptions);
                 inComingCallNotification.onclick = function (event) {
 
