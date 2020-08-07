@@ -183,8 +183,8 @@ var AudioinputDevices = [];
 var VideoinputDevices = [];
 var SpeakerDevices = [];
 var Lines = [];
-var lang = {};
-var audioBlobs = {};
+var lang = {}
+var audioBlobs = {}
 
 
 // Upgrade Pataches
@@ -1153,12 +1153,12 @@ function ConfigureExtensionWindow(){
             }
 
             if(MicrophoneFound){
-                contraints.audio = { deviceId: "default" };
-                if(audioDeviceFound) contraints.audio.deviceId = { exact: savedAudioDevice };
+                contraints.audio = { deviceId: "default" }
+                if(audioDeviceFound) contraints.audio.deviceId = { exact: savedAudioDevice }
             }
             if(VideoFound){
-                contraints.video = { deviceId: "default" };
-                if(videoDeviceFound) contraints.video.deviceId = { exact: savedVideoDevice };
+                contraints.video = { deviceId: "default" }
+                if(videoDeviceFound) contraints.video.deviceId = { exact: savedVideoDevice }
             }
             // Additional
             if($("input[name=Settings_FrameRate]:checked").val() != ""){
@@ -1184,7 +1184,7 @@ function ConfigureExtensionWindow(){
                     }
                 }
                 else {
-                    Alert("No video / webcam devices found, make sure one is plugged in.", "Device Error");
+                    console.warn("No video / webcam devices found. Video Calling will not be possible.")
                 }
 
                 // Handle Audio
@@ -1196,7 +1196,7 @@ function ConfigureExtensionWindow(){
                     window.SettingsMicrophoneSoundMeter = MeterSettingsOutput(localMicrophoneStream, "Settings_MicrophoneOutput", "width", 50);
                 }
                 else {
-                    Alert("No microphone devices found, make sure one is plugged in.", "Device Error");
+                    console.warn("No microphone devices found. Calling will not be possible.")
                 }
 
                 // Display Output Levels
@@ -1237,6 +1237,14 @@ function ConfigureExtensionWindow(){
                         option.text((DisplayName != "")? DisplayName : "Webcam");
                         selectVideoScr.append(option);
                     }
+                }
+                // Add "Default" option
+                if(selectVideoScr.children('option').length > 0){
+                    var option = $('<option/>');
+                    option.prop("value", "default");
+                    if(getVideoSrcID() == "default" || getVideoSrcID() == "" || getVideoSrcID() == "null") option.prop("selected", true);
+                    option.text("(Default)");
+                    selectVideoScr.append(option);
                 }
             }).catch(function(e){
                 console.error(e);
@@ -1288,7 +1296,7 @@ function ConfigureExtensionWindow(){
                     $("#ImageCanvas").croppie('bind', {
                         url: event.target.result
                     });
-                };
+                }
     
                 // Use onload for this
                 reader.readAsDataURL(fileObj);
@@ -1664,19 +1672,19 @@ function InitUi(){
 }
 
 function PreloadAudioFiles(){
-    audioBlobs.Alert = { file : "Alert.mp3", url : hostingPrefex +"media/Alert.mp3" };
-    audioBlobs.Ringtone = { file : "Ringtone_1.mp3", url : hostingPrefex +"media/Ringtone_1.mp3" };
-    audioBlobs.speech_orig = { file : "speech_orig.mp3", url : hostingPrefex +"media/speech_orig.mp3" };
-    audioBlobs.Busy_UK = { file : "Tone_Busy-UK.mp3", url : hostingPrefex +"media/Tone_Busy-UK.mp3" };
-    audioBlobs.Busy_US = { file : "Tone_Busy-US.mp3", url : hostingPrefex +"media/Tone_Busy-US.mp3" };
-    audioBlobs.CallWaiting = { file : "Tone_CallWaiting.mp3", url : hostingPrefex +"media/Tone_CallWaiting.mp3" };
-    audioBlobs.Congestion_UK = { file : "Tone_Congestion-UK.mp3", url : hostingPrefex +"media/Tone_Congestion-UK.mp3" };
-    audioBlobs.Congestion_US = { file : "Tone_Congestion-US.mp3", url : hostingPrefex +"media/Tone_Congestion-US.mp3" };
-    audioBlobs.EarlyMedia_Australia = { file : "Tone_EarlyMedia-Australia.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-Australia.mp3" };
-    audioBlobs.EarlyMedia_European = { file : "Tone_EarlyMedia-European.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-European.mp3" };
-    audioBlobs.EarlyMedia_Japan = { file : "Tone_EarlyMedia-Japan.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-Japan.mp3" };
-    audioBlobs.EarlyMedia_UK = { file : "Tone_EarlyMedia-UK.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-UK.mp3" };
-    audioBlobs.EarlyMedia_US = { file : "Tone_EarlyMedia-US.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-US.mp3" };
+    audioBlobs.Alert = { file : "Alert.mp3", url : hostingPrefex +"media/Alert.mp3" }
+    audioBlobs.Ringtone = { file : "Ringtone_1.mp3", url : hostingPrefex +"media/Ringtone_1.mp3" }
+    audioBlobs.speech_orig = { file : "speech_orig.mp3", url : hostingPrefex +"media/speech_orig.mp3" }
+    audioBlobs.Busy_UK = { file : "Tone_Busy-UK.mp3", url : hostingPrefex +"media/Tone_Busy-UK.mp3" }
+    audioBlobs.Busy_US = { file : "Tone_Busy-US.mp3", url : hostingPrefex +"media/Tone_Busy-US.mp3" }
+    audioBlobs.CallWaiting = { file : "Tone_CallWaiting.mp3", url : hostingPrefex +"media/Tone_CallWaiting.mp3" }
+    audioBlobs.Congestion_UK = { file : "Tone_Congestion-UK.mp3", url : hostingPrefex +"media/Tone_Congestion-UK.mp3" }
+    audioBlobs.Congestion_US = { file : "Tone_Congestion-US.mp3", url : hostingPrefex +"media/Tone_Congestion-US.mp3" }
+    audioBlobs.EarlyMedia_Australia = { file : "Tone_EarlyMedia-Australia.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-Australia.mp3" }
+    audioBlobs.EarlyMedia_European = { file : "Tone_EarlyMedia-European.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-European.mp3" }
+    audioBlobs.EarlyMedia_Japan = { file : "Tone_EarlyMedia-Japan.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-Japan.mp3" }
+    audioBlobs.EarlyMedia_UK = { file : "Tone_EarlyMedia-UK.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-UK.mp3" }
+    audioBlobs.EarlyMedia_US = { file : "Tone_EarlyMedia-US.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-US.mp3" }
     
     $.each(audioBlobs, function (i, item) {
         var oReq = new XMLHttpRequest();
@@ -1687,8 +1695,8 @@ function PreloadAudioFiles(){
             reader.readAsDataURL(oReq.response);
             reader.onload = function() {
                 item.blob = reader.result;
-            };
-        };
+            }
+        }
         oReq.send();
     });
     // console.log(audioBlobs);
@@ -3467,7 +3475,7 @@ function SaveQosData(QosData, sessionId, buddy){
         }
         IDB.onerror = function(event) {
             console.error("IndexDB Error:", event);
-        };
+        }
 
         // Prepare data to write
         var data = {
@@ -3506,7 +3514,7 @@ function DisplayQosData(sessionId){
         var objectStoreGet = transaction.objectStore("CallQos").index('sessionid').getAll(sessionId);
         objectStoreGet.onerror = function(event) {
             console.error("IndexDB Get Error:", event);
-        };
+        }
         objectStoreGet.onsuccess = function(event) {
             if(event.target.result && event.target.result.length == 2){
                 // This is the correct data
@@ -3739,7 +3747,7 @@ function DeleteQosData(buddy){
         }
         IDB.onerror = function(event) {
             console.error("IndexDB Error:", event);
-        };
+        }
 
         // Loop and Delete
         console.log("Deleting CallQosData: ", buddy);
@@ -3775,7 +3783,7 @@ function SubscribeAll() {
     // conference, message-summary, dialog, presence, presence.winfo, xcap-diff, dialog.winfo, refer
 
     // Voicemail notice TODO: Make this optional
-    var vmOptions = { expires: 300 };
+    var vmOptions = { expires: 300 }
     voicemailSubs = userAgent.subscribe(SipUsername + "@" + wssServer, 'message-summary', vmOptions); // message-summary = voicemail messages
     voicemailSubs.on('notify', function (notification) {
 
@@ -3806,10 +3814,10 @@ function SubscribeAll() {
     });
 
     // Dialog Subscription (This version isnt as nice as PIDF)
-    // var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/dialog-info+xml'] };
+    // var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/dialog-info+xml'] }
 
     // PIDF Subscription TODO: make this an option.
-    var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] };
+    var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] }
 
     // Start subscribe all
     console.log("Starting Subscribe of all ("+ Buddies.length +") Extension Buddies...");
@@ -3827,7 +3835,7 @@ function SubscribeAll() {
     }
 }
 function SubscribeBuddy(buddyObj) {
-    var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] };
+    var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] }
     if(buddyObj.type == "extension") {
         console.log("SUBSCRIBE: "+ buddyObj.ExtNo +"@" + wssServer);
         var blfObj = userAgent.subscribe(buddyObj.ExtNo +"@" + wssServer, 'presence', dialogOptions);
@@ -5051,7 +5059,7 @@ function StartRecording(lineNum){
             mimeType : mediaType
         }
         var mediaRecorder = new MediaRecorder(mixedAudioVideoRecordStream, options);
-        mediaRecorder.data = {};
+        mediaRecorder.data = {}
         mediaRecorder.data.id = ""+ id;
         mediaRecorder.data.sessionId = ""+ session.id;
         mediaRecorder.data.buddyId = ""+ lineObj.BuddyObj.identity;
@@ -5071,7 +5079,7 @@ function StartRecording(lineNum){
         updateLineScroll(lineNum);
     }
     else if(session.data.mediaRecorder.state == "inactive") {
-        session.data.mediaRecorder.data = {};
+        session.data.mediaRecorder.data = {}
         session.data.mediaRecorder.data.id = ""+ id;
         session.data.mediaRecorder.data.sessionId = ""+ session.id;
         session.data.mediaRecorder.data.buddyId = ""+ lineObj.BuddyObj.identity;
@@ -5120,7 +5128,7 @@ function SaveCallRecording(blob, id, buddy, sessionid){
         }
         IDB.onerror = function(event) {
             console.error("IndexDB Error:", event);
-        };
+        }
     
         // Prepare data to write
         var data = {
@@ -5237,7 +5245,7 @@ function PlayAudioCallRecording(obj, cdrId, uID){
         var objectStoreGet = transaction.objectStore("Recordings").get(uID);
         objectStoreGet.onerror = function(event) {
             console.error("IndexDB Get Error:", event);
-        };
+        }
         objectStoreGet.onsuccess = function(event) {
             $("#cdr-media-meta-size-"+ cdrId +"-"+ uID).html(" Size: "+ formatBytes(event.target.result.bytes));
             $("#cdr-media-meta-codec-"+ cdrId +"-"+ uID).html(" Codec: "+ event.target.result.type);
@@ -7646,7 +7654,7 @@ function DeleteCallRecordings(buddy, stream){
         }
         IDB.onerror = function(event) {
             console.error("IndexDB Error:", event);
-        };
+        }
 
         // Loop and Delete
         $.each(stream.DataCollection, function (i, item) {
@@ -9516,12 +9524,12 @@ function chatOnbeforepaste(event, obj, buddy){
                     console.log("Placeholder loaded... CreateImageEditor...");
 
                     CreateImageEditor(buddy, placeholderImage);
-                };
+                }
                 placeholderImage.src = event.target.result;
 
                 // $("#contact-" + buddy + "-msgPreviewhtml").html("<img src=\""+ event.target.result +"\" style=\"max-width:320px; max-height:240px\" />");
                 // $("#contact-" + buddy + "-msgPreview").show();
-            };
+            }
             reader.readAsDataURL(blob);
 
             preventDefault = true;
@@ -10123,7 +10131,7 @@ function onFileDragDrop(e, buddy){
             else{
                 alert("The file '"+ fileObj.name +"' is bigger than 50MB, you cannot upload this file")
             }
-        };
+        }
         console.log("Adding: "+ fileObj.name + " of size: "+ fileObj.size +"bytes");
         reader.readAsDataURL(fileObj);
     }
