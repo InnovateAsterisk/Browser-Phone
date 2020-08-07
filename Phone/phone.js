@@ -135,6 +135,9 @@ var RecordingLayout = getDbItem("RecordingLayout", "them-pnp");             // T
 var DidLength = parseInt(getDbItem("DidLength", 6));                 // DID length from which to decide if an incoming caller is a "contact" or an "extension".
 var MaxDidLength = parseInt(getDbItem("maximumNumberLength", 16));   // Maximum langth of any DID number including international dialled numbers.
 
+var DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");  // The display format for all dates. https://momentjs.com/docs/#/displaying/
+var DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");    // The display format for all times. https://momentjs.com/docs/#/displaying/
+
 // Permission Settings
 var EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");               // Enables the Text Messaging
 var DisableFreeDial = (getDbItem("DisableFreeDial", "0") == "1");                       // Removes the Dial icon in the profile area, users will need to add buddies in order to dial.
@@ -3547,7 +3550,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceiveBitRate.length > 0)? QosData0.ReceiveBitRate : QosData1.ReceiveBitRate;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var ReceiveBitRateChart = new Chart($("#cdr-AudioReceiveBitRate"), {
@@ -3571,7 +3574,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceivePacketRate.length > 0)? QosData0.ReceivePacketRate : QosData1.ReceivePacketRate;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var ReceivePacketRateChart = new Chart($("#cdr-AudioReceivePacketRate"), {
@@ -3595,7 +3598,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceivePacketLoss.length > 0)? QosData0.ReceivePacketLoss : QosData1.ReceivePacketLoss;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var AudioReceivePacketLossChart = new Chart($("#cdr-AudioReceivePacketLoss"), {
@@ -3619,7 +3622,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceiveJitter.length > 0)? QosData0.ReceiveJitter : QosData1.ReceiveJitter;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var AudioReceiveJitterChart = new Chart($("#cdr-AudioReceiveJitter"), {
@@ -3643,7 +3646,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.ReceiveLevels.length > 0)? QosData0.ReceiveLevels : QosData1.ReceiveLevels;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var AudioReceiveLevelsChart = new Chart($("#cdr-AudioReceiveLevels"), {
@@ -3667,7 +3670,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.SendPacketRate.length > 0)? QosData0.SendPacketRate : QosData1.SendPacketRate;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var SendPacketRateChart = new Chart($("#cdr-AudioSendPacketRate"), {
@@ -3691,7 +3694,7 @@ function DisplayQosData(sessionId){
                 var dataset = [];
                 var data = (QosData0.SendBitRate.length > 0)? QosData0.SendBitRate : QosData1.SendBitRate;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss"));
+                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var AudioSendBitRateChart = new Chart($("#cdr-AudioSendBitRate"), {
@@ -7197,7 +7200,7 @@ function RefreshLineActivity(lineNum){
     });
 
     $.each(callDetails, function(item, detail){
-        var Time = moment.utc(detail.TimeStr.replace(" UTC", "")).local().format("h:mm:ss A");
+        var Time = moment.utc(detail.TimeStr.replace(" UTC", "")).local().format(DisplayTimeFormat);
         var messageString = "<table class=timelineMessage cellspacing=0 cellpadding=0><tr>"
         messageString += "<td class=timelineMessageArea>"
         messageString += "<div class=timelineMessageDate><i class=\"fa fa-circle timelineMessageDot\"></i>"+ Time +"</div>"
@@ -7378,10 +7381,10 @@ function UpdateBuddyList(){
         var displayDateTime = "";
         if(lastActivity.isSame(today, 'day'))
         {
-            displayDateTime = lastActivity.local().format("h:mm:ss A");
+            displayDateTime = lastActivity.local().format(DisplayTimeFormat);
         } 
         else {
-            displayDateTime = lastActivity.local().format("YYYY-MM-DD");
+            displayDateTime = lastActivity.local().format(DisplayDateFormat);
         }
 
         var classStr = (buddyObj.IsSelected)? "buddySelected" : "buddy";
@@ -7902,8 +7905,8 @@ function RefreshStream(buddyObj, filter) {
     $.each(json.DataCollection, function (i, item) {
 
         var IsToday = moment.utc(item.ItemDate.replace(" UTC", "")).isSame(moment.utc(), "day");
-        var DateTime = moment.utc(item.ItemDate.replace(" UTC", "")).local().calendar(null, { sameElse: 'YYYY-MM-DD' });
-        if(IsToday) DateTime = moment.utc(item.ItemDate.replace(" UTC", "")).local().format("h:mm:ss A");
+        var DateTime = moment.utc(item.ItemDate.replace(" UTC", "")).local().calendar(null, { sameElse: DisplayDateFormat });
+        if(IsToday) DateTime = moment.utc(item.ItemDate.replace(" UTC", "")).local().format(DisplayTimeFormat);
 
         if (item.ItemType == "MSG") {
             // Add Chat Message
@@ -8031,7 +8034,7 @@ function RefreshStream(buddyObj, filter) {
                         else {
                             recordingsHtml += "<div><button onclick=\"PlayAudioCallRecording(this, '"+ item.CdrId +"', '"+ recording.uID +"', '"+ buddyObj.identity +"')\"><i class=\"fa fa-play\"></i></button></div>";
                         } 
-                        recordingsHtml += "<div>"+ lang.started +": "+ StartTime.format("h:mm:ss A") +" <i class=\"fa fa-long-arrow-right\"></i> "+ lang.stopped +": "+ StopTime.format("h:mm:ss A") +"</div>";
+                        recordingsHtml += "<div>"+ lang.started +": "+ StartTime.format(DisplayTimeFormat) +" <i class=\"fa fa-long-arrow-right\"></i> "+ lang.stopped +": "+ StopTime.format(DisplayTimeFormat) +"</div>";
                         recordingsHtml += "<div>"+ lang.recording_duration +": "+ formatShortDuration(recordingDuration.asSeconds()) +"</div>";
                         recordingsHtml += "<div>";
                         recordingsHtml += "<span id=\"cdr-video-meta-width-"+ item.CdrId +"-"+ recording.uID +"\"></span>";
@@ -8342,10 +8345,10 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
             // Transfers: []
             // WithVideo: false
 
-            var CallDate = moment.utc(cdr.ItemDate.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss");
-            var CallAnswer = (cdr.CallAnswer)? moment.utc(cdr.CallAnswer.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss") : null ;
+            var CallDate = moment.utc(cdr.ItemDate.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat);
+            var CallAnswer = (cdr.CallAnswer)? moment.utc(cdr.CallAnswer.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat) : null ;
             var ringTime = (cdr.RingTime)? cdr.RingTime : 0 ;
-            var CallEnd = moment.utc(cdr.CallEnd.replace(" UTC", "")).local().format("YYYY-MM-DD HH:mm:ss");
+            var CallEnd = moment.utc(cdr.CallEnd.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat);
 
             var srcCallerID = "";
             var dstCallerID = "";
@@ -8458,7 +8461,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                 return 0;
             });
             $.each(callDetails, function(item, detail){
-                var Time = moment.utc(detail.TimeStr.replace(" UTC", "")).local().format("h:mm:ss A");
+                var Time = moment.utc(detail.TimeStr.replace(" UTC", "")).local().format(DisplayTimeFormat);
                 var messageString = "<table class=timelineMessage cellspacing=0 cellpadding=0><tr>"
                 messageString += "<td class=timelineMessageArea>"
                 messageString += "<div class=timelineMessageDate style=\"color: #333333\"><i class=\"fa fa-circle timelineMessageDot\"></i>"+ Time +"</div>"
@@ -8483,7 +8486,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                     else {
                         recordingsHtml += "<div><audio id=\"callrecording-audio-"+ recording.uID +"\" controls style=\"width: 100%\"></div>";
                     } 
-                    recordingsHtml += "<div>"+ lang.started +": "+ StartTime.format("h:mm:ss A") +" <i class=\"fa fa-long-arrow-right\"></i> "+ lang.stopped +": "+ StopTime.format("h:mm:ss A") +"</div>";
+                    recordingsHtml += "<div>"+ lang.started +": "+ StartTime.format(DisplayTimeFormat) +" <i class=\"fa fa-long-arrow-right\"></i> "+ lang.stopped +": "+ StopTime.format(DisplayTimeFormat) +"</div>";
                     recordingsHtml += "<div>"+ lang.recording_duration +": "+ formatShortDuration(recordingDuration.asSeconds()) +"</div>";
                     recordingsHtml += "<div><a id=\"download-"+ recording.uID +"\">"+ lang.save_as +"</a> ("+ lang.right_click_and_select_save_link_as +")</div>";
                     recordingsHtml += "</div>";
