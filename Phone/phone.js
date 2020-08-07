@@ -295,6 +295,8 @@ function GetAlternateLanguage(){
     for(l = 0; l < availableLang.length; l++){
         if(userLanguage.indexOf(availableLang[l].toLowerCase()) == 0){
             console.log("Alternate Language detected: ", userLanguage);
+            // Set up Moment with the same langugae settings
+            moment.locale(userLanguage);
             return availableLang[l].toLowerCase();
         }
     }
