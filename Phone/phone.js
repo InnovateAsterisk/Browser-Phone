@@ -134,9 +134,9 @@ var RecordingLayout = getDbItem("RecordingLayout", "them-pnp");             // T
 
 var DidLength = parseInt(getDbItem("DidLength", 6));                 // DID length from which to decide if an incoming caller is a "contact" or an "extension".
 var MaxDidLength = parseInt(getDbItem("maximumNumberLength", 16));   // Maximum langth of any DID number including international dialled numbers.
-
 var DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");  // The display format for all dates. https://momentjs.com/docs/#/displaying/
 var DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");    // The display format for all times. https://momentjs.com/docs/#/displaying/
+var Language = getDbItem("Language", "auto");    // Overrides the langauage selector or "automatic". Must be one of availableLang[]. If not defaults to en. Testing: zh-Hans-CN, zh-cmn-Hans-CN, zh-Hant, de, de-DE, en-US, fr, fr-FR, es-ES, sl-IT-nedis, hy-Latn-IT-arevela
 
 // Permission Settings
 var EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");               // Enables the Text Messaging
@@ -286,31 +286,15 @@ function UserLocale(){
     }
 }
 function GetAlternateLanguage(){
-    var language = window.navigator.userLanguage || window.navigator.language; // "en", "en-US", "fr", "fr-FR", "es-ES", etc.
+    var userLanguage = window.navigator.userLanguage || window.navigator.language; // "en", "en-US", "fr", "fr-FR", "es-ES", etc.
     // langtag = language["-"script]["-" region] *("-" variant) *("-" extension) ["-" privateuse]
-    // Testing: 
-/*
-    language = "zh-Hans-CN";
-    language = "zh-cmn-Hans-CN";
-    language = "zh-Hant";
-    language = "de";
-    language = "de-DE";
-    language = "en";
-    language = "en-US";
-    language = "fr";
-    language = "fr-FR";
-    language = "es-ES";
-    language = "sl-IT-nedis";
-    language = "hy-Latn-IT-arevela";
-*/
-    language = language.toLowerCase();
-
-    // English is already loaded
-    if(language == "en" || language.indexOf("en-") == 0) return "";
+    if(Language != "auto") userLanguage = Language;
+    userLanguage = userLanguage.toLowerCase();
+    if(userLanguage == "en" || userLanguage.indexOf("en-") == 0) return "";  // English is already loaded
 
     for(l = 0; l < availableLang.length; l++){
-        if(language.indexOf(availableLang[l].toLowerCase()) == 0){
-            console.log("Alternate Language detected: ", language);
+        if(userLanguage.indexOf(availableLang[l].toLowerCase()) == 0){
+            console.log("Alternate Language detected: ", userLanguage);
             return availableLang[l].toLowerCase();
         }
     }
