@@ -265,5 +265,6 @@
   "activity_timeline": "Etkinlik Çizelgesi",
   "call_recordings": "Çağrı Kayıtları",
   "save_as": "Farklı kaydet",
-  "right_click_and_select_save_link_as": "Sağ tıklayıp Bağlantıyı Farklı Kaydet seçin"
+  "right_click_and_select_save_link_as": "Sağ tıklayıp Bağlantıyı Farklı Kaydet seçin",
+  "send" : "gönderme"
 }

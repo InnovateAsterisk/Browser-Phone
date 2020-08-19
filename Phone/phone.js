@@ -1860,7 +1860,7 @@ function ReceiveCall(session) {
     var callerID = session.remoteIdentity.displayName;
     var did = session.remoteIdentity.uri.user;
 
-    console.log("New Incoming Call!", "\""+ callerID +"\" <"+ did +">");
+    console.log("New Incoming Call!", callerID +" <"+ did +">");
 
     var CurrentCalls = countSessions(session.id);
     console.log("Current Call Count:", CurrentCalls);
@@ -1871,6 +1871,12 @@ function ReceiveCall(session) {
         var buddyType = (did.length > DidLength)? "contact" : "extension";
         var focusOnBuddy = (CurrentCalls==0);
         buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, true, callerID, did);
+    } else {
+        // Double check that the buddy has the same caller ID as the incoming call
+        // This is unlikely to work will with anything other than extensions
+        if(buddyObj.type == "extension" && buddyObj.CallerIDName != callerID){
+            UpdateBuddyCalerID(buddyObj, callerID);
+        }
     }
     var buddy = buddyObj.identity;
 
@@ -6732,7 +6738,7 @@ function KeyPress(num){
     $("#dialText").val(($("#dialText").val()+num).substring(0,MaxDidLength));
     $("#dialVideo").prop('disabled', ($("#dialText").val().length >= DidLength));
 }
-function DialByLine(type, buddy, numToDial){
+function DialByLine(type, buddy, numToDial, CallerID){
     if(userAgent == null || userAgent.isRegistered()==false){
         ConfigureExtensionWindow();
         return;
@@ -6757,12 +6763,12 @@ function DialByLine(type, buddy, numToDial){
         // Assumption but anyway: If the number starts with a * or # then its probably not a subscribable did,  
         // and is probably a feature code.
         if(buddyType.substring(0,1) == "*" || buddyType.substring(0,1) == "#") buddyType = "contact";
-        buddyObj = MakeBuddy(buddyType, true, false, true, numDial, numDial);
+        buddyObj = MakeBuddy(buddyType, true, false, true, (CallerID)? CallerID : numDial, numDial);
     }
 
     // Create a Line
     var newLineNumber = Lines.length + 1;
-    lineObj = new Line(newLineNumber, numDial, numDial, buddyObj);
+    lineObj = new Line(newLineNumber, buddyObj.CallerIDName, numDial, buddyObj);
     Lines.push(lineObj);
     AddLineHtml(lineObj);
     SelectLine(newLineNumber);
@@ -7290,6 +7296,25 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did){
     // Return new buddy
     return buddyObj;
 }
+function UpdateBuddyCalerID(buddyObj, callerID){
+    buddyObj.CallerIDName = callerID;
+
+    var buddy = buddyObj.identity;
+    // Update DB
+    var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
+    if(json != null){
+        $.each(json.DataCollection, function (i, item) {
+            if(item.uID == buddy || item.cID == buddy || item.gID == buddy){
+                item.DisplayName = callerID;
+                return false;
+            }
+        });
+        // Save To DB
+        localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
+    }
+
+    UpdateBuddyList();
+}
 function AddBuddy(buddyObj, update, focus, subscribe){
     Buddies.push(buddyObj);
     if(update == true) UpdateBuddyList();
@@ -7553,7 +7578,7 @@ function AddBuddyMessageStream(buddyObj) {
         html += "<div id=\"contact-"+ buddyObj.identity +"-msgPreview\" class=sendMessagePreview style=\"display:none\">"
         html += "<table class=sendMessagePreviewContainer cellpadding=0 cellspacing=0><tr>";
         html += "<td style=\"text-align:right\"><div id=\"contact-"+ buddyObj.identity +"-msgPreviewhtml\" class=\"sendMessagePreviewHtml cleanScroller\"></div></td>"
-        html += "<td style=\"width:40px\"><button onclick=\"SendChatMessage('"+ buddyObj.identity +"')\" class=\"roundButtons\" title=\"Send\"><i class=\"fa fa-paper-plane\"></i></button></td>"
+        html += "<td style=\"width:40px\"><button onclick=\"SendChatMessage('"+ buddyObj.identity +"')\" class=\"roundButtons\" title=\""+ lang.send +"\"><i class=\"fa fa-paper-plane\"></i></button></td>"
         html += "</tr></table>";
         html += "</div>";
 

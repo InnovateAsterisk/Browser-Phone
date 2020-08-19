@@ -265,5 +265,6 @@
     "activity_timeline" : "活动时间表",
     "call_recordings" : "通话录音",
     "save_as" : "另存为",
-    "right_click_and_select_save_link_as" : "右键单击并选择“将链接另存为”"
+    "right_click_and_select_save_link_as" : "右键单击并选择“将链接另存为”",
+    "send" : "发送"
 }

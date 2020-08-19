@@ -265,5 +265,6 @@
     "activity_timeline" : "Activiteiten tijdlijn",
     "call_recordings" : "Gespreksopnames",
     "save_as" : "Opslaan als",
-    "right_click_and_select_save_link_as" : "Klik rechtermuisknop en kies opslaan als"
+    "right_click_and_select_save_link_as" : "Klik rechtermuisknop en kies opslaan als",
+    "send" : "Sturen"
 }

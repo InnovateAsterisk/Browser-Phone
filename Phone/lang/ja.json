@@ -265,5 +265,6 @@
     "activity_timeline" : "活動タイムライン",
     "call_recordings" : "通話録音",
     "save_as" : "名前を付けて保存",
-    "right_click_and_select_save_link_as" : "右クリックして「名前を付けてリンクを保存」を選択します"
+    "right_click_and_select_save_link_as" : "右クリックして「名前を付けてリンクを保存」を選択します",
+    "send" : "送る"
 }

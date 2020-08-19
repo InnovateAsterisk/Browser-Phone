@@ -265,5 +265,6 @@
   "activity_timeline": "Хронология деятельности",
   "call_recordings": "Вызов записи",
   "save_as": "Сохранить Как",
-  "right_click_and_select_save_link_as": "Щелкните правой кнопкой мыши и выберите Сохранить Как"
+  "right_click_and_select_save_link_as": "Щелкните правой кнопкой мыши и выберите Сохранить Как",
+  "send" : "Отправить"
 }
