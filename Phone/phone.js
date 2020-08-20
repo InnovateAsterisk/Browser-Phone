@@ -1873,8 +1873,11 @@ function ReceiveCall(session) {
         buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, true, callerID, did);
     } else {
         // Double check that the buddy has the same caller ID as the incoming call
-        // This is unlikely to work will with anything other than extensions
+        // With Buddies that are contacts, eg +441234567890 <+441234567890> leave as as
         if(buddyObj.type == "extension" && buddyObj.CallerIDName != callerID){
+            UpdateBuddyCalerID(buddyObj, callerID);
+        }
+        else if(buddyObj.type == "contact" && callerID != did && buddyObj.CallerIDName != callerID){
             UpdateBuddyCalerID(buddyObj, callerID);
         }
     }
@@ -3813,6 +3816,7 @@ function SubscribeAll() {
 
     // PIDF Subscription TODO: make this an option.
     var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] }
+    // var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml', 'application/xpidf+xml', 'application/simple-message-summary', 'application/im-iscomposing+xml'] }
 
     // Start subscribe all
     console.log("Starting Subscribe of all ("+ Buddies.length +") Extension Buddies...");
@@ -3831,6 +3835,8 @@ function SubscribeAll() {
 }
 function SubscribeBuddy(buddyObj) {
     var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] }
+    // var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml', 'application/xpidf+xml', 'application/simple-message-summary', 'application/im-iscomposing+xml'] }
+
     if(buddyObj.type == "extension") {
         console.log("SUBSCRIBE: "+ buddyObj.ExtNo +"@" + wssServer);
         var blfObj = userAgent.subscribe(buddyObj.ExtNo +"@" + wssServer, 'presence', dialogOptions);
