@@ -262,10 +262,10 @@ function formatShortDuration(seconds){
     } 
     //  Otherwise.. this is just too long
 }
-function formatBytes(bytes, decimals=2) {
+function formatBytes(bytes, decimals) {
     if (bytes === 0) return "0 "+ lang.bytes;
     var k = 1024;
-    var dm = decimals < 0 ? 0 : decimals;
+    var dm = (decimals && decimals >= 0)? decimals : 2;
     var sizes = [lang.bytes, lang.kb, lang.mb, lang.gb, lang.tb, lang.pb, lang.eb, lang.zb, lang.yb];
     var i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
