@@ -26,6 +26,9 @@
         <link rel="stylesheet" type="text/css" href="phone.css"/>
 
         <script type="text/javascript">
+            var web_hook_on_transportError = function(t, ua){
+                console.warn("web_hook_on_transportError",t, ua);
+            }
             var web_hook_on_register = function(ua){
                 console.warn("web_hook_on_register", ua);
             }

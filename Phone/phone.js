@@ -1749,7 +1749,7 @@ function CreateUserAgent() {
         // Custom Web hook
         if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
     });
-    userAgent.on('registrationFailed', function (cause) {
+    userAgent.on('registrationFailed', function (response, cause) {
         console.log("Registration Failed: " + cause);
         $("#regStatus").html(lang.registration_failed);
 
@@ -1784,15 +1784,18 @@ function CreateUserAgent() {
             // Auto start register
             Register();
         });
-        transport.on('disconnected', function (d) {
-            console.log("Disconnected from Web Socket!"+ d.code);
+        transport.on('disconnected', function () {
+            console.log("Disconnected from Web Socket!");
             $("#regStatus").html(lang.disconnected_from_web_socket);
         });
-        transport.on('transportError', function (e) {
-            console.log("Web Socket error: "+ e);
+        transport.on('transportError', function () {
+            console.log("Web Socket error!");
             $("#regStatus").html(lang.web_socket_error);
 
             $("#WebRtcFailed").show();
+
+            // Custom Web hook
+            if(typeof web_hook_on_transportError !== 'undefined') web_hook_on_transportError(transport, userAgent);
         });
     });
 
@@ -1908,6 +1911,9 @@ function ReceiveCall(session) {
     session.on('rejected', function (response, cause) {
         console.log("Call rejected: " + cause);
 
+        session.data.reasonCode = response.status_code
+        session.data.reasonText = cause
+    
         AddCallMessage(buddy, session, response.status_code, cause);
 
         // Custom Web hook
@@ -2739,6 +2745,8 @@ function teardownSession(lineObj, reasonCode, reasonText) {
     if(session.data.teardownComplete == true) return;
     session.data.teardownComplete = true; // Run this code only once
 
+    session.data.reasonCode = reasonCode
+    session.data.reasonText = reasonText
     // Call UI
     HidePopup();
 
@@ -4313,6 +4321,8 @@ function AddCallMessage(buddy, session, reasonCode, reasonText) {
         ringTime = moment.duration(CallAnswer.diff(CallStart));
     }
     totalDuration = moment.duration(CallEnd.diff(CallStart));
+
+    console.log(session.data.reasonCode + "("+ session.data.reasonText +")")
 
     var srcId = "";
     var srcCallerID = "";
