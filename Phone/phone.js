@@ -1925,6 +1925,8 @@ function ReceiveCall(session) {
         // Stop the ringtone
         if(session.data.rinngerObj){
             session.data.rinngerObj.pause();
+            session.data.rinngerObj.removeAttribute('src');
+            session.data.rinngerObj.load();
             session.data.rinngerObj = null;
         }
 
@@ -2129,6 +2131,8 @@ function AnswerAudioCall(buddy) {
     // Stop the ringtone
     if(session.data.rinngerObj){
         session.data.rinngerObj.pause();
+        session.data.rinngerObj.removeAttribute('src');
+        session.data.rinngerObj.load();
         session.data.rinngerObj = null;
     }
 
@@ -2233,6 +2237,8 @@ function AnswerVideoCall(buddy) {
     // Stop the ringtone
     if(session.data.rinngerObj){
         session.data.rinngerObj.pause();
+        session.data.rinngerObj.removeAttribute('src');
+        session.data.rinngerObj.load();
         session.data.rinngerObj = null;
     }
 
@@ -2445,6 +2451,8 @@ function wireupAudioSession(lineObj) {
 
         if(session.data.earlyMedia){
             session.data.earlyMedia.pause();
+            session.data.earlyMedia.removeAttribute('src');
+            session.data.earlyMedia.load();
             session.data.earlyMedia = null;
         }
 
@@ -2640,6 +2648,8 @@ function wireupVideoSession(lineObj) {
         
         if(session.data.earlyMedia){
             session.data.earlyMedia.pause();
+            session.data.earlyMedia.removeAttribute('src');
+            session.data.earlyMedia.load();
             session.data.earlyMedia = null;
         }
 
@@ -2771,6 +2781,8 @@ function teardownSession(lineObj, reasonCode, reasonText) {
     // Stop any Early Media
     if(session.data.earlyMedia){
         session.data.earlyMedia.pause();
+        session.data.earlyMedia.removeAttribute('src');
+        session.data.earlyMedia.load();
         session.data.earlyMedia = null;
     }
 
