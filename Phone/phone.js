@@ -9,44 +9,18 @@ A fully featured browser based WebRTC SIP phone for Asterisk
 =============================================================
 File: phone.js
 License: GNU Lesser General Public License v3.0
-Version: 0.0.2
+Version: 0.1.0
 Owner: Conrad de Wet
 Date: April 2020
 Git: https://github.com/InnovateAsterisk/Browser-Phone
 
-=============
-Dependencies:
-=============
-    ✅ Asterisk PBX (with WebRTC and Messaging)
-    ✅ sip-0.11.6.js                        : WebRTC and SIP signalling library
-    ✅ jquery-3.3.1.min.js                  : JavaScript toolkit
-    ✅ jquery.md5-min.js                    : Md5 Hash plug-in (unused)
-    ✅ Chart.bundle-2.7.2.js                : Graph and Chart UI
-    ✅ dhtmlx.js                            : Windowing & UI Library
-    ✅ fabric-2.4.6.min.js                  : Canvas Editing Library
-    ✅ moment-with-locales-2.24.0.min.js    : Date & Time Library
-    ✅ croppie.min.js                       : Profile Picture Crop Library
-Note: These Libraries get loaded automatically.
-
-=========================
-Performance Improvements:
-=========================
-    ✅ Code Cleanup: namespace, objects, memory cleanup
-    ✅ Hosted Tones and Audio files (commit to storage on apply)
-
-=================================
-Extended & Non-standard Features:
-=================================
-    ✅ Extended Services Send: Image, Recording, Video, FAX, SMS, Email
-    ✅ Preview : File, Image, Video, YouTube, Audio
 */
 
 // Global Settings
 // ===============
-var enabledExtendedServices = false;   // TODO: Send: Image, Recording, Video, SMS, Email
-var enabledGroupServices = false;      // TODO: Group calling functionality - requires Asterisks config 
+
 // Set the following to null to disable
-var welcomeScreen = "<div class=\"UiWindowField scroller\"><pre style=\"font-size: 12px\">";
+let welcomeScreen = "<div class=\"UiWindowField scroller\"><pre style=\"font-size: 12px\">";
 welcomeScreen += "===========================================================================\n";
 welcomeScreen += "Copyright © 2020 - All Rights Reserved\n";
 welcomeScreen += "===========================================================================\n";
@@ -83,77 +57,101 @@ welcomeScreen += "</div>";
 // Use the "en.json" as a template.
 // More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
 // "en.json" is always loaded by default
-var availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl"];
+const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl"];
 
 // User Settings & Defaults
 // ========================
-var wssServer = getDbItem("wssServer", null);           // eg: raspberrypi.local
-var profileUserID = getDbItem("profileUserID", null);   // Internal reference ID. (DON'T CHANGE THIS!)
-var profileUser = getDbItem("profileUser", null);       // eg: 100
-var profileName = getDbItem("profileName", null);       // eg: Keyla James
-var WebSocketPort = getDbItem("WebSocketPort", null);   // eg: 444 | 4443
-var ServerPath = getDbItem("ServerPath", null);         // eg: /ws
-var SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
-var SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
+let wssServer = getDbItem("wssServer", null);           // eg: raspberrypi.local
+let profileUserID = getDbItem("profileUserID", null);   // Internal reference ID. (DON'T CHANGE THIS!)
+let profileUser = getDbItem("profileUser", null);       // eg: 100
+let profileName = getDbItem("profileName", null);       // eg: Keyla James
+let WebSocketPort = getDbItem("WebSocketPort", null);   // eg: 444 | 4443
+let ServerPath = getDbItem("ServerPath", null);         // eg: /ws
+let SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
+let SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
 
-var TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));        // The timeout in seconds for the initial connection to make on the web socket port
-var TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 99));  // The number of times to attempt to reconnect to a WebSocket when the connection drops.
-var TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 15));    // The time in seconds to wait between WebSocket reconnection attempts.
+let TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));        // The timeout in seconds for the initial connection to make on the web socket port
+let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 99));  // The number of times to attempt to reconnect to a WebSocket when the connection drops.
+let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 15));    // The time in seconds to wait between WebSocket reconnection attempts.
 
-var userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (SipJS - 0.11.6)");   // Set this to whatever you want.
-var hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
-var RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
-var WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
-var IpInContact = (getDbItem("IpInContact", "1") == "1");                           // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
-var IceStunServerProtocol = getDbItem("IceStunServerProtocol", "stun");             // Set the ICE/STUN server protocol. Either 'stun', 'turn' or 'turns'
-var IceStunServerAddress = getDbItem("IceStunServerAddress", "stun.l.google.com");  // Set the URL for the ICE/STUN Server
-var IceStunServerPort = getDbItem("IceStunServerPort", "19302");                    // Set the ICE/STUN server port
-var IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));          // Set amount of time in milliseconds to wait for the ICE/STUN server
+let userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (SipJS - 0.11.6)");   // Set this to whatever you want.
+let hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
+let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
+let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
+let IpInContact = (getDbItem("IpInContact", "1") == "1");                           // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
+let IceStunServerJson = getDbItem("IceStunServerJson", "{ \"urls\" : \"stun:stun.l.google.com:19302\" }"); // Sets the JSON string for ice Server.
+let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));          // Set amount of time in milliseconds to wait for the ICE/STUN server
 
-var AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
-var DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");   // Rejects any inbound call, while allowing outbound calls
-var CallWaitingEnabled = (getDbItem("CallWaitingEnabled", "1") == "1");     // Rejects any inbound call if you are on a call already.
-var RecordAllCalls = (getDbItem("RecordAllCalls", "0") == "1");             // Starts Call Recording when a call is established.
-var StartVideoFullScreen = (getDbItem("StartVideoFullScreen", "1") == "1"); // Starts a vdeo call in the full screen (browser screen, not dektop)
+let AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
+let DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");   // Rejects any inbound call, while allowing outbound calls
+let CallWaitingEnabled = (getDbItem("CallWaitingEnabled", "1") == "1");     // Rejects any inbound call if you are on a call already.
+let RecordAllCalls = (getDbItem("RecordAllCalls", "0") == "1");             // Starts Call Recording when a call is established.
+let StartVideoFullScreen = (getDbItem("StartVideoFullScreen", "1") == "1"); // Starts a vdeo call in the full screen (browser screen, not dektop)
+let ShowCallAnswerWindow = (getDbItem("ShowCallAnswerWindow", "0") == "1"); // Shows a window for incoming calls if you have another buddy selected (May be disruptive)
+let SelectRingingLine = (getDbItem("SelectRingingLine", "1") == "1");       // Selects the ringing line if you are not on another call ()
 
-var AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");       // Attempts to adjust the microphone volume to a good audio level. (OS may be better at this)
-var EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");     // Attemots to remove echo over the line.
-var NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");     // Attempts to clear the call qulity of noise.
-var MirrorVideo = getDbItem("VideoOrientation", "rotateY(180deg)");     // Displays the self-preview in normal or mirror view, to better present the preview. 
-var maxFrameRate = getDbItem("FrameRate", "");                          // Suggests a frame rate to your webcam if possible.
-var videoHeight = getDbItem("VideoHeight", "");                         // Suggests a video height (and therefor picture quality) to your webcam.
-var videoAspectRatio = getDbItem("AspectRatio", "");                    // Suggests an aspect ratio (1:1 | 4:3 | 16:9) to your webcam.
-var NotificationsActive = (getDbItem("Notifications", "0") == "1");
+let AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");       // Attempts to adjust the microphone volume to a good audio level. (OS may be better at this)
+let EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");     // Attemots to remove echo over the line.
+let NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");     // Attempts to clear the call qulity of noise.
+let MirrorVideo = getDbItem("VideoOrientation", "rotateY(180deg)");     // Displays the self-preview in normal or mirror view, to better present the preview. 
+let maxFrameRate = getDbItem("FrameRate", "");                          // Suggests a frame rate to your webcam if possible.
+let videoHeight = getDbItem("VideoHeight", "");                         // Suggests a video height (and therefor picture quality) to your webcam.
+let MaxVideoBandwidth = parseInt(getDbItem("MaxVideoBandwidth", "128")); // Specifies the maximum bandwidth (in Kb/s) for your outgoing video stream. e.g: 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | -1 to disable
+let videoAspectRatio = getDbItem("AspectRatio", "");                    // Suggests an aspect ratio (1:1 | 4:3 | 16:9) to your webcam.
+let NotificationsActive = (getDbItem("Notifications", "0") == "1");
 
-var StreamBuffer = parseInt(getDbItem("StreamBuffer", 50));                 // The amount of rows to buffer in the Buddy Stream
-var PosterJpegQuality = parseFloat(getDbItem("PosterJpegQuality", 0.6));    // The image quality of the Video Poster images
-var VideoResampleSize = getDbItem("VideoResampleSize", "HD");               // The resample size (height) to re-render video that gets presented (sent). (SD = ???x360 | HD = ???x720 | FHD = ???x1080)
-var RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recodings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
-var RecordingVideoFps = parseInt(getDbItem("RecordingVideoFps", 12));       // The Frame Per Second of the Video Track recording
-var RecordingLayout = getDbItem("RecordingLayout", "them-pnp");             // The Layout of the Recording Video Track (side-by-side | us-pnp | them-pnp | us-only | them-only)
+let StreamBuffer = parseInt(getDbItem("StreamBuffer", 50));                 // The amount of rows to buffer in the Buddy Stream
+let PosterJpegQuality = parseFloat(getDbItem("PosterJpegQuality", 0.6));    // The image quality of the Video Poster images
+let VideoResampleSize = getDbItem("VideoResampleSize", "HD");               // The resample size (height) to re-render video that gets presented (sent). (SD = ???x360 | HD = ???x720 | FHD = ???x1080)
+let RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recodings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
+let RecordingVideoFps = parseInt(getDbItem("RecordingVideoFps", 12));       // The Frame Per Second of the Video Track recording
+let RecordingLayout = getDbItem("RecordingLayout", "them-pnp");             // The Layout of the Recording Video Track (side-by-side | us-pnp | them-pnp | us-only | them-only)
 
-var DidLength = parseInt(getDbItem("DidLength", 6));                 // DID length from which to decide if an incoming caller is a "contact" or an "extension".
-var MaxDidLength = parseInt(getDbItem("maximumNumberLength", 16));   // Maximum langth of any DID number including international dialled numbers.
-var DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");  // The display format for all dates. https://momentjs.com/docs/#/displaying/
-var DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");    // The display format for all times. https://momentjs.com/docs/#/displaying/
-var Language = getDbItem("Language", "auto");    // Overrides the langauage selector or "automatic". Must be one of availableLang[]. If not defaults to en. Testing: zh-Hans-CN, zh-cmn-Hans-CN, zh-Hant, de, de-DE, en-US, fr, fr-FR, es-ES, sl-IT-nedis, hy-Latn-IT-arevela
+let DidLength = parseInt(getDbItem("DidLength", 6));                 // DID length from which to decide if an incoming caller is a "contact" or an "extension".
+let MaxDidLength = parseInt(getDbItem("MaxDidLength", 16));          // Maximum langth of any DID number including international dialled numbers.
+let DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");       // The display format for all dates. https://momentjs.com/docs/#/displaying/
+let DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");        // The display format for all times. https://momentjs.com/docs/#/displaying/
+let Language = getDbItem("Language", "auto");                        // Overrides the langauage selector or "automatic". Must be one of availableLang[]. If not defaults to en. Testing: zh-Hans-CN, zh-cmn-Hans-CN, zh-Hant, de, de-DE, en-US, fr, fr-FR, es-ES, sl-IT-nedis, hy-Latn-IT-arevela
 
 // Permission Settings
-var EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");               // Enables the Text Messaging
-var DisableFreeDial = (getDbItem("DisableFreeDial", "0") == "1");                       // Removes the Dial icon in the profile area, users will need to add buddies in order to dial.
-var DisableBuddies = (getDbItem("DisableBuddies", "0") == "1");                         // Removes the Add Someone menu item and icon from the profile area. Buddies will still be created automatically. 
-var EnableTransfer = (getDbItem("EnableTransfer", "1") == "1");                         // Controls Transfering during a call
-var EnableConference = (getDbItem("EnableConference", "1") == "1");                     // Controls Conference during a call
-var AutoAnswerPolicy = getDbItem("AutoAnswerPolicy", "allow");                          // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
-var DoNotDisturbPolicy = getDbItem("DoNotDisturbPolicy", "allow");                      // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
-var CallWaitingPolicy = getDbItem("CallWaitingPolicy", "allow");                        // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
-var CallRecordingPolicy = getDbItem("CallRecordingPolicy", "allow");                    // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
-var EnableAccountSettings = (getDbItem("EnableAccountSettings", "1") == "1");           // Controls the Account tab in Settings
-var EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1");     // Controls the Audio & Video tab in Settings
-var EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
-var EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
-var EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
-var EnableVideoCalling = (getDbItem("EnableVideoCalling", "1") == "1");                 // Enables Video during a call
+let EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");               // Enables the Text Messaging
+let DisableFreeDial = (getDbItem("DisableFreeDial", "0") == "1");                       // Removes the Dial icon in the profile area, users will need to add buddies in order to dial.
+let DisableBuddies = (getDbItem("DisableBuddies", "0") == "1");                         // Removes the Add Someone menu item and icon from the profile area. Buddies will still be created automatically. 
+let EnableTransfer = (getDbItem("EnableTransfer", "1") == "1");                         // Controls Transfering during a call
+let EnableConference = (getDbItem("EnableConference", "0") == "1");                     // Controls Conference during a call
+let AutoAnswerPolicy = getDbItem("AutoAnswerPolicy", "allow");                          // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
+let DoNotDisturbPolicy = getDbItem("DoNotDisturbPolicy", "allow");                      // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
+let CallWaitingPolicy = getDbItem("CallWaitingPolicy", "allow");                        // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
+let CallRecordingPolicy = getDbItem("CallRecordingPolicy", "allow");                    // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
+let IntercomPolicy = getDbItem("IntercomPolicy", "enabled");                            // disabled = feature is disabled | enabled = feature is always on
+let EnableAccountSettings = (getDbItem("EnableAccountSettings", "1") == "1");           // Controls the Account tab in Settings
+let EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1");     // Controls the Audio & Video tab in Settings
+let EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
+let EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
+let EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
+let EnableVideoCalling = (getDbItem("EnableVideoCalling", "1") == "1");                 // Enables Video during a call
+
+let ChatEngine = getDbItem("ChatEngine", "SIMPLE");    // Select the chat engine XMPP | SIMPLE
+
+// XMPP Settings
+let XmppDomain = getDbItem("XmppDomain", "");                // Domain portion of username will make up username as profileUser@XmppDomain
+let XmppServer = getDbItem("XmppServer", "");                // FQDN of XMPP server HTTP service";
+let XmppWebsocketPort = getDbItem("XmppWebsocketPort", "");  // OpenFire Default : 7443
+let XmppWebsocketPath = getDbItem("XmppWebsocketPath", "");  // OpenFire Default : /ws
+// XMPP Tenanting
+let XmppRealm = getDbItem("XmppRealm", "");                    // To create a tennant like partition in XMPP server all users and buddies will have this realm prepeded to their details.
+let XmppRealmSeperator = getDbItem("XmppRealmSeperator", "-"); // Separates the realm from the profileUser eg: abc123-100@XmppDomain
+// TODO
+let XmppChatGroupService = getDbItem("XmppChatGroupService", "conference");
+
+// TODO
+let EnableSendFiles = false;          // Enables sending of Images
+let EnableSendImages = false;          // Enables sending of Images
+let EnableAudioRecording = false;  // Enables the ability to record a voice message
+let EnableVideoRecording = false;  // Enables the ability to record a video message
+let EnableSms = false;             // Enables SMS sending to the server (requires onward services)
+let EnableFax = false;             // Enables Fax sending to the server (requires onward services)
+let EnableEmail = false;           // Enables Email sending to the server (requires onward services)
 
 // ===================================================
 // Rather don't fiddle with anything beyond this point
@@ -161,41 +159,30 @@ var EnableVideoCalling = (getDbItem("EnableVideoCalling", "1") == "1");         
 
 // System variables
 // ================
-var localDB = window.localStorage;
-var userAgent = null;
-var voicemailSubs = null;
-var BlfSubs = [];
-var CanvasCollection = [];
-var Buddies = [];
-var isReRegister = false;
-var dhtmlxPopup = null;
-var selectedBuddy = null;
-var selectedLine = null;
-var alertObj = null;
-var confirmObj = null;
-var promptObj = null;
-var windowsCollection = null;
-var messagingCollection = null;
-var HasVideoDevice = false;
-var HasAudioDevice = false;
-var HasSpeakerDevice = false;
-var AudioinputDevices = [];
-var VideoinputDevices = [];
-var SpeakerDevices = [];
-var Lines = [];
-var lang = {}
-var audioBlobs = {}
-
-
-// Upgrade Pataches
-// ================
-// Version: 0.0.1 => Version: 0.0.2
-var oldUserBuddies = localDB.getItem("UserBuddiesJson");
-if(oldUserBuddies != null && profileUserID != null) {
-    localDB.setItem(profileUserID + "-Buddies", oldUserBuddies);
-    localDB.removeItem("UserBuddiesJson");
-}
-oldUserBuddies = null;
+let localDB = window.localStorage;
+let userAgent = null;
+let voicemailSubs = null;
+let BlfSubs = [];
+let CanvasCollection = [];
+let Buddies = [];
+let isReRegister = false;
+let dhtmlxPopup = null;
+let selectedBuddy = null;
+let selectedLine = null;
+let alertObj = null;
+let confirmObj = null;
+let promptObj = null;
+let windowsCollection = null;
+let messagingCollection = null;
+let HasVideoDevice = false;
+let HasAudioDevice = false;
+let HasSpeakerDevice = false;
+let AudioinputDevices = [];
+let VideoinputDevices = [];
+let SpeakerDevices = [];
+let Lines = [];
+let lang = {}
+let audioBlobs = {}
 
 // Utilities
 // =========
@@ -223,7 +210,7 @@ function getVideoSrcID(){
     return (id != null)? id : "default";
 }
 function getRingerOutputID(){
-    var id = localDB.getItem("RingerOutputId");
+    var id = localDB.getItem("RingOutputId");
     return (id != null)? id : "default";
 }
 function formatDuration(seconds){
@@ -396,67 +383,71 @@ function AddSomeoneWindow(numberStr){
 
     html += "<div class=UiText>"+ lang.full_name +":</div>";
     html += "<div><input id=AddSomeone_Name class=UiInputText type=text placeholder='"+ lang.eg_full_name +"'></div>";
+    html += "<div><input type=checkbox id=AddSomeone_Dnd><label for=AddSomeone_Dnd>"+ lang.allow_calls_on_dnd +"</label></div>";
 
+    // Type
+    html += "<ul style=\"list-style-type:none\">"
+    html += "<li><input type=radio name=buddyType id=type_exten checked><label for=type_exten>"+ lang.basic_extension +"</label>"
+    if(ChatEngine == "XMPP"){
+        html += "<li><input type=radio name=buddyType id=type_xmpp><label for=type_xmpp>"+ lang.extension_including_xmpp +"</label>"
+    }
+    html += "<li><input type=radio name=buddyType id=type_contact><label for=type_contact>"+ lang.addressbook_contact +"</label>"
+    html += "</ul>"
+
+    html += "<div id=RowDescription>"
     html += "<div class=UiText>"+ lang.title_description +":</div>";
     html += "<div><input id=AddSomeone_Desc class=UiInputText type=text placeholder='"+ lang.eg_general_manager +"'></div>";
+    html += "</div>"
 
+    html += "<div id=RowExtension>"
     html += "<div class=UiText>"+ lang.internal_subscribe_extension +":</div>";
-    if(numberStr && numberStr.length > 1 && numberStr.length < DidLength && numberStr.substring(0,1) != "*"){
-        html += "<div><input id=AddSomeone_Exten class=UiInputText type=text value="+ numberStr +" placeholder='"+ lang.eg_internal_subscribe_extension +"'></div>";
-    } 
-    else{
-        html += "<div><input id=AddSomeone_Exten class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"'></div>";
-    }
+    html += "<div><input id=AddSomeone_Exten class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"'></div>";
+    html += "<div><input type=checkbox id=AddSomeone_Subscribe checked><label for=AddSomeone_Subscribe>"+ lang.subscribe_to_dev_state +"</label></div>";
+    html += "</div>"
 
+    html += "<div id=RowMobileNumber>"
     html += "<div class=UiText>"+ lang.mobile_number +":</div>";
     html += "<div><input id=AddSomeone_Mobile class=UiInputText type=text placeholder='"+ lang.eg_mobile_number +"'></div>";
+    html += "</div>"
 
+    html += "<div id=RowEmail>"
     html += "<div class=UiText>"+ lang.email +":</div>";
     html += "<div><input id=AddSomeone_Email class=UiInputText type=text placeholder='"+ lang.eg_email +"'></div>";
+    html += "</div>"
 
+    html += "<div id=RowContact1>"
     html += "<div class=UiText>"+ lang.contact_number_1 +":</div>";
-    if(numberStr && numberStr.length > 1){
-        html += "<div><input id=AddSomeone_Num1 class=UiInputText type=text value="+ numberStr +" placeholder='"+ lang.eg_contact_number_1 +"'></div>";
-    }
-    else {
-        html += "<div><input id=AddSomeone_Num1 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_1 +"'></div>";
-    }
+    html += "<div><input id=AddSomeone_Num1 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_1 +"'></div>";
+    html += "</div>"
 
+    html += "<div id=RowContact2>"
     html += "<div class=UiText>"+ lang.contact_number_2 +":</div>";
     html += "<div><input id=AddSomeone_Num2 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_2 +"'></div>";
     html += "</div>"
+
+    html += "</div>"
     OpenWindow(html, lang.add_someone, 480, 640, false, true, lang.add, function(){
+
+        // Basic Validation
+        var type = "extension";
+        if($("#type_exten").is(':checked')){
+            type = "extension";
+        } else if($("#type_xmpp").is(':checked')){
+            type = "xmpp";
+        } else if($("#type_contact").is(':checked')){
+            type = "contact";
+        }
+        if($("#AddSomeone_Name").val() == "") return;
+        if(type == "extension" || type == "xmpp"){
+            if($("#AddSomeone_Exten").val() == "") return;
+        }
 
         // Add Contact / Extension
         var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
         if(json == null) json = InitUserBuddies();
 
-        if($("#AddSomeone_Exten").val() == ""){
-            // Add Regular Contact
-            var id = uID();
-            var dateNow = utcDateNow();
-            json.DataCollection.push(
-                {
-                    Type: "contact", 
-                    LastActivity: dateNow,
-                    ExtensionNumber: "", 
-                    MobileNumber: $("#AddSomeone_Mobile").val(),
-                    ContactNumber1: $("#AddSomeone_Num1").val(),
-                    ContactNumber2: $("#AddSomeone_Num2").val(),
-                    uID: null,
-                    cID: id,
-                    gID: null,
-                    DisplayName: $("#AddSomeone_Name").val(),
-                    Position: "",
-                    Description: $("#AddSomeone_Desc").val(),
-                    Email: $("#AddSomeone_Email").val(),
-                    MemberCount: 0
-                }
-            );
-            var buddyObj = new Buddy("contact", id, $("#AddSomeone_Name").val(), "", $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val());
-            AddBuddy(buddyObj, false, false);
-        }
-        else {
+        var buddyObj = null;
+        if(type == "extension"){
             // Add Extension
             var id = uID();
             var dateNow = utcDateNow();
@@ -471,20 +462,86 @@ function AddSomeoneWindow(numberStr){
                     uID: id,
                     cID: null,
                     gID: null,
+                    jid: null,
                     DisplayName: $("#AddSomeone_Name").val(),
-                    Position: $("#AddSomeone_Desc").val(),
-                    Description: "", 
+                    Description: $("#AddSomeone_Desc").val(),
                     Email: $("#AddSomeone_Email").val(),
-                    MemberCount: 0
+                    MemberCount: 0,
+                    EnableDuringDnd: $("#AddSomeone_Dnd").is(':checked'),
+                    Subscribe: $("#AddSomeone_Subscribe").is(':checked')
                 }
             );
-            var buddyObj = new Buddy("extension", id, $("#AddSomeone_Name").val(), $("#AddSomeone_Exten").val(), $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val());
-            AddBuddy(buddyObj, false, false, true);
+            buddyObj = new Buddy("extension", id, $("#AddSomeone_Name").val(), $("#AddSomeone_Exten").val(), $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val(), jid, $("#AddSomeone_Dnd").is(':checked'), $("#AddSomeone_Subscribe").is(':checked'));
+            
+            // Add memory object
+            AddBuddy(buddyObj, false, false, $("#AddSomeone_Subscribe").is(':checked'));
         }
-        // Update Size: 
-        json.TotalRows = json.DataCollection.length;
+        if(type == "xmpp"){
+            // Add XMPP extension
+            var id = uID();
+            var dateNow = utcDateNow();
+            var jid = $("#AddSomeone_Exten").val() +"@"+ XmppDomain;
+            if(XmppRealm != "" && XmppRealmSeperator != "") jid = XmppRealm +""+ XmppRealmSeperator +""+ jid;
+            json.DataCollection.push(
+                {
+                    Type: "xmpp", 
+                    LastActivity: dateNow,
+                    ExtensionNumber: $("#AddSomeone_Exten").val(), 
+                    MobileNumber: null,
+                    ContactNumber1: null,
+                    ContactNumber2: null,
+                    uID: id,
+                    cID: null,
+                    gID: null,
+                    jid: jid,
+                    DisplayName: $("#AddSomeone_Name").val(),
+                    Description: null,
+                    Email: null,
+                    MemberCount: 0,
+                    EnableDuringDnd: $("#AddSomeone_Dnd").is(':checked'),
+                    Subscribe: $("#AddSomeone_Subscribe").is(':checked')
+                }
+            );
+            buddyObj = new Buddy("xmpp", id, $("#AddSomeone_Name").val(), $("#AddSomeone_Exten").val(), "", "", "", dateNow, "", "", jid, $("#AddSomeone_Dnd").is(':checked'), $("#AddSomeone_Subscribe").is(':checked'));
+            
+            // XMPP add to roster
+            XmppAddBuddyToRoster(buddyObj);
+
+            // Add memory object
+            AddBuddy(buddyObj, false, false, $("#AddSomeone_Subscribe").is(':checked'));
+        }
+        if(type == "contact"){
+            // Add Regular Contact
+            var id = uID();
+            var dateNow = utcDateNow();
+            json.DataCollection.push(
+                {
+                    Type: "contact", 
+                    LastActivity: dateNow,
+                    ExtensionNumber: "", 
+                    MobileNumber: $("#AddSomeone_Mobile").val(),
+                    ContactNumber1: $("#AddSomeone_Num1").val(),
+                    ContactNumber2: $("#AddSomeone_Num2").val(),
+                    uID: null,
+                    cID: id,
+                    gID: null,
+                    jid: null,
+                    DisplayName: $("#AddSomeone_Name").val(),
+                    Description: $("#AddSomeone_Desc").val(),
+                    Email: $("#AddSomeone_Email").val(),
+                    MemberCount: 0,
+                    EnableDuringDnd: $("#AddSomeone_Dnd").is(':checked'),
+                    Subscribe: false
+                }
+            );
+            buddyObj = new Buddy("contact", id, $("#AddSomeone_Name").val(), "", $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val(), jid, $("#AddSomeone_Dnd").is(':checked'), false);
+
+            // Add memory object
+            AddBuddy(buddyObj, false, false, false);
+        }
 
         // Save To DB
+        json.TotalRows = json.DataCollection.length;
         localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
 
         UpdateBuddyList();
@@ -492,6 +549,37 @@ function AddSomeoneWindow(numberStr){
         CloseWindow();
     }, lang.cancel, function(){
         CloseWindow();
+    }, function(){
+        $("#type_exten").change(function(){
+            if($("#type_exten").is(':checked')){
+                $("#RowDescription").show();
+                $("#RowExtension").show();
+                $("#RowMobileNumber").show();
+                $("#RowEmail").show();
+                $("#RowContact1").show();
+                $("#RowContact2").show();
+            }
+        });
+        $("#type_xmpp").change(function(){
+            if($("#type_xmpp").is(':checked')){
+                $("#RowDescription").hide();
+                $("#RowExtension").show();
+                $("#RowMobileNumber").hide();
+                $("#RowEmail").hide();
+                $("#RowContact1").hide();
+                $("#RowContact2").hide();
+            }
+        });
+        $("#type_contact").change(function(){
+            if($("#type_contact").is(':checked')){
+                $("#RowDescription").show();
+                $("#RowExtension").hide();
+                $("#RowMobileNumber").show();
+                $("#RowEmail").show();
+                $("#RowContact1").show();
+                $("#RowContact2").show();
+            }
+        });
     });
 }
 function CreateGroupWindow(){
@@ -511,6 +599,48 @@ function ConfigureExtensionWindow(){
 
     OpenWindow("...", lang.configure_extension , 480, 640, false, true, lang.save, function(){
 
+        var chatEng = ($("#chat_type_sip").is(':checked'))? "SIMPLE" : "XMPP";
+
+        if($("#Configure_Account_wssServer").val() == "") {
+            console.warn("Validation Failed");
+            return;
+        } 
+        if($("#Configure_Account_WebSocketPort").val() == "") {
+            console.warn("Validation Failed");
+            return;
+        } 
+        if($("#Configure_Account_profileUser").val() == "") {
+            console.warn("Validation Failed");
+            return;
+        } 
+        if($("#Configure_Account_profileName").val() == "") {
+            console.warn("Validation Failed");
+            return;
+        } 
+        if($("#Configure_Account_SipUsername").val() == "") {
+            console.warn("Validation Failed");
+            return;
+        } 
+        if($("#Configure_Account_SipPassword").val() == "") {
+            console.warn("Validation Failed");
+            return;
+        } 
+
+        if(chatEng == "XMPP"){
+            if($("#Configure_Account_xmpp_domain").val() == "") {
+                console.warn("Validation Failed");
+                return;
+            } 
+            if($("#Configure_Account_xmpp_address").val() == "") {
+                console.warn("Validation Failed");
+                return;
+            } 
+            if($("#Configure_Account_xmpp_port").val() == "") {
+                console.warn("Validation Failed");
+                return;
+            } 
+        }
+
         // 1 Account
         if(localDB.getItem("profileUserID") == null) localDB.setItem("profileUserID", uID()); // For first time only
         localDB.setItem("wssServer", $("#Configure_Account_wssServer").val());
@@ -520,6 +650,13 @@ function ConfigureExtensionWindow(){
         localDB.setItem("profileName", $("#Configure_Account_profileName").val());
         localDB.setItem("SipUsername", $("#Configure_Account_SipUsername").val());
         localDB.setItem("SipPassword", $("#Configure_Account_SipPassword").val());
+
+        localDB.setItem("ChatEngine", chatEng);
+
+        localDB.setItem("XmppDomain", $("#Configure_Account_xmpp_domain").val());
+        localDB.setItem("XmppServer", $("#Configure_Account_xmpp_address").val());
+        localDB.setItem("XmppWebsocketPort", $("#Configure_Account_xmpp_port").val());
+        localDB.setItem("XmppWebsocketPath", $("#Configure_Account_xmpp_path").val());
 
         // 2 Audio & Video
         localDB.setItem("AudioOutputId", $("#playbackSrc").val());
@@ -535,22 +672,34 @@ function ConfigureExtensionWindow(){
         localDB.setItem("RingOutputId", $("#ringDevice").val());
 
         // 3 Appearance
-        $("#ImageCanvas").croppie('result', { 
+        var vCard = { 
+            "TitleDesc": $("#Configure_Profile_TitleDesc").val(),
+            "Mobile": $("#Configure_Profile_Mobile").val(),
+            "Email": $("#Configure_Profile_Email").val(),
+            "Number1": $("#Configure_Profile_Number1").val(),
+            "Number2": $("#Configure_Profile_Number2").val(),
+        }
+        localDB.setItem("profileVcard", JSON.stringify(vCard));
+
+        var options =  { 
             type: 'base64', 
             size: 'viewport', 
             format: 'png', 
             quality: 1, 
             circle: false 
-        }).then(function(base64) {
+        }
+        $("#ImageCanvas").croppie('result', options).then(function(base64) {
             localDB.setItem("profilePicture", base64);
+
+            // Notify Changes
+            Alert(lang.alert_settings, lang.reload_required, function(){
+                window.location.reload();
+            });
+
         });
 
         // 4 Notifications
         localDB.setItem("Notifications", ($("#Settings_Notifications").is(":checked"))? "1" : "0");
-
-        Alert(lang.alert_settings, lang.reload_required, function(){
-            window.location.reload();
-        });
 
         // CloseWindow();
     }, lang.cancel, function(){
@@ -570,6 +719,7 @@ function ConfigureExtensionWindow(){
         }
         catch(e){}
 
+        // Microphone Preview
         try{
             var tracks = window.SettingsMicrophoneStream.getTracks();
             tracks.forEach(function(track) {
@@ -586,6 +736,7 @@ function ConfigureExtensionWindow(){
         catch(e){}   
         window.SettingsMicrophoneSoundMeter = null;
         
+        // Speaker Preview
         try{
             window.SettingsOutputAudio.pause();
         }
@@ -607,6 +758,29 @@ function ConfigureExtensionWindow(){
         }
         catch(e){}
         window.SettingsOutputStreamMeter = null;
+
+        // Ringer Preview
+        try{
+            window.SettingsRingerAudio.pause();
+        }
+        catch(e){}
+        window.SettingsRingerAudio = null;
+
+        try{
+            var tracks = window.SettingsRingerStream.getTracks();
+            tracks.forEach(function(track) {
+                track.stop();
+            });
+        }
+        catch(e){}
+        window.SettingsRingerStream = null;
+
+        try{
+            var soundMeter = window.SettingsRingerStreamMeter;
+            soundMeter.stop();
+        }
+        catch(e){}
+        window.SettingsRingerStreamMeter = null;
 
         return true;
     });
@@ -649,9 +823,45 @@ function ConfigureExtensionWindow(){
 
     AccountHtml += "<div class=UiText>"+ lang.sip_password +":</div>";
     AccountHtml += "<div><input id=Configure_Account_SipPassword class=UiInputText type=password placeholder='"+ lang.eg_sip_password +"' value='"+ getDbItem("SipPassword", "") +"'></div>";
+
+    AccountHtml += "<div class=UiText>"+ lang.chat_engine +":</div>";
+
+    AccountHtml += "<ul style=\"list-style-type:none\">"
+    AccountHtml += "<li><input type=radio name=chatEngine id=chat_type_sip "+ ((ChatEngine == "XMPP")? "" : "checked") +"><label for=chat_type_sip>SIP</label>"
+    AccountHtml += "<li><input type=radio name=chatEngine id=chat_type_xmpp "+ ((ChatEngine == "XMPP")? "checked" : "") +"><label for=chat_type_xmpp>XMPP</label>"
+    AccountHtml += "</ul>"
+
+    AccountHtml += "<div id=RowChatEngine_xmpp style=\"display:"+ ((ChatEngine == "XMPP")? "unset" : "none") +"\">";
+
+    AccountHtml += "<div class=UiText>XMPP "+ lang.xmpp_domain +":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_domain class=UiInputText type=text placeholder='"+ lang.eg_xmpp_domain +"' value='"+ getDbItem("XmppDomain", "") +"'></div>";
+
+    AccountHtml += "<div class=UiText>XMPP "+ lang.server_address +":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_address class=UiInputText type=text placeholder='"+ lang.eg_xmpp_server_address +"' value='"+ getDbItem("XmppServer", "") +"'></div>";
+
+    AccountHtml += "<div class=UiText>XMPP "+ lang.websocket_port +":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_port class=UiInputText type=text placeholder='"+ lang.eg_websocket_port +"' value='"+ getDbItem("XmppWebsocketPort", "") +"'></div>";
+
+    AccountHtml += "<div class=UiText>XMPP "+ lang.websocket_path +":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_path class=UiInputText type=text placeholder='"+ lang.eg_websocket_path +"' value='"+ getDbItem("XmppWebsocketPath", "") +"'></div>";
+
+    AccountHtml += "</div>";
+
+
     AccountHtml += "<br><br></div>";
 
     ConfigureTabbar.tabs("1").attachHTMLString(AccountHtml);
+
+    $("#chat_type_sip").change(function(){
+        if($("#chat_type_sip").is(':checked')){
+            $("#RowChatEngine_xmpp").hide();
+        }
+    });
+    $("#chat_type_xmpp").change(function(){
+        if($("#chat_type_xmpp").is(':checked')){
+            $("#RowChatEngine_xmpp").show();
+        }
+    });
 
     // 2 Audio & Video
     // ==================================================================================
@@ -661,6 +871,18 @@ function ConfigureExtensionWindow(){
     AudioVideoHtml += "<div style=\"text-align:center\"><select id=playbackSrc style=\"width:100%\"></select></div>";
     AudioVideoHtml += "<div class=Settings_VolumeOutput_Container><div id=Settings_SpeakerOutput class=Settings_VolumeOutput></div></div>";
     AudioVideoHtml += "<div><button class=on_white id=preview_output_play><i class=\"fa fa-play\"></i></button></div>";
+
+    AudioVideoHtml += "<div id=RingDeviceSection>";
+    AudioVideoHtml += "<div class=UiText>"+ lang.ring_device +":</div>";
+    AudioVideoHtml += "<div style=\"text-align:center\"><select id=ringDevice style=\"width:100%\"></select></div>";
+    AudioVideoHtml += "<div class=Settings_VolumeOutput_Container><div id=Settings_RingerOutput class=Settings_VolumeOutput></div></div>";
+    AudioVideoHtml += "<div><button class=on_white id=preview_ringer_play><i class=\"fa fa-play\"></i></button></div>";
+    AudioVideoHtml += "</div>";
+
+    // TODO
+    // AudioVideoHtml += "<div class=UiText>"+ lang.ringtone +":</div>";
+    // AudioVideoHtml += "<div style=\"text-align:center\"><select id=ringTone style=\"width:100%\"></select></div>";
+    // AudioVideoHtml += "<div>Play</div>";
 
     AudioVideoHtml += "<div class=UiText>"+ lang.microphone +":</div>";
     AudioVideoHtml += "<div style=\"text-align:center\"><select id=microphoneSrc style=\"width:100%\"></select></div>";
@@ -710,16 +932,6 @@ function ConfigureExtensionWindow(){
     AudioVideoHtml += "<div class=UiText>"+ lang.preview +":</div>";
     AudioVideoHtml += "<div style=\"text-align:center; margin-top:10px\"><video id=local-video-preview class=previewVideo></video></div>";
 
-    // TODO
-    // AudioVideoHtml += "<div class=UiText>"+ lang.ringtone +":</div>";
-    // AudioVideoHtml += "<div style=\"text-align:center\"><select id=ringTone style=\"width:100%\"></select></div>";
-    // AudioVideoHtml += "<div>Play</div>";
-
-    AudioVideoHtml += "<div id=RingDeviceSection>";
-    AudioVideoHtml += "<div class=UiText>"+ lang.ring_device +":</div>";
-    AudioVideoHtml += "<div style=\"text-align:center\"><select id=ringDevice style=\"width:100%\"></select></div>";
-    AudioVideoHtml += "</div>";
-    
     AudioVideoHtml += "<BR><BR></div>";
 
     ConfigureTabbar.tabs("2").attachHTMLString(AudioVideoHtml);
@@ -729,12 +941,14 @@ function ConfigureExtensionWindow(){
 
     var playButton = $("#preview_output_play");
 
+    var playRingButton = $("#preview_ringer_play");
+
     // Microphone
     var selectMicScr = $("#microphoneSrc");
     $("#Settings_AutoGainControl").prop("checked", AutoGainControl);
     $("#Settings_EchoCancellation").prop("checked", EchoCancellation);
     $("#Settings_NoiseSuppression").prop("checked", NoiseSuppression);
-    
+
     // Webcam
     var selectVideoScr = $("#previewVideoSrc");
 
@@ -769,7 +983,6 @@ function ConfigureExtensionWindow(){
 
     // Ring Device
     var selectRingDevice = $("#ringDevice");
-    // TODO
 
     // Handle Aspect Ratio Change
     AspectRatioSel.change(function(){    
@@ -1039,6 +1252,77 @@ function ConfigureExtensionWindow(){
         window.SettingsOutputAudio = audioObj;
     });
 
+    playRingButton.click(function(){
+
+        try{
+            window.SettingsRingerAudio.pause();
+        } 
+        catch(e){}
+        window.SettingsRingerAudio = null;
+
+        try{
+            var tracks = window.SettingsRingerStream.getTracks();
+            tracks.forEach(function(track) {
+                track.stop();
+            });
+        }
+        catch(e){}
+        window.SettingsRingerStream = null;
+
+        try{
+            var soundMeter = window.SettingsRingerStreamMeter;
+            soundMeter.stop();
+        }
+        catch(e){}
+        window.SettingsRingerStreamMeter = null;
+
+        // Load Sample
+        console.log("Audio:", audioBlobs.Ringtone.url);
+        var audioObj = new Audio(audioBlobs.Ringtone.blob);
+        audioObj.preload = "auto";
+        audioObj.onplay = function(){
+            var outputStream = new MediaStream();
+            if (typeof audioObj.captureStream !== 'undefined') {
+                outputStream = audioObj.captureStream();
+            } 
+            else if (typeof audioObj.mozCaptureStream !== 'undefined') {
+                return;
+                // BUG: mozCaptureStream() in Firefox does not work the same way as captureStream()
+                // the actual sound does not play out to the speakers... its as if the mozCaptureStream
+                // removes the stream from the <audio> object.
+                outputStream = audioObj.mozCaptureStream();
+            }
+            else if (typeof audioObj.webkitCaptureStream !== 'undefined') {
+                outputStream = audioObj.webkitCaptureStream();
+            }
+            else {
+                console.warn("Cannot display Audio Levels")
+                return;
+            }
+            // Monitor Output
+            window.SettingsRingerStream = outputStream;
+            window.SettingsRingerStreamMeter = MeterSettingsOutput(outputStream, "Settings_RingerOutput", "width", 50);
+        }
+        audioObj.oncanplaythrough = function(e) {
+            if (typeof audioObj.sinkId !== 'undefined') {
+                audioObj.setSinkId(selectRingDevice.val()).then(function() {
+                    console.log("Set sinkId to:", selectRingDevice.val());
+                }).catch(function(e){
+                    console.warn("Failed not apply setSinkId.", e);
+                });
+            }
+            // Play
+            audioObj.play().then(function(){
+                // Audio Is Playing
+            }).catch(function(e){
+                console.warn("Unable to play audio file", e);
+            });
+            console.log("Playing sample audio file... ");
+        }
+
+        window.SettingsRingerAudio = audioObj;
+    });
+
     // Change Video Image
     OriteationSel.change(function(){
         console.log("Call to change Orientation ("+ this.value +")");
@@ -1187,6 +1471,7 @@ function ConfigureExtensionWindow(){
 
                 // Display Output Levels
                 $("#Settings_SpeakerOutput").css("width", "0%");
+                $("#Settings_RingerOutput").css("width", "0%");
                 if(!SpeakerFound){
                     console.log("No speaker devices found, make sure one is plugged in.")
                     $("#playbackSrc").hide();
@@ -1216,7 +1501,9 @@ function ConfigureExtensionWindow(){
                         option.text((DisplayName != "")? DisplayName : "Speaker");
                         if(getAudioOutputID() == devideId) option.prop("selected", true);
                         selectAudioScr.append(option);
-                        selectRingDevice.append(option.clone());
+                        var ringOption = option.clone();
+                        if(getRingerOutputID() == devideId) ringOption.prop("selected", true);
+                        selectRingDevice.append(ringOption);
                     }
                     else if (deviceInfo.kind === "videoinput") {
                         if(getVideoSrcID() == devideId) option.prop("selected", true);
@@ -1250,6 +1537,22 @@ function ConfigureExtensionWindow(){
     AppearanceHtml += "<div id=ImageCanvas style=\"width:150px; height:150px\"></div>";
     AppearanceHtml += "<div style=\"float:left; margin-left:200px;\"><input id=fileUploader type=file></div>";
     AppearanceHtml += "<div style=\"margin-top: 50px\"></div>";
+
+    // SIP & XMPP vCard
+    var profileVcard = getDbItem("profileVcard", null);
+    if(profileVcard != null) profileVcard = JSON.parse(profileVcard);
+
+    AppearanceHtml += "<div class=UiText>"+ lang.title_description +":</div>";
+    AppearanceHtml += "<div><input id=Configure_Profile_TitleDesc class=UiInputText type=text placeholder='"+ lang.eg_general_manager +"' value='"+ ((profileVcard != null)? profileVcard.TitleDesc : "") +"'></div>";
+    AppearanceHtml += "<div class=UiText>"+ lang.mobile_number +":</div>";
+    AppearanceHtml += "<div><input id=Configure_Profile_Mobile class=UiInputText type=text placeholder='"+ lang.eg_mobile_number +"' value='"+ ((profileVcard != null)? profileVcard.Mobile : "") +"'></div>";
+    AppearanceHtml += "<div class=UiText>"+ lang.email +":</div>";
+    AppearanceHtml += "<div><input id=Configure_Profile_Email class=UiInputText type=text placeholder='"+ lang.email +"' value='"+ ((profileVcard != null)? profileVcard.Email : "") +"'></div>";
+    AppearanceHtml += "<div class=UiText>"+ lang.contact_number_1 +":</div>";
+    AppearanceHtml += "<div><input id=Configure_Profile_Number1 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_1 +"' value='"+ ((profileVcard != null)? profileVcard.Number1 : "") +"'></div>";
+    AppearanceHtml += "<div class=UiText>"+ lang.contact_number_2 +":</div>";
+    AppearanceHtml += "<div><input id=Configure_Profile_Number2 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_2 +"' value='"+ ((profileVcard != null)? profileVcard.Number2 : "") +"'></div>";
+
     AppearanceHtml += "<div>";
 
     ConfigureTabbar.tabs("3").attachHTMLString(AppearanceHtml);
@@ -1264,7 +1567,7 @@ function ConfigureExtensionWindow(){
     // Wireup File Change
     $("#fileUploader").change(function () {
         var filesArray = $(this).prop('files');
-    
+
         if (filesArray.length == 1) {
             var uploadId = Math.floor(Math.random() * 1000000000);
             var fileObj = filesArray[0];
@@ -1353,22 +1656,27 @@ function EditBuddyWindow(buddy){
     }
     catch(e){}
 
-    var buddyObj = null;
+    var buddyObj = FindBuddyByIdentity(buddy);
+    if(buddyObj == null){
+        Alert(lang.alert_not_found, lang.error);
+        return;
+    }
+    var buddyJson = {};
     var itemId = -1;
     var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
     $.each(json.DataCollection, function (i, item) {
         if(item.uID == buddy || item.cID == buddy || item.gID == buddy){
-            buddyObj = item;
+            buddyJson = item;
             itemId = i;
             return false;
         }
     });
 
-    if(buddyObj == null){
+    if(buddyJson == {}){
         Alert(lang.alert_not_found, lang.error);
         return;
     }
-    
+
     var cropper;
     
     var html = "<div border=0 class='UiWindowField scroller'>";
@@ -1378,41 +1686,65 @@ function EditBuddyWindow(buddy){
     html += "<div style=\"margin-top: 50px\"></div>";
     
     html += "<div class=UiText>"+ lang.full_name +":</div>";
-    html += "<div><input id=AddSomeone_Name class=UiInputText type=text placeholder='"+ lang.eg_full_name +"' value='"+ ((buddyObj.DisplayName && buddyObj.DisplayName != "null" && buddyObj.DisplayName != "undefined")? buddyObj.DisplayName : "") +"'></div>";
+    html += "<div><input id=AddSomeone_Name class=UiInputText type=text placeholder='"+ lang.eg_full_name +"' value='"+ ((buddyJson.DisplayName && buddyJson.DisplayName != "null" && buddyJson.DisplayName != "undefined")? buddyJson.DisplayName : "") +"'></div>";
+    html += "<div><input type=checkbox id=AddSomeone_Dnd "+ ((buddyJson.EnableDuringDnd == true)? "checked" : "" ) +"><label for=AddSomeone_Dnd>Allow calls while on Do Not Disturb</label></div>";
 
     html += "<div class=UiText>"+ lang.title_description +":</div>";
-    if(buddyObj.Type == "extension"){
-        html += "<div><input id=AddSomeone_Desc class=UiInputText type=text placeholder='"+ lang.eg_general_manager +"' value='"+ ((buddyObj.Position && buddyObj.Position != "null" && buddyObj.Position != "undefined")? buddyObj.Position : "") +"'></div>";
+    html += "<div><input id=AddSomeone_Desc class=UiInputText type=text placeholder='"+ lang.eg_general_manager +"' value='"+ ((buddyJson.Description && buddyJson.Description != "null" && buddyJson.Description != "undefined")? buddyJson.Description : "") +"'></div>";
+
+    if(buddyJson.Type == "extension" || buddyJson.Type == "xmpp"){
+        html += "<div class=UiText>"+ lang.internal_subscribe_extension +": </div>";
+        html += "<div><input id=AddSomeone_Exten class=UiInputText type=text disabled readonly value="+ buddyJson.ExtensionNumber +"></div>";
+        html += "<div><input type=checkbox id=AddSomeone_Subscribe "+ ((buddyJson.Subscribe == true)? "checked" : "" ) +"><label for=AddSomeone_Subscribe>Subscribe to Device State Notifications</label></div>";
     }
     else {
-        html += "<div><input id=AddSomeone_Desc class=UiInputText type=text placeholder='"+ lang.eg_general_manager +"' value='"+ ((buddyObj.Description && buddyObj.Description != "null" && buddyObj.Description != "undefined")? buddyObj.Description : "") +"'></div>";
+        html += "<input type=checkbox id=AddSomeone_Subscribe style=\"display:none\">";
     }
     html += "<div class=UiText>"+ lang.mobile_number +":</div>";
-    html += "<div><input id=AddSomeone_Mobile class=UiInputText type=text placeholder='"+ lang.eg_mobile_number +"' value='"+ ((buddyObj.MobileNumber && buddyObj.MobileNumber != "null" && buddyObj.MobileNumber != "undefined")? buddyObj.MobileNumber : "") +"'></div>";
+    html += "<div><input id=AddSomeone_Mobile class=UiInputText type=text placeholder='"+ lang.eg_mobile_number +"' value='"+ ((buddyJson.MobileNumber && buddyJson.MobileNumber != "null" && buddyJson.MobileNumber != "undefined")? buddyJson.MobileNumber : "") +"'></div>";
 
     html += "<div class=UiText>"+ lang.email +":</div>";
-    html += "<div><input id=AddSomeone_Email class=UiInputText type=text placeholder='"+ lang.email +"' value='"+ ((buddyObj.Email && buddyObj.Email != "null" && buddyObj.Email != "undefined")? buddyObj.Email : "") +"'></div>";
+    html += "<div><input id=AddSomeone_Email class=UiInputText type=text placeholder='"+ lang.email +"' value='"+ ((buddyJson.Email && buddyJson.Email != "null" && buddyJson.Email != "undefined")? buddyJson.Email : "") +"'></div>";
 
     html += "<div class=UiText>"+ lang.contact_number_1 +":</div>";
-    html += "<div><input id=AddSomeone_Num1 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_1 +"' value='"+((buddyObj.ContactNumber1 && buddyObj.ContactNumber1 != "null" && buddyObj.ContactNumber1 != "undefined")? buddyObj.ContactNumber1 : "") +"'></div>";
+    html += "<div><input id=AddSomeone_Num1 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_1 +"' value='"+((buddyJson.ContactNumber1 && buddyJson.ContactNumber1 != "null" && buddyJson.ContactNumber1 != "undefined")? buddyJson.ContactNumber1 : "") +"'></div>";
 
     html += "<div class=UiText>"+ lang.contact_number_2 +":</div>";
-    html += "<div><input id=AddSomeone_Num2 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_2 +"' value='"+ ((buddyObj.ContactNumber2 && buddyObj.ContactNumber2 != "null" && buddyObj.ContactNumber2 != "undefined")? buddyObj.ContactNumber2 : "") +"'></div>";
+    html += "<div><input id=AddSomeone_Num2 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_2 +"' value='"+ ((buddyJson.ContactNumber2 && buddyJson.ContactNumber2 != "null" && buddyJson.ContactNumber2 != "undefined")? buddyJson.ContactNumber2 : "") +"'></div>";
     html += "</div>"
     OpenWindow(html, lang.edit, 480, 640, false, true, lang.save, function(){
 
-        buddyObj.LastActivity = utcDateNow();
-        buddyObj.DisplayName = $("#AddSomeone_Name").val();
-        if(buddyObj.Type == "extension"){
-            buddyObj.Position = $("#AddSomeone_Desc").val();
+        if($("#AddSomeone_Name").val() == "") return;
+
+        buddyJson.LastActivity = utcDateNow();
+        buddyObj.lastActivity = buddyJson.LastActivity;
+
+        buddyJson.DisplayName = $("#AddSomeone_Name").val();
+        buddyObj.CallerIDName = buddyJson.DisplayName;
+
+        buddyJson.Description = $("#AddSomeone_Desc").val();
+        buddyObj.Desc = buddyJson.Description;
+
+        buddyJson.MobileNumber = $("#AddSomeone_Mobile").val();
+        buddyObj.MobileNumber = buddyJson.MobileNumber;
+
+        buddyJson.Email = $("#AddSomeone_Email").val();
+        buddyObj.Email = buddyJson.Email;
+
+        buddyJson.ContactNumber1 = $("#AddSomeone_Num1").val();
+        buddyObj.ContactNumber1 = buddyJson.ContactNumber1;
+
+        buddyJson.ContactNumber2 = $("#AddSomeone_Num2").val();
+        buddyObj.ContactNumber2 = buddyJson.ContactNumber2;
+
+        buddyJson.EnableDuringDnd = $("#AddSomeone_Dnd").is(':checked');
+        buddyObj.EnableDuringDnd = buddyJson.EnableDuringDnd;
+        
+        if(buddyJson.Type == "extension" || buddyJson.Type == "xmpp"){
+            buddyJson.Subscribe = $("#AddSomeone_Subscribe").is(':checked');
+            if(buddyObj.EnableSubscribe == true) UnsubscribeBuddy(buddyObj);
+            if(buddyJson.Subscribe == true) SubscribeBuddy(buddyObj);
         }
-        else {
-            buddyObj.Description = $("#AddSomeone_Desc").val();
-        }
-        buddyObj.MobileNumber = $("#AddSomeone_Mobile").val();
-        buddyObj.Email = $("#AddSomeone_Email").val();
-        buddyObj.ContactNumber1 = $("#AddSomeone_Num1").val();
-        buddyObj.ContactNumber2 = $("#AddSomeone_Num2").val();
 
         // Update Image
         var constraints = { 
@@ -1423,48 +1755,27 @@ function EditBuddyWindow(buddy){
             circle: false 
         }
         $("#ImageCanvas").croppie('result', constraints).then(function(base64) {
-            if(buddyObj.Type == "extension"){
-                localDB.setItem("img-"+ buddyObj.uID +"-extension", base64);
-                $("#contact-"+ buddyObj.uID +"-picture-main").css("background-image", 'url('+ getPicture(buddyObj.uID, 'extension') +')');
+            if(buddyJson.Type == "extension"){
+                localDB.setItem("img-"+ buddyJson.uID +"-extension", base64);
+                $("#contact-"+ buddyJson.uID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.uID, 'extension') +')');
             }
-            else if(buddyObj.Type == "contact") {
-                localDB.setItem("img-"+ buddyObj.cID +"-contact", base64);
-                $("#contact-"+ buddyObj.cID +"-picture-main").css("background-image", 'url('+ getPicture(buddyObj.cID, 'contact') +')');
+            else if(buddyJson.Type == "contact") {
+                localDB.setItem("img-"+ buddyJson.cID +"-contact", base64);
+                $("#contact-"+ buddyJson.cID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.cID, 'contact') +')');
             }
-            else if(buddyObj.Type == "group") {
-                localDB.setItem("img-"+ buddyObj.gID +"-group", base64);
-                $("#contact-"+ buddyObj.gID +"-picture-main").css("background-image", 'url('+ getPicture(buddyObj.gID, 'group') +')');
+            else if(buddyJson.Type == "group") {
+                localDB.setItem("img-"+ buddyJson.gID +"-group", base64);
+                $("#contact-"+ buddyJson.gID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.gID, 'group') +')');
             }
             // Update
             UpdateBuddyList();
         });
 
         // Update: 
-        json.DataCollection[itemId] = buddyObj;
+        json.DataCollection[itemId] = buddyJson;
 
         // Save To DB
         localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
-
-        // Update the Memory Array, so that the UpdateBuddyList can make the changes
-        for(var b = 0; b < Buddies.length; b++) {
-            if(buddyObj.Type == "extension"){
-                if(buddyObj.uID == Buddies[b].identity){
-                    Buddies[b].lastActivity = buddyObj.LastActivity;
-                    Buddies[b].CallerIDName = buddyObj.DisplayName;
-                    Buddies[b].Desc = buddyObj.Position;
-                }                
-            }
-            else if(buddyObj.Type == "contact") {
-                if(buddyObj.cID == Buddies[b].identity){
-                    Buddies[b].lastActivity = buddyObj.LastActivity;
-                    Buddies[b].CallerIDName = buddyObj.DisplayName;
-                    Buddies[b].Desc = buddyObj.Description;
-                }                
-            }
-            else if(buddyObj.Type == "group") {
-                
-            }
-        }
 
         CloseWindow();
     }, lang.cancel, function(){
@@ -1476,14 +1787,27 @@ function EditBuddyWindow(buddy){
         });
 
         // Preview Existing Image
-        if(buddyObj.Type == "extension"){
-            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyObj.uID, "extension") }).then();
+        if(buddyJson.Type == "extension"){
+            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.uID, "extension") }).then();
         }
-        else if(buddyObj.Type == "contact") {
-            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyObj.cID, "contact") }).then();
+        if(buddyJson.Type == "xmpp"){
+            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.uID, "xmpp") }).then();
         }
-        else if(buddyObj.Type == "group") {
-            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyObj.gID, "group") }).then();
+        else if(buddyJson.Type == "contact") {
+            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.cID, "contact") }).then();
+        }
+        else if(buddyJson.Type == "group") {
+            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.gID, "group") }).then();
+        }
+
+        if(buddyJson.Type == "xmpp"){
+            $("#fileUploader").hide();
+            $("#AddSomeone_Name").attr("disabled", true);
+            $("#AddSomeone_Desc").attr("disabled", true);
+            $("#AddSomeone_Mobile").attr("disabled", true);
+            $("#AddSomeone_Email").attr("disabled", true);
+            $("#AddSomeone_Num1").attr("disabled", true);
+            $("#AddSomeone_Num2").attr("disabled", true);
         }
 
         // Wireup File Change
@@ -1518,6 +1842,30 @@ function EditBuddyWindow(buddy){
                 Alert(lang.alert_single_file, lang.error);
             }
         });
+    });
+}
+function SetStatusWindow(){
+    HidePopup();
+
+    var windowHtml = "<div class=UiWindowField>";
+    windowHtml += "<div><input type=text id=presence_text class=UiInputText></div>";
+    windowHtml += "</div>";
+    OpenWindow(windowHtml, lang.set_status, 180, 350, false, false, "OK", function(){
+        // ["away", "chat", "dnd", "xa"] => ["Away", "Available", "Busy", "Gone"]
+
+        var presenceStr = "chat"
+        var statusStr = $("#presence_text").val();
+
+        localDB.setItem("XmppLastPresence", presenceStr);
+        localDB.setItem("XmppLastStatus", statusStr);
+
+        XmppSetMyPresence(presenceStr, statusStr);
+
+        CloseWindow();
+    }, "Cancel", function(){
+        CloseWindow();
+    }, function(){
+        $("#presence_text").val(getDbItem("XmppLastStatus", ""));
     });
 }
 
@@ -1563,10 +1911,14 @@ function InitUi(){
     leftHTML += "<div class=profileContainer>";
     leftHTML += "<div class=contact id=UserProfile style=\"margin-bottom:5px;\">";
     leftHTML += "<div id=UserProfilePic class=buddyIcon></div>";
+    leftHTML += "<div class=contactNameText style=\"margin-right: 0px;\">"
+
+    leftHTML += "<span id=dereglink class=dotOnline style=\"display:none\"></span>";
+    leftHTML += "<span id=WebRtcFailed class=dotFailed style=\"display:none\"></span>";
     leftHTML += "<span id=reglink class=dotOffline></span>";
-    leftHTML += "<span id=dereglink class=dotOnline style=\"display:none\"><i class=\"fa fa-wifi\" style=\"line-height: 14px; text-align: center; display: block;\"></i></span>";
-    leftHTML += "<span id=WebRtcFailed class=dotFailed style=\"display:none\"><i class=\"fa fa-cross\" style=\"line-height: 14px; text-align: center; display: block;\"></i></span>";
-    leftHTML += "<div class=contactNameText style=\"margin-right: 0px;\"><i class=\"fa fa-phone-square\"></i> <span id=UserDID></span> - <span id=UserCallID></span></div>";
+
+    leftHTML += " <span id=UserDID></span> - <span id=UserCallID></span>"
+    leftHTML += "</div>";
     leftHTML += "<div id=regStatus class=presenceText>&nbsp;</div>";
     leftHTML += "</div>";
     // Search / Add Buddies
@@ -1575,7 +1927,10 @@ function InitUi(){
     leftHTML += "&nbsp;";
     leftHTML += "<button id=BtnFreeDial><i class=\"fa fa-phone\"></i></button>";
     leftHTML += "<button id=BtnAddSomeone><i class=\"fa fa-user-plus\"></i></button>";
-    leftHTML += "<button id=BtnCreateGroup><i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i></button>";
+    if(false){
+         // TODO
+        leftHTML += "<button id=BtnCreateGroup><i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i></button>";
+    }
     leftHTML += "</div>";
     leftHTML += "</div>";
     leftHTML += "</td></tr>";
@@ -1599,7 +1954,7 @@ function InitUi(){
 
     if(DisableFreeDial == true) $("#BtnFreeDial").hide();
     if(DisableBuddies == true) $("#BtnAddSomeone").hide();
-    if(enabledGroupServices == false) $("#BtnCreateGroup").hide();
+    if(ChatEngine != "XMPP") $("#BtnCreateGroup").hide();
 
     $("#UserDID").html(profileUser);
     $("#UserCallID").html(profileName);
@@ -1702,15 +2057,21 @@ function CreateUserAgent() {
                 connectionTimeout: TransportConnectionTimeout,
                 maxReconnectionAttempts: TransportReconnectionAttempts,
                 reconnectionTimeout: TransportReconnectionTimeout,
+                // keepAliveInterval: 30 // Uncomment this and make this any number greater then 0 for keep alive... 
+                // NB, adding a keep alive will NOT fix bad interent, if your connection cannot stay open (permanent WebSocket Connection) you probably 
+                // have a router or ISP issue, and if your internet is so poor that you need to some how keep it alive with empty packets
+                // upgrade you internt connection. This is voip we are talking about here.
             },
-            sessionDescriptionHandlerFactoryOptions:{
+            sessionDescriptionHandlerFactoryOptions: {
                 peerConnectionOptions :{
                     alwaysAcquireMediaFirst: true, // Better for firefox, but seems to have no effect on others
                     iceCheckingTimeout: IceStunCheckTimeout,
                     rtcConfiguration: { 
                         iceServers : [
-                            { urls: IceStunServerProtocol + ":"+ IceStunServerAddress +":"+ IceStunServerPort }
+                            JSON.parse(IceStunServerJson)
                         ]
+                        // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
+                        // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
                     }
                 }
             },
@@ -1722,6 +2083,7 @@ function CreateUserAgent() {
             userAgentString: userAgentStr,
             autostart: false,
             register: false,
+            rel100: SIP.C.supported.UNSUPPORTED // UNSUPPORTED | SUPPORTED | REQUIRED NOTE: rel100 is not supported
         });
         console.log("Creating User Agent... Done");
     }
@@ -1734,20 +2096,31 @@ function CreateUserAgent() {
 
     // UA Register events
     userAgent.on('registered', function () {
-        console.log("Registered!");
-        $("#regStatus").html(lang.registered);
-
-        $("#reglink").hide();
-        $("#dereglink").show();
-
-        // Start Subscribe Loop
+        // This code fires on re-resiter after session timeout
+        // to ensure that events are not fired multiple times
+        // a isReRegister state is kept.
         if(!isReRegister) {
+            console.log("Registered!");
+
+            $("#reglink").hide();
+            $("#dereglink").show();
+            if(DoNotDisturbEnabled || DoNotDisturbPolicy == "enabled") {
+                $("#dereglink").attr("class", "dotDoNotDisturb");
+            }
+
+            // Start Subscribe Loop
             SubscribeAll();
+
+            // Output to status
+            $("#regStatus").html(lang.registered);
+
+            // Start XMPP
+            if(ChatEngine == "XMPP") reconnectXmpp();
+
+            // Custom Web hook
+            if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
         }
         isReRegister = true;
-
-        // Custom Web hook
-        if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
     });
     userAgent.on('registrationFailed', function (response, cause) {
         console.log("Registration Failed: " + cause);
@@ -1871,10 +2244,14 @@ function ReceiveCall(session) {
     var buddyObj = FindBuddyByDid(did);
     // Make new contact of its not there
     if(buddyObj == null) {
+
+        // Check if Privacy DND is enabled
+
         var buddyType = (did.length > DidLength)? "contact" : "extension";
         var focusOnBuddy = (CurrentCalls==0);
-        buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, true, callerID, did);
-    } else {
+        buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, false, callerID, did, null, false);
+    }
+    else {
         // Double check that the buddy has the same caller ID as the incoming call
         // With Buddies that are contacts, eg +441234567890 <+441234567890> leave as as
         if(buddyObj.type == "extension" && buddyObj.CallerIDName != callerID){
@@ -1884,89 +2261,145 @@ function ReceiveCall(session) {
             UpdateBuddyCalerID(buddyObj, callerID);
         }
     }
-    var buddy = buddyObj.identity;
 
-    // Time Stamp
-    window.clearInterval(session.data.callTimer);
-    var startTime = moment.utc();
-    session.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
-    $("#contact-" + buddy + "-timer").show();
-    session.data.callTimer = window.setInterval(function(){
-        var now = moment.utc();
-        var duration = moment.duration(now.diff(startTime)); 
-        $("#contact-" + buddy + "-timer").html(formatShortDuration(duration.asSeconds()));
-    }, 1000);
-    session.data.buddyId = buddy;
-    session.data.calldirection = "inbound";
-    session.data.terminateby = "them";
-    session.data.withvideo = false;
-    var videoInvite = false;
-    if(session.request.body){
-        // Asterisk 13 PJ_SIP always sends m=video if endpoint has video codec,
-        // even if origional invite does not specify video.
-        if(session.request.body.indexOf("m=video") > -1) videoInvite = true;
-    }
+    // Create the line and add the session so we can answer or reject it.
+    var newLineNumber = Lines.length + 1;
+    lineObj = new Line(newLineNumber, callerID, did, buddyObj);
+    lineObj.SipSession = session;
+    lineObj.SipSession.data.line = lineObj.LineNumber;
+    lineObj.SipSession.data.buddyId = lineObj.BuddyObj.identity;
+    lineObj.SipSession.data.earlyReject = false;
+    Lines.push(lineObj);
 
-    // Inbound You or They Rejected
-    session.on('rejected', function (response, cause) {
+    // Wire up early session events
+    // Inbound You or They Rejected (Does not apply)
+    lineObj.SipSession.on('rejected', function (response, cause) {
         console.log("Call rejected: " + cause);
 
-        session.data.reasonCode = response.status_code
-        session.data.reasonText = cause
-    
-        AddCallMessage(buddy, session, response.status_code, cause);
+        var sessionLineObj = FindLineByNumber(this.data.line);
 
-        // Custom Web hook
-        if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
+        sessionLineObj.SipSession.data.reasonCode = response.status_code;
+        sessionLineObj.SipSession.data.reasonText = cause;
+    
+        teardownSession(sessionLineObj, response.status_code, cause);
     });
     // They cancelled (Gets called regardless)
-    session.on('terminated', function(response, cause) {
+    lineObj.SipSession.on('terminated', function(response, cause) {
+        console.warn("terminated called from ReceiveCall(), probably they cancelled", cause);
 
-        // Stop the ringtone
-        if(session.data.rinngerObj){
-            session.data.rinngerObj.pause();
-            session.data.rinngerObj.removeAttribute('src');
-            session.data.rinngerObj.load();
-            session.data.rinngerObj = null;
-        }
+        var sessionLineObj = FindLineByNumber(this.data.line);
 
-        CloseWindow();
-
-        console.log("Call terminated");
-
-        window.clearInterval(session.data.callTimer);
-
-        $("#contact-" + buddy + "-timer").html("");
-        $("#contact-" + buddy + "-timer").hide();
-        $("#contact-" + buddy + "-msg").html("");
-        $("#contact-" + buddy + "-msg").hide();
-        $("#contact-" + buddy + "-AnswerCall").hide();
-
-        RefreshStream(buddyObj);
-        updateScroll(buddyObj.identity);
-        UpdateBuddyList();
-
-        // Once the call is answered into a line, you can then teardown 
-        // teardownSession(buddyObj.identity, session, 0, "Call Cancelled");
+        teardownSession(sessionLineObj, 0, "Call Cancelled");
     });
 
-    // Start Handle Call
-    if(DoNotDisturbEnabled || DoNotDisturbPolicy == "enabled") {
-        console.log("Do Not Disturb Enabled, rejecting call.");
-        RejectCall(buddyObj.identity);
-        return;
+    // Time Stamp
+    window.clearInterval(lineObj.SipSession.data.callTimer);
+    var startTime = moment.utc();
+    lineObj.SipSession.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
+    lineObj.SipSession.data.callTimer = window.setInterval(function(){
+        var now = moment.utc();
+        var duration = moment.duration(now.diff(startTime)); 
+        $("#line-" + lineObj.LineNumber + "-timer").html(formatShortDuration(duration.asSeconds()));
+    }, 1000);
+    lineObj.SipSession.data.calldirection = "inbound";
+    lineObj.SipSession.data.terminateby = "them"; // The lack of any direct action from us leave this settings to be them by default.
+    lineObj.SipSession.data.withvideo = false;
+    var videoInvite = false;
+    if(lineObj.SipSession.request.body){
+        // Asterisk 13 PJ_SIP always sends m=video if endpoint has video codec,
+        // even if origional invite does not specify video.
+        if(lineObj.SipSession.request.body.indexOf("m=video") > -1) videoInvite = true;
+    }
+
+    // Possible Early Rejection options
+    if(DoNotDisturbEnabled == true || DoNotDisturbPolicy == "enabled") {
+        if(DoNotDisturbEnabled == true && buddyObj.EnableDuringDnd == true){
+            // This buddy has been allowed 
+            console.log("Buddy is allowed to call while you are on DND")
+        }
+        else {
+            console.log("Do Not Disturb Enabled, rejecting call.");
+            lineObj.SipSession.data.earlyReject = true;
+            RejectCall(lineObj.LineNumber, true);
+            return;
+        }
     }
     if(CurrentCalls >= 1){
         if(CallWaitingEnabled == false || CallWaitingEnabled == "disabled"){
             console.log("Call Waiting Disabled, rejecting call.");
-            RejectCall(buddyObj.identity);
+            lineObj.SipSession.data.earlyReject = true;
+            RejectCall(lineObj.LineNumber, true);
             return;
         }
     }
-    if(AutoAnswerEnabled || AutoAnswerPolicy == "enabled"){
+
+    // Create the call HTML 
+    AddLineHtml(lineObj);
+    $("#line-" + lineObj.LineNumber + "-msg").html(lang.incoming_call_from +" " + callerID +" &lt;"+ did +"&gt;");
+    $("#line-" + lineObj.LineNumber + "-msg").show();
+    $("#line-" + lineObj.LineNumber + "-timer").show();
+    if(videoInvite){
+        $("#line-"+ lineObj.LineNumber +"-answer-video").show();
+    }
+    else {
+        $("#line-"+ lineObj.LineNumber +"-answer-video").hide();
+    }
+    $("#line-" + lineObj.LineNumber + "-AnswerCall").show();
+
+    // Update the buddy list now so that any early rejected calls dont flash on
+    UpdateBuddyList();
+
+    // Auto Answer options
+    var autoAnswerRequested = false;
+    var answerTimeout = 1000;
+    if (!AutoAnswerEnabled  && IntercomPolicy == "enabled"){ // Check headers only if policy is allow
+
+        // https://github.com/InnovateAsterisk/Browser-Phone/issues/126
+        // Alert-Info: info=alert-autoanswer
+        // Alert-Info: answer-after=0
+        // Call-info: answer-after=0; x=y
+        // Call-Info: Answer-After=0
+        // Alert-Info: ;info=alert-autoanswer
+        // Alert-Info: <sip:>;info=alert-autoanswer
+        // Alert-Info: <sip:domain>;info=alert-autoanswer
+
+        var ci = session.request.headers["Call-Info"];
+        if (ci !== undefined && ci.length > 0){
+            for (var i = 0; i < ci.length; i++){
+                var raw_ci = ci[i].raw.toLowerCase();
+                if (raw_ci.indexOf("answer-after=") > 0){
+                    var temp_seconds_autoanswer = parseInt(raw_ci.substring(raw_ci.indexOf("answer-after=") +"answer-after=".length).split(';')[0]);
+                    if (Number.isInteger(temp_seconds_autoanswer) && temp_seconds_autoanswer >= 0){
+                        autoAnswerRequested = true;
+                        if(temp_seconds_autoanswer > 1) answerTimeout = temp_seconds_autoanswer * 1000;
+                        break;
+                    }
+                }
+            }
+        }
+        var ai = session.request.headers["Alert-Info"];
+        if (autoAnswerRequested === false && ai !== undefined && ai.length > 0){
+            for (var i=0; i < ai.length ; i++){
+                var raw_ai = ai[i].raw.toLowerCase();
+                if (raw_ai.indexOf("auto answer") > 0 || raw_ai.indexOf("alert-autoanswer") > 0){
+                    var autoAnswerRequested = true;
+                    break;
+                }
+                if (raw_ai.indexOf("answer-after=") > 0){
+                    var temp_seconds_autoanswer = parseInt(raw_ai.substring(raw_ai.indexOf("answer-after=") +"answer-after=".length).split(';')[0]);
+                    if (Number.isInteger(temp_seconds_autoanswer) && temp_seconds_autoanswer >= 0){
+                        autoAnswerRequested = true;
+                        if(temp_seconds_autoanswer > 1) answerTimeout = temp_seconds_autoanswer * 1000;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if(AutoAnswerEnabled || AutoAnswerPolicy == "enabled" || autoAnswerRequested){
         if(CurrentCalls == 0){ // There are no other calls, so you can answer
-            console.log("Auto Answer Call...");
-            var buddyId = buddyObj.identity;
+            console.log("Going to Auto Answer this call...");
             window.setTimeout(function(){
                 // If the call is with video, assume the auto answer is also
                 // In order for this to work nicely, the recipient maut be "ready" to accept video calls
@@ -1974,33 +2407,47 @@ function ReceiveCall(session) {
                 // The NULL video sould be configured
                 // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
                 if(videoInvite) {
-                    AnswerVideoCall(buddyId)
+                    AnswerVideoCall(lineObj.LineNumber);
                 }
                 else {
-                    AnswerAudioCall(buddyId);
+                    AnswerAudioCall(lineObj.LineNumber);
                 }
-            }, 1000);
+            }, answerTimeout);
 
             // Select Buddy
-            SelectBuddy(buddyObj.identity);
+            SelectLine(lineObj.LineNumber);
             return;
         }
         else {
             console.warn("Could not auto answer call, already on a call.");
         }
     }
-    
-    // Show the Answer Thingy
-    $("#contact-" + buddyObj.identity + "-msg").html(lang.incomming_call_from +" " + callerID +" &lt;"+ did +"&gt;");
-    $("#contact-" + buddyObj.identity + "-msg").show();
-    if(videoInvite){
-        $("#contact-"+ buddyObj.identity +"-answer-video").show();
+
+    // Show notification
+    // =================
+    if ("Notification" in window) {
+        if (Notification.permission === "granted") {
+            var noticeOptions = { body: lang.incoming_call_from +" " + callerID +" <"+ did +">", icon: getPicture(buddyObj.identity) }
+            var inComingCallNotification = new Notification(lang.incoming_call, noticeOptions);
+            inComingCallNotification.onclick = function (event) {
+
+                var lineNo = lineObj.LineNumber;
+                window.setTimeout(function(){
+                    // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
+                    if(videoInvite) {
+                        AnswerVideoCall(lineNo)
+                    }
+                    else {
+                        AnswerAudioCall(lineNo);
+                    }
+                }, 1000);
+
+                // Select Buddy
+                SelectLine(lineNo);
+                return;
+            }
+        }
     }
-    else {
-        $("#contact-"+ buddyObj.identity +"-answer-video").hide();
-    }
-    $("#contact-" + buddyObj.identity + "-AnswerCall").show();
-    updateScroll(buddyObj.identity);
 
     // Play Ring Tone if not on the phone
     if(CurrentCalls >= 1){
@@ -2024,7 +2471,7 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        session.data.rinngerObj = rinnger;
+        lineObj.SipSession.data.rinngerObj = rinnger;
     } else {
         // Play Ring Tone
         console.log("Audio:", audioBlobs.Ringtone.url);
@@ -2046,16 +2493,17 @@ function ReceiveCall(session) {
                 console.warn("Unable to play audio file.", e);
             }); 
         }
-        session.data.rinngerObj = rinnger;
+        lineObj.SipSession.data.rinngerObj = rinnger;
     }
 
     // Check if that buddy is not already on a call??
     var streamVisible = $("#stream-"+ buddyObj.identity).is(":visible");
-    if (streamVisible) {
-        // Remove anything distracting
-        HidePopup();
-    } 
-    else {
+    if (streamVisible || CurrentCalls == 0) {
+        // If you are already on the selected buddy who is now calling you, switch to his call.
+        // NOTE: This will put other calls on hold
+        if(CurrentCalls == 0) SelectLine(newLineNumber);
+    }
+    else if(ShowCallAnswerWindow){
         CloseWindow(); // If something else was there, close it.
         // Show Call Answer Window
         var callAnswerHtml = "<div class=\"UiWindowField scroller\" style=\"text-align:center\">"
@@ -2069,7 +2517,7 @@ function ReceiveCall(session) {
             callAnswerHtml += "<div style=\"margin-top:15px\"><button onclick=\"AnswerVideoCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button></div>";
         }
         callAnswerHtml += "</div>";
-        OpenWindow(callAnswerHtml, lang.incomming_call_from, 350, 300, true, false, lang.reject_call, function(){
+        OpenWindow(callAnswerHtml, lang.incoming_call_from, 400, 300, true, false, lang.reject_call, function(){
             // Reject the call
             RejectCall(buddyObj.identity);
             CloseWindow();
@@ -2077,57 +2525,17 @@ function ReceiveCall(session) {
             // Let it ring
             CloseWindow();
         }, null, null);
-
-        // Add a notification badge
-        IncreaseMissedBadge(buddyObj.identity);
-
-        // Show notification
-        // =================
-        if ("Notification" in window) {
-            if (Notification.permission === "granted") {
-                var noticeOptions = { body: lang.incomming_call_from +" " + callerID +" <"+ did +">", icon: getPicture(buddyObj.identity) }
-                var inComingCallNotification = new Notification(lang.incomming_call, noticeOptions);
-                inComingCallNotification.onclick = function (event) {
-
-                    var buddyId = buddyObj.identity;
-                    window.setTimeout(function(){
-                        // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
-                        if(videoInvite) {
-                            AnswerVideoCall(buddyId)
-                        }
-                        else {
-                            AnswerAudioCall(buddyId);
-                        }
-                    }, 1000);
-
-                    // Select Buddy
-                    SelectBuddy(buddyObj.identity);
-
-                    return;
-                }
-            }
-        }
     }
 }
-function AnswerAudioCall(buddy) {
-    CloseWindow();
+function AnswerAudioCall(lineNumber) {
+    // CloseWindow();
 
-    var buddyObj = FindBuddyByIdentity(buddy);
-    if(buddyObj == null) {
-        console.warn("Audio Answer failed, null buddy");
-        $("#contact-" + buddy + "-msg").html(lang.call_failed);
-        $("#contact-" + buddy + "-AnswerCall").hide();
+    var lineObj = FindLineByNumber(lineNumber);
+    if(lineObj == null){
+        console.warn("Failed to get line ("+ lineNumber +")");
         return;
     }
-
-    var session = getSession(buddy);
-    if (session == null) {
-        console.warn("Audio Answer failed, null session");
-        $("#contact-" + buddy + "-msg").html(lang.call_failed);
-        $("#contact-" + buddy + "-AnswerCall").hide();
-        return;
-    }
-    
+    var session = lineObj.SipSession;
     // Stop the ringtone
     if(session.data.rinngerObj){
         session.data.rinngerObj.pause();
@@ -2135,33 +2543,18 @@ function AnswerAudioCall(buddy) {
         session.data.rinngerObj.load();
         session.data.rinngerObj = null;
     }
-
     // Check vitals
     if(HasAudioDevice == false){
         Alert(lang.alert_no_microphone);
-        $("#contact-" + buddy + "-msg").html(lang.call_failed);
-        $("#contact-" + buddy + "-AnswerCall").hide();
+        $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_failed);
+        $("#line-" + lineObj.LineNumber + "-AnswerCall").hide();
         return;
     }
-    $("#contact-" + buddy + "-timer").html("");
-    $("#contact-" + buddy + "-timer").hide();
-    $("#contact-" + buddy + "-msg").html("");
-    $("#contact-" + buddy + "-msg").hide();
-    $("#contact-" + buddy + "-AnswerCall").hide();
 
-    // Create a new Line and move the session over to the line
-    var callerID = session.remoteIdentity.displayName;
-    var did = session.remoteIdentity.uri.user;
-    var newLineNumber = Lines.length + 1;
-    lineObj = new Line(newLineNumber, callerID, did, buddyObj);
-    lineObj.SipSession = session;
-    lineObj.SipSession.data.line = lineObj.LineNumber;
-    lineObj.SipSession.data.buddyId = lineObj.BuddyObj.identity;
-    Lines.push(lineObj);
-    AddLineHtml(lineObj);
-    SelectLine(newLineNumber);
-    UpdateBuddyList();
+    // Update UI
+    $("#line-" + lineObj.LineNumber + "-AnswerCall").hide();
 
+    // Start SIP handling
     var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
@@ -2201,39 +2594,35 @@ function AnswerAudioCall(buddy) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
     }
 
-    // Send Answer
-    lineObj.SipSession.accept(spdOptions);
+    // Save Devices
     lineObj.SipSession.data.withvideo = false;
     lineObj.SipSession.data.VideoSourceDevice = null;
     lineObj.SipSession.data.AudioSourceDevice = getAudioSrcID();
     lineObj.SipSession.data.AudioOutputDevice = getAudioOutputID();
 
-    // Wire up UI
-    wireupAudioSession(lineObj);
-    $("#contact-" + buddy + "-msg").html(lang.call_in_progress);
+    // Send Answer
+    // If this fails, it must still wireup the call so we can manually close it
+    try{
+        lineObj.SipSession.accept(spdOptions);
 
-    // Clear Answer Buttons
-    $("#contact-" + buddy + "-AnswerCall").hide();
+        // Wire up UI
+        $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_in_progress);
+        wireupAudioSession(lineObj);
+    }
+    catch(e){
+        console.warn("Failed to answer call", e, lineObj.SipSession);
+        teardownSession(lineObj, 500, "Client Error");
+    }
 }
-function AnswerVideoCall(buddy) {
-    CloseWindow();
+function AnswerVideoCall(lineNumber) {
+    // CloseWindow();
 
-    var buddyObj = FindBuddyByIdentity(buddy);
-    if(buddyObj == null) {
-        console.warn("Audio Answer failed, null buddy");
-        $("#contact-" + buddy + "-msg").html(lang.call_failed);
-        $("#contact-" + buddy + "-AnswerCall").hide();
+    var lineObj = FindLineByNumber(lineNumber);
+    if(lineObj == null){
+        console.warn("Failed to get line ("+ lineNumber +")");
         return;
     }
-
-    var session = getSession(buddy);
-    if (session == null) {
-        console.warn("Video Answer failed, null session");
-        $("#contact-" + buddy + "-msg").html(lang.call_failed);
-        $("#contact-" + buddy + "-AnswerCall").hide();
-        return;
-    }
-
+    var session = lineObj.SipSession;
     // Stop the ringtone
     if(session.data.rinngerObj){
         session.data.rinngerObj.pause();
@@ -2241,38 +2630,18 @@ function AnswerVideoCall(buddy) {
         session.data.rinngerObj.load();
         session.data.rinngerObj = null;
     }
-
     // Check vitals
     if(HasAudioDevice == false){
         Alert(lang.alert_no_microphone);
-        $("#contact-" + buddy + "-msg").html(lang.call_failed);
-        $("#contact-" + buddy + "-AnswerCall").hide();
+        $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_failed);
+        $("#line-" + lineObj.LineNumber + "-AnswerCall").hide();
         return;
     }
-    if(HasVideoDevice == false){
-        console.warn("No video devices (webcam) found, switching to audio call.");
-        AnswerAudioCall(buddy);
-        return;
-    }
-    $("#contact-" + buddy + "-timer").html("");
-    $("#contact-" + buddy + "-timer").hide();
-    $("#contact-" + buddy + "-msg").html("");
-    $("#contact-" + buddy + "-msg").hide();
-    $("#contact-" + buddy + "-AnswerCall").hide();
 
-    // Create a new Line and move the session over to the line
-    var callerID = session.remoteIdentity.displayName;
-    var did = session.remoteIdentity.uri.user;
-    var newLineNumber = Lines.length + 1;
-    lineObj = new Line(newLineNumber, callerID, did, buddyObj);
-    lineObj.SipSession = session;
-    lineObj.SipSession.data.line = lineObj.LineNumber;
-    lineObj.SipSession.data.buddyId = lineObj.BuddyObj.identity;
-    Lines.push(lineObj);
-    AddLineHtml(lineObj);
-    SelectLine(newLineNumber);
-    UpdateBuddyList();
+    // Update UI
+    $("#line-" + lineObj.LineNumber + "-AnswerCall").hide();
 
+    // Start SIP handling
     var supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
     var spdOptions = {
         sessionDescriptionHandlerOptions: {
@@ -2341,36 +2710,63 @@ function AnswerVideoCall(buddy) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
     }
 
-    // Send Answer
-    lineObj.SipSession.accept(spdOptions);
+    // Save Devices
     lineObj.SipSession.data.withvideo = true;
     lineObj.SipSession.data.VideoSourceDevice = getVideoSrcID();
     lineObj.SipSession.data.AudioSourceDevice = getAudioSrcID();
     lineObj.SipSession.data.AudioOutputDevice = getAudioOutputID();
 
-    // Wire up UI
-    wireupVideoSession(lineObj);
-    $("#contact-" + buddy + "-msg").html(lang.call_in_progress);
+    // Send Answer
+    // If this fails, it must still wireup the call so we can manually close it
+    try{
+        lineObj.SipSession.accept(spdOptions);
 
-    // Clear Answer Buttons
-    $("#contact-" + buddy + "-AnswerCall").hide();
-
-    if(StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
+        // Wire up UI
+        $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_in_progress);
+        wireupVideoSession(lineObj);
+        if(StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
+    }
+    catch(e){
+        console.warn("Failed to answer call", e, lineObj.SipSession);
+        teardownSession(lineObj, 500, "Client Error");
+    }
 }
 
-function RejectCall(buddy) {
-    var session = getSession(buddy);
+function RejectCall(lineNumber) {
+    var lineObj = FindLineByNumber(lineNumber);
+    if (lineObj == null) {
+        console.warn("Unable to find line ("+ lineNumber +")");
+        return;
+    }
+    var session = lineObj.SipSession;
     if (session == null) {
         console.warn("Reject failed, null session");
-        $("#contact-" + buddy + "-msg").html(lang.call_failed);
-        $("#contact-" + buddy + "-AnswerCall").hide();
+        $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_failed);
+        $("#line-" + lineObj.LineNumber + "-AnswerCall").hide();
     }
     session.data.terminateby = "us";
-    session.reject({ 
-        statusCode: 486, 
-        reasonPhrase: "Busy Here" 
-    });
-    $("#contact-" + buddy + "-msg").html(lang.call_rejected);
+    if(session.status == SIP.Session.C.STATUS_WAITING_FOR_ANSWER){
+        try{
+            session.reject({ 
+                statusCode: 486, 
+                reasonPhrase: "Busy Here" 
+            });
+        }
+        catch(e){
+            console.warn("Problem in RejectCall(), could not reject() call", e, session);
+        }
+    } 
+    else {
+        try{
+            session.bye();
+        }
+        catch(e){
+            console.warn("Problem in RejectCall(), could not bye() call", e, session);
+        }
+    }
+    $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_rejected);
+
+    teardownSession(lineObj, 486, "Busy Here");
 }
 
 // Session Wireup
@@ -2385,7 +2781,8 @@ function wireupAudioSession(lineObj) {
         // Provisional 1xx
         if(response.status_code == 100){
             $(MessageObjId).html(lang.trying);
-        } else if(response.status_code == 180){
+        }
+        else if(response.status_code == 180){
             $(MessageObjId).html(lang.ringing);
             
             var soundFile = audioBlobs.EarlyMedia_European;
@@ -2413,16 +2810,45 @@ function wireupAudioSession(lineObj) {
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            session.data.earlyMedia = earlyMedia;
-        } else {
+            this.data.earlyMedia = earlyMedia;
+        }
+        else if(response.status_code === 183){
+            $(MessageObjId).html(response.reason_phrase + "...");
+
+            // Special Early Media Handling
+            if(response.body != "" && this.hasOffer && !this.dialog){
+                // Confirm the dialog, eventhough it's a provisional answer
+                if (!this.createDialog(response, 'UAC')) {
+                    console.warn("Could not create Dialog ");
+                    return;
+                }
+
+                // this ensures that 200 will not try to set description
+                this.hasAnswer = true;
+
+                // Force the session status
+                this.status = SIP.Session.C.STATUS_EARLY_MEDIA;
+
+                // Set the SDP from the response, so the media can connect
+                // (Assuming that the response is a vlid SDP)
+                this.sessionDescriptionHandler.setDescription(response.body).catch(function(reason){
+                    console.warn("Failed to set SDP in 183 response: ", reason);
+                });
+            }
+        }
+        else {
+            // 181 = Call is Being Forwarded
+            // 182 = Call is queued (Busy server!)
+            // 199 = Call is Terminated (Early Dialog)
+
             $(MessageObjId).html(response.reason_phrase + "...");
         }
 
         // Custom Web hook
-        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", session);
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", response);
     });
     session.on('trackAdded', function () {
-        var pc = session.sessionDescriptionHandler.peerConnection;
+        var pc = this.sessionDescriptionHandler.peerConnection;
 
         // Gets Remote Audio Track (Local audio is setup via initial GUM)
         var remoteStream = new MediaStream();
@@ -2445,20 +2871,20 @@ function wireupAudioSession(lineObj) {
         }
 
         // Custom Web hook
-        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", session);
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", this);
     });
     session.on('accepted', function (data) {
 
-        if(session.data.earlyMedia){
-            session.data.earlyMedia.pause();
-            session.data.earlyMedia.removeAttribute('src');
-            session.data.earlyMedia.load();
-            session.data.earlyMedia = null;
+        if(this.data.earlyMedia){
+            this.data.earlyMedia.pause();
+            this.data.earlyMedia.removeAttribute('src');
+            this.data.earlyMedia.load();
+            this.data.earlyMedia = null;
         }
 
-        window.clearInterval(session.data.callTimer);
+        window.clearInterval(this.data.callTimer);
         var startTime = moment.utc();
-        session.data.callTimer = window.setInterval(function(){
+        this.data.callTimer = window.setInterval(function(){
             var now = moment.utc();
             var duration = moment.duration(now.diff(startTime)); 
             $("#line-" + lineObj.LineNumber + "-timer").html(formatShortDuration(duration.asSeconds()));
@@ -2473,15 +2899,15 @@ function wireupAudioSession(lineObj) {
         $("#line-" + lineObj.LineNumber + "-ActiveCall").show();
 
         // Audo Monitoring
-        lineObj.LocalSoundMeter = StartLocalAudioMediaMonitoring(lineObj.LineNumber, session);
-        lineObj.RemoteSoundMeter = StartRemoteAudioMediaMonitoring(lineObj.LineNumber, session);
+        lineObj.LocalSoundMeter = StartLocalAudioMediaMonitoring(lineObj.LineNumber, this);
+        lineObj.RemoteSoundMeter = StartRemoteAudioMediaMonitoring(lineObj.LineNumber, this);
         
         $(MessageObjId).html(lang.call_in_progress);
 
         updateLineScroll(lineObj.LineNumber);
 
         // Custom Web hook
-        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("accepted", session);
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("accepted", this);
     });
     session.on('rejected', function (response, cause) {
         // Should only apply befor answer
@@ -2509,16 +2935,16 @@ function wireupAudioSession(lineObj) {
     session.on('terminated', function (message, cause) {
         console.log("Session terminated");
     });
-    session.on('reinvite', function (session) {
-        console.log("Session reinvited!");
+    session.on('reinvite', function (newSession) {
+        console.log("Session re-invited!", newSession);
     });
     //dtmf
     session.on('directionChanged', function() {
-        var direction = session.sessionDescriptionHandler.getDirection();
+        var direction = this.sessionDescriptionHandler.getDirection();
         console.log("Direction Change: ", direction);
 
         // Custom Web hook
-        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("directionChanged", session);
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("directionChanged", this);
     });
 
     $("#line-" + lineObj.LineNumber + "-btn-settings").removeAttr('disabled');
@@ -2548,69 +2974,14 @@ function wireupVideoSession(lineObj) {
     var MessageObjId = "#line-" + lineObj.LineNumber + "-msg";
     var session = lineObj.SipSession;
 
-    session.on('trackAdded', function () {
-        // Gets remote tracks
-        var pc = session.sessionDescriptionHandler.peerConnection;
-        var remoteAudioStream = new MediaStream();
-        var remoteVideoStream = new MediaStream();
-        pc.getReceivers().forEach(function (receiver) {
-            if(receiver.track){
-                if(receiver.track.kind == "audio"){
-                    remoteAudioStream.addTrack(receiver.track);
-                }
-                if(receiver.track.kind == "video"){
-                    remoteVideoStream.addTrack(receiver.track);
-                }
-            }
-        });
-        var remoteAudio = $("#line-" + lineObj.LineNumber + "-remoteAudio").get(0);
-        remoteAudio.srcObject = remoteAudioStream;
-        remoteAudio.onloadedmetadata = function(e) {
-            if (typeof remoteAudio.sinkId !== 'undefined') {
-                remoteAudio.setSinkId(getAudioOutputID()).then(function(){
-                    console.log("sinkId applied: "+ getAudioOutputID());
-                }).catch(function(e){
-                    console.warn("Error using setSinkId: ", e);
-                });
-            }
-            remoteAudio.play();
-        }
-
-        var remoteVideo = $("#line-" + lineObj.LineNumber + "-remoteVideo").get(0);
-        remoteVideo.srcObject = remoteVideoStream;
-        remoteVideo.onloadedmetadata = function(e) {
-            remoteVideo.play();
-        }
-
-        // Note: There appears to be a bug in the peerConnection.getSenders()
-        // The array returns but may or may not be fully populated by the RTCRtpSender
-        // The track property appears to be null initially and then moments later populated.
-        // This does not appear to be the case when oritionisting a call, mostly when receiving a call.
-        window.setTimeout(function(){
-            var localVideoStream = new MediaStream();
-            var pc = session.sessionDescriptionHandler.peerConnection;
-            pc.getSenders().forEach(function (sender) {
-                if(sender.track && sender.track.kind == "video"){
-                    localVideoStream.addTrack(sender.track);
-                }
-            });
-            var localVideo = $("#line-" + lineObj.LineNumber + "-localVideo").get(0);
-            localVideo.srcObject = localVideoStream;
-            localVideo.onloadedmetadata = function(e) {
-                localVideo.play();
-            }
-        }, 1000);
-
-        // Custom Web hook
-        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", session);
-    });
     session.on('progress', function (response) {
         // Provisional 1xx
         if(response.status_code == 100){
             $(MessageObjId).html(lang.trying);
-        } else if(response.status_code == 180){
+        }
+        else if(response.status_code == 180){
             $(MessageObjId).html(lang.ringing);
-
+            
             var soundFile = audioBlobs.EarlyMedia_European;
             if(UserLocale().indexOf("us") > -1) soundFile = audioBlobs.EarlyMedia_US;
             if(UserLocale().indexOf("gb") > -1) soundFile = audioBlobs.EarlyMedia_UK;
@@ -2636,32 +3007,134 @@ function wireupVideoSession(lineObj) {
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            session.data.earlyMedia = earlyMedia;
-        } else {
+            this.data.earlyMedia = earlyMedia;
+        }
+        else if(response.status_code === 183){
+            $(MessageObjId).html(response.reason_phrase + "...");
+
+            // Special Early Media Handling
+            if(response.body != "" && this.hasOffer && !this.dialog){
+                // Confirm the dialog, eventhough it's a provisional answer
+                if (!this.createDialog(response, 'UAC')) {
+                    console.warn("Could not create Dialog ");
+                    return;
+                }
+
+                // this ensures that 200 will not try to set description
+                this.hasAnswer = true;
+
+                // Force the session status
+                this.status = SIP.Session.C.STATUS_EARLY_MEDIA;
+
+                // Set the SDP from the response, so the media can connect
+                // (Assuming that the response is a vlid SDP)
+                this.sessionDescriptionHandler.setDescription(response.body).catch(function(reason){
+                    console.warn("Failed to set SDP in 183 response: ", reason);
+                });
+            }
+        }
+        else {
+            // 181 = Call is Being Forwarded
+            // 182 = Call is queued (Busy server!)
+            // 199 = Call is Terminated (Early Dialog)
+
             $(MessageObjId).html(response.reason_phrase + "...");
         }
 
         // Custom Web hook
-        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", session);
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", response);
+    });
+    session.on('trackAdded', function () {
+        // Gets remote tracks
+        var pc = this.sessionDescriptionHandler.peerConnection;
+        var remoteAudioStream = new MediaStream();
+        var remoteVideoStream = new MediaStream();
+        pc.getReceivers().forEach(function (receiver) {
+            if(receiver.track){
+                if(receiver.track.kind == "audio"){
+                    remoteAudioStream.addTrack(receiver.track);
+                }
+                if(receiver.track.kind == "video"){
+                    remoteVideoStream.addTrack(receiver.track);
+                }
+            }
+        });
+
+        var remoteAudio = $("#line-" + lineObj.LineNumber + "-remoteAudio").get(0);
+        remoteAudio.srcObject = remoteAudioStream;
+        remoteAudio.onloadedmetadata = function(e) {
+            if (typeof remoteAudio.sinkId !== 'undefined') {
+                remoteAudio.setSinkId(getAudioOutputID()).then(function(){
+                    console.log("sinkId applied: "+ getAudioOutputID());
+                }).catch(function(e){
+                    console.warn("Error using setSinkId: ", e);
+                });
+            }
+            remoteAudio.play();
+        }
+
+        var remoteVideo = $("#line-" + lineObj.LineNumber + "-remoteVideo").get(0);
+        remoteVideo.srcObject = remoteVideoStream;
+        remoteVideo.onloadedmetadata = function(e) {
+            remoteVideo.play();
+        }
+
+        // Custom Web hook
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", this);
     });
     session.on('accepted', function (data) {
         
-        if(session.data.earlyMedia){
-            session.data.earlyMedia.pause();
-            session.data.earlyMedia.removeAttribute('src');
-            session.data.earlyMedia.load();
-            session.data.earlyMedia = null;
+        if(this.data.earlyMedia){
+            this.data.earlyMedia.pause();
+            this.data.earlyMedia.removeAttribute('src');
+            this.data.earlyMedia.load();
+            this.data.earlyMedia = null;
         }
 
-        window.clearInterval(session.data.callTimer);
+        window.clearInterval(this.data.callTimer);
         $("#line-" + lineObj.LineNumber + "-timer").show();
         var startTime = moment.utc();
-        session.data.callTimer = window.setInterval(function(){
+        this.data.callTimer = window.setInterval(function(){
             var now = moment.utc();
             var duration = moment.duration(now.diff(startTime)); 
             $("#line-" + lineObj.LineNumber + "-timer").html(formatShortDuration(duration.asSeconds()));
         }, 1000);
 
+        // Preview our stream from peer conneciton
+        var localVideoStream = new MediaStream();
+        var pc = this.sessionDescriptionHandler.peerConnection;
+        pc.getSenders().forEach(function (sender) {
+            if(sender.track && sender.track.kind == "video"){
+                localVideoStream.addTrack(sender.track);
+            }
+        });
+        var localVideo = $("#line-" + lineObj.LineNumber + "-localVideo").get(0);
+        localVideo.srcObject = localVideoStream;
+        localVideo.onloadedmetadata = function(e) {
+            localVideo.play();
+        }
+
+        // Apply Call Bandwidth Limits
+        if(MaxVideoBandwidth > -1){
+            pc.getSenders().forEach(function (sender) {
+                if(sender.track && sender.track.kind == "video"){
+
+                    var parameters = sender.getParameters();
+                    if(!parameters.encodings) parameters.encodings = [{}];
+                    parameters.encodings[0].maxBitrate = MaxVideoBandwidth * 1000;
+
+                    console.log("Applying limit for Bandwidth to: ", MaxVideoBandwidth + "kb per second")
+
+                    // Only going to try without re-negotiations
+                    sender.setParameters(parameters).catch(function(e){
+                        console.warn("Cannot apply Bandwidth Limits", e);
+                    });
+
+                }
+            });
+        }
+
+        // Start Call Recording
         if(RecordAllCalls || CallRecordingPolicy == "enabled") {
             StartRecording(lineObj.LineNumber);
         }
@@ -2687,15 +3160,15 @@ function wireupVideoSession(lineObj) {
         updateLineScroll(lineObj.LineNumber);
 
         // Start Audio Monitoring
-        lineObj.LocalSoundMeter = StartLocalAudioMediaMonitoring(lineObj.LineNumber, session);
-        lineObj.RemoteSoundMeter = StartRemoteAudioMediaMonitoring(lineObj.LineNumber, session);
+        lineObj.LocalSoundMeter = StartLocalAudioMediaMonitoring(lineObj.LineNumber, this);
+        lineObj.RemoteSoundMeter = StartRemoteAudioMediaMonitoring(lineObj.LineNumber, this);
 
         $(MessageObjId).html(lang.call_in_progress);
 
         if(StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
 
         // Custom Web hook
-        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("accepted", session);
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("accepted", this);
     });
     session.on('rejected', function (response, cause) {
         // Should only apply befor answer
@@ -2723,8 +3196,8 @@ function wireupVideoSession(lineObj) {
     session.on('terminated', function (message, cause) {
         console.log("Session terminated");
     });
-    session.on('reinvite', function (session) {
-        console.log("Session reinvited!");
+    session.on('reinvite', function (newSession) {
+        console.log("Session re-invited!", newSession);
     });
     // dtmf
     session.on('directionChanged', function() {
@@ -2732,7 +3205,7 @@ function wireupVideoSession(lineObj) {
         console.log("Direction Change: ", direction);
 
         // Custom Web hook
-        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("directionChanged", session);
+        if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("directionChanged", this);
     });
 
     $("#line-" + lineObj.LineNumber + "-btn-settings").removeAttr('disabled');
@@ -2755,10 +3228,13 @@ function teardownSession(lineObj, reasonCode, reasonText) {
     if(session.data.teardownComplete == true) return;
     session.data.teardownComplete = true; // Run this code only once
 
-    session.data.reasonCode = reasonCode
-    session.data.reasonText = reasonText
+    session.data.reasonCode = reasonCode;
+    session.data.reasonText = reasonText;
+
     // Call UI
-    HidePopup();
+    if(session.data.earlyReject != true){
+        HidePopup();
+    }
 
     // End any child calls
     if(session.data.childsession){
@@ -2785,6 +3261,13 @@ function teardownSession(lineObj, reasonCode, reasonText) {
         session.data.earlyMedia.load();
         session.data.earlyMedia = null;
     }
+    // Stop any ringing calls
+    if(session.data.rinngerObj){
+        session.data.rinngerObj.pause();
+        session.data.rinngerObj.removeAttribute('src');
+        session.data.rinngerObj.load();
+        session.data.rinngerObj = null;
+    }
 
     // Stop Recording if we are
     StopRecording(lineObj.LineNumber,true);
@@ -2806,13 +3289,20 @@ function teardownSession(lineObj, reasonCode, reasonText) {
     // Add to stream
     AddCallMessage(lineObj.BuddyObj.identity, session, reasonCode, reasonText);
 
+    // Check if this call was missed
+    if(session.data.calldirection == "inbound" && session.data.terminateby == "them" && lineObj.SipSession.startTime == null){
+        IncreaseMissedBadge(session.data.buddyId);
+    }
+
     // Close up the UI
     window.setTimeout(function () {
         RemoveLine(lineObj);
     }, 1000);
 
     UpdateBuddyList();
-    UpdateUI();
+    if(session.data.earlyReject != true){
+        UpdateUI();
+    }
 
     // Custom Web hook
     if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
@@ -3067,12 +3557,8 @@ function StartRemoteAudioMediaMonitoring(lineNum, session) {
         // Create remote SoundMeter
         console.log("SoundMeter for RemoteAudio Connected, displaying levels for Line: " + lineNum);
         soundMeter.levelsInterval = window.setInterval(function () {
-            // Calculate Levels
-            //value="0" max="1" high="0.25" (this seems low... )
-            var level = soundMeter.instant * 4.0;
-            if (level > 1) level = 1;
-            var instPercent = level * 100;
-
+            // Calculate Levels (0 - 255)
+            var instPercent = (soundMeter.instant/255) * 100;
             $("#line-" + lineNum + "-Speaker").css("height", instPercent.toFixed(2) +"%");
         }, 50);
         soundMeter.networkInterval = window.setInterval(function (){
@@ -3269,11 +3755,8 @@ function StartLocalAudioMediaMonitoring(lineNum, session) {
 
         console.log("SoundMeter for LocalAudio Connected, displaying levels for Line: " + lineNum);
         soundMeter.levelsInterval = window.setInterval(function () {
-            // Calculate Levels
-            //value="0" max="1" high="0.25" (this seems low... )
-            var level = soundMeter.instant * 4.0;
-            if (level > 1) level = 1;
-            var instPercent = level * 100;
+            // Calculate Levels (0 - 255)
+            var instPercent = (soundMeter.instant/255) * 100;
             $("#line-" + lineNum + "-Mic").css("height", instPercent.toFixed(2) +"%");
         }, 50);
         soundMeter.networkInterval = window.setInterval(function (){
@@ -3355,12 +3838,17 @@ class SoundMeter {
             console.warn("AudioContext() LocalAudio not available... its fine.");
         }
         if (audioContext == null) return null;
+        this.context = audioContext;
+        this.source = null;
 
         this.lineNum = lineNum;
         this.sessionId = sessionId;
+
+        this.captureInterval = null;
         this.levelsInterval = null;
         this.networkInterval = null;
         this.startTime = 0;
+
         this.ReceiveBitRateChart = null;
         this.ReceiveBitRate = [];
         this.ReceivePacketRateChart = null;
@@ -3375,27 +3863,22 @@ class SoundMeter {
         this.SendBitRate = [];
         this.SendPacketRateChart = null;
         this.SendPacketRate = [];
-        this.context = audioContext;
-        this.instant = 0.0;
-        this.script = audioContext.createScriptProcessor(2048, 1, 1);
-        const that = this;
-        this.script.onaudioprocess = function (event) {
-            const input = event.inputBuffer.getChannelData(0);
-            let i;
-            let sum = 0.0;
-            for (i = 0; i < input.length; ++i) {
-                sum += input[i] * input[i];
-            }
-            that.instant = Math.sqrt(sum / input.length);
-        }
+
+        this.instant = 0; // Primary Output indicator
+
+        this.AnalyserNode = this.context.createAnalyser();
+        this.AnalyserNode.minDecibels = -90;
+        this.AnalyserNode.maxDecibels = -10;
+        this.AnalyserNode.smoothingTimeConstant = 0.85;
     }
     connectToSource(stream, callback) {
         console.log("SoundMeter connecting...");
         try {
-            this.mic = this.context.createMediaStreamSource(stream);
-            this.mic.connect(this.script);
-            // necessary to make sample run, but should not be.
-            this.script.connect(this.context.destination);
+            this.source = this.context.createMediaStreamSource(stream);
+            this.source.connect(this.AnalyserNode);
+            // this.AnalyserNode.connect(this.context.destination); // Can be left unconnected
+            this._start();
+
             callback(null);
         }
         catch(e) {
@@ -3403,22 +3886,41 @@ class SoundMeter {
             callback(e);
         }
     }
+    _start(){
+        var self = this;
+        self.instant = 0;
+        self.AnalyserNode.fftSize = 32; // 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, and 32768. Defaults to 2048
+        self.dataArray = new Uint8Array(self.AnalyserNode.frequencyBinCount);
+
+        this.captureInterval = window.setInterval(function(){
+            self.AnalyserNode.getByteFrequencyData(self.dataArray); // Populate array with data from 0-255
+
+            // Just take the maximum value of this data
+            self.instant = 0;
+            for(var d = 0; d < self.dataArray.length; d++) {
+                if(self.dataArray[d] > self.instant) self.instant = self.dataArray[d];
+            }
+
+        }, 1);
+    }
     stop() {
         console.log("Disconnecting SoundMeter...");
+        window.clearInterval(this.captureInterval);
+        this.captureInterval = null;
+        window.clearInterval(this.levelsInterval);
+        this.levelsInterval = null;
+        window.clearInterval(this.networkInterval);
+        this.networkInterval = null;
         try {
-            window.clearInterval(this.levelsInterval);
-            this.levelsInterval = null;
+            this.source.disconnect();
         }
         catch(e) { }
+        this.source = null;
         try {
-            window.clearInterval(this.networkInterval);
-            this.networkInterval = null;
+            this.AnalyserNode.disconnect();
         }
         catch(e) { }
-        this.mic.disconnect();
-        this.script.disconnect();
-        this.mic = null;
-        this.script = null;
+        this.AnalyserNode = null;
         try {
             this.context.close();
         }
@@ -3436,7 +3938,9 @@ class SoundMeter {
             SendBitRate: this.SendBitRate,
             SendPacketRate: this.SendPacketRate,
         }
-        SaveQosData(QosData, this.sessionId, lineObj.BuddyObj.identity);
+        if(this.sessionId != null){
+            SaveQosData(QosData, this.sessionId, lineObj.BuddyObj.identity);
+        }
     }
 }
 function MeterSettingsOutput(audioStream, objectId, direction, interval){
@@ -3447,13 +3951,9 @@ function MeterSettingsOutput(audioStream, objectId, direction, interval){
 
         console.log("SoundMeter Connected, displaying levels to:"+ objectId);
         soundMeter.levelsInterval = window.setInterval(function () {
-            // Calculate Levels
-            //value="0" max="1" high="0.25" (this seems low... )
-            var level = soundMeter.instant * 4.0;
-            if (level > 1) level = 1;
-            var instPercent = level * 100;
-
-            $("#"+objectId).css(direction, instPercent.toFixed(2) +"%"); // Settings_MicrophoneOutput "width" 50
+            // Calculate Levels (0 - 255)
+            var instPercent = (soundMeter.instant/255) * 100;
+            $("#"+ objectId).css(direction, instPercent.toFixed(2) +"%");
         }, interval);
     });
 
@@ -3842,7 +4342,7 @@ function SubscribeAll() {
     console.log("Starting Subscribe of all ("+ Buddies.length +") Extension Buddies...");
     for(var b=0; b<Buddies.length; b++) {
         var buddyObj = Buddies[b];
-        if(buddyObj.type == "extension") {
+        if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && buddyObj.EnableSubscribe == true) {
             console.log("SUBSCRIBE: "+ buddyObj.ExtNo +"@" + wssServer);
             var blfObj = userAgent.subscribe(buddyObj.ExtNo +"@" + wssServer, 'presence', dialogOptions); 
             blfObj.data.buddyId = buddyObj.identity;
@@ -3857,7 +4357,7 @@ function SubscribeBuddy(buddyObj) {
     var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] }
     // var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml', 'application/xpidf+xml', 'application/simple-message-summary', 'application/im-iscomposing+xml'] }
 
-    if(buddyObj.type == "extension") {
+    if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         console.log("SUBSCRIBE: "+ buddyObj.ExtNo +"@" + wssServer);
         var blfObj = userAgent.subscribe(buddyObj.ExtNo +"@" + wssServer, 'presence', dialogOptions);
         blfObj.data.buddyId = buddyObj.identity;
@@ -3869,6 +4369,10 @@ function SubscribeBuddy(buddyObj) {
 }
 function RecieveBlf(notification) {
     if (userAgent == null || !userAgent.isRegistered()) return;
+
+    var buddy = "";
+    var dotClass = "dotOffline";
+    var Presence = "Unknown";
 
     var ContentType = notification.request.headers["Content-Type"][0].parsed;
     if (ContentType == "application/pidf+xml") {
@@ -3919,52 +4423,16 @@ function RecieveBlf(notification) {
         */
 
         var xml = $($.parseXML(notification.request.body));
+        buddy = xml.find("presence").find("tuple").attr("id");
 
         var Entity = xml.find("presence").attr("entity");
         var Contact = xml.find("presence").find("tuple").find("contact").text();
-        if (SipUsername == Entity.split("@")[0].split(":")[1] || SipUsername == Contact.split("@")[0].split(":")[1]){
-            // Message is for you.
-        } 
-        else {
-            console.warn("presence message not for you.", xml);
-            return;
-        }
-
-        var buddy = xml.find("presence").find("tuple").attr("id");
-
         var statusObj = xml.find("presence").find("tuple").find("status");
         var availability = xml.find("presence").find("tuple").find("status").find("basic").text();
-        var friendlyState = xml.find("presence").find("note").text();
-        var dotClass = "dotOffline";
-        if (friendlyState == "Not online") dotClass = "dotOffline";
-        if (friendlyState == "Ready") dotClass = "dotOnline";
-        if (friendlyState == "On the phone") dotClass = "dotInUse";
-        if (friendlyState == "Ringing") dotClass = "dotRinging";
-        if (friendlyState == "On hold") dotClass = "dotOnHold";
-        if (friendlyState == "Unavailable") dotClass = "dotOffline";
 
-        // dotOnline | dotOffline | dotRinging | dotInUse | dotReady | dotOnHold
-        var buddyObj = FindBuddyByExtNo(buddy);
-        if(buddyObj != null)
-        {
-            console.log("Setting Presence for "+ buddyObj.identity +" to "+ friendlyState);
-            $("#contact-" + buddyObj.identity + "-devstate").prop("class", dotClass);
-            $("#contact-" + buddyObj.identity + "-devstate-main").prop("class", dotClass);
-            buddyObj.devState = dotClass;
-            buddyObj.presence = friendlyState;
-
-            if (friendlyState == "Not online") friendlyState = lang.state_not_online;
-            if (friendlyState == "Ready") friendlyState = lang.state_ready;
-            if (friendlyState == "On the phone") friendlyState = lang.state_on_the_phone;
-            if (friendlyState == "Ringing") friendlyState = lang.state_ringing;
-            if (friendlyState == "On hold") friendlyState = lang.state_on_hold;
-            if (friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
-            $("#contact-" + buddyObj.identity + "-presence").html(friendlyState);
-            $("#contact-" + buddyObj.identity + "-presence-main").html(friendlyState);
-        }
+        Presence = xml.find("presence").find("note").text();
     }
-    else if (ContentType == "application/dialog-info+xml")
-    {
+    else if (ContentType == "application/dialog-info+xml") {
         // Handle "Dialog" State
 
         var xml = $($.parseXML(notification.request.body));
@@ -3983,53 +4451,57 @@ function RecieveBlf(notification) {
         */
 
         var ObservedUser = xml.find("dialog-info").attr("entity");
-        var buddy = ObservedUser.split("@")[0].split(":")[1];
+        buddy = ObservedUser.split("@")[0].split(":")[1];
 
         var version = xml.find("dialog-info").attr("version");
-
         var DialogState = xml.find("dialog-info").attr("state");
-        if (DialogState != "full") return;
-
         var extId = xml.find("dialog-info").find("dialog").attr("id");
-        if (extId != buddy) return;
 
         var state = xml.find("dialog-info").find("dialog").find("state").text();
-        var friendlyState = "Unknown";
-        if (state == "terminated") friendlyState = "Ready";
-        if (state == "trying") friendlyState = "On the phone";
-        if (state == "proceeding") friendlyState = "On the phone";
-        if (state == "early") friendlyState = "Ringing";
-        if (state == "confirmed") friendlyState = "On the phone";
-
-        var dotClass = "dotOffline";
-        if (friendlyState == "Not online") dotClass = "dotOffline";
-        if (friendlyState == "Ready") dotClass = "dotOnline";
-        if (friendlyState == "On the phone") dotClass = "dotInUse";
-        if (friendlyState == "Ringing") dotClass = "dotRinging";
-        if (friendlyState == "On hold") dotClass = "dotOnHold";
-        if (friendlyState == "Unavailable") dotClass = "dotOffline";
+        if (state == "terminated") Presence = "Ready";
+        if (state == "trying") Presence = "On the phone";
+        if (state == "proceeding") Presence = "On the phone";
+        if (state == "early") Presence = "Ringing";
+        if (state == "confirmed") Presence = "On the phone";
 
         // The dialog states only report devices states, and cant say online or offline.
-        // dotOnline | dotOffline | dotRinging | dotInUse | dotReady | dotOnHold
-        var buddyObj = FindBuddyByExtNo(buddy);
-        if(buddyObj != null)
-        {
-            console.log("Setting Presence for "+ buddyObj.identity +" to "+ friendlyState);
-            $("#contact-" + buddyObj.identity + "-devstate").prop("class", dotClass);
-            $("#contact-" + buddyObj.identity + "-devstate-main").prop("class", dotClass);
-            buddyObj.devState = dotClass;
-            buddyObj.presence = friendlyState;
+    }
+    
+    var buddyObj = FindBuddyByExtNo(buddy);
+    if(buddyObj == null) {
+        console.warn("Buddy not found");
+        return;
+    }
 
-            if (friendlyState == "Unknown") friendlyState = lang.state_unknown;
-            if (friendlyState == "Not online") friendlyState = lang.state_not_online;
-            if (friendlyState == "Ready") friendlyState = lang.state_ready;
-            if (friendlyState == "On the phone") friendlyState = lang.state_on_the_phone;
-            if (friendlyState == "Ringing") friendlyState = lang.state_ringing;
-            if (friendlyState == "On hold") friendlyState = lang.state_on_hold;
-            if (friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
-            $("#contact-" + buddyObj.identity + "-presence").html(friendlyState);
-            $("#contact-" + buddyObj.identity + "-presence-main").html(friendlyState);
-        }
+    // dotOnline | dotOffline | dotRinging | dotInUse | dotReady | dotOnHold
+    if (Presence == "Not online") dotClass = "dotOffline";
+    if (Presence == "Ready") dotClass = "dotOnline";
+    if (Presence == "On the phone") dotClass = "dotInUse";
+    if (Presence == "Ringing") dotClass = "dotRinging";
+    if (Presence == "On hold") dotClass = "dotOnHold";
+    if (Presence == "Unavailable") dotClass = "dotOffline";
+
+    // SIP Device Sate indicators
+    console.log("Setting DevSate State for "+ buddyObj.CallerIDName +" to "+ Presence);
+    buddyObj.devState = dotClass;
+    $("#contact-" + buddyObj.identity + "-devstate").prop("class", dotClass);
+    $("#contact-" + buddyObj.identity + "-devstate-main").prop("class", dotClass);
+
+    // Presence (SIP / XMPP)
+    // SIP uses Devices states only
+    // XMPP uses Device states, and Presence, but only XMMP Presence will display a text message
+    if(buddyObj.type != "xmpp"){
+        console.log("Setting Presence for "+ buddyObj.CallerIDName +" to "+ Presence);
+        
+        buddyObj.presence = Presence;
+        if (Presence == "Not online") Presence = lang.state_not_online;
+        if (Presence == "Ready") Presence = lang.state_ready;
+        if (Presence == "On the phone") Presence = lang.state_on_the_phone;
+        if (Presence == "Ringing") Presence = lang.state_ringing;
+        if (Presence == "On hold") Presence = lang.state_on_hold;
+        if (Presence == "Unavailable") Presence = lang.state_unavailable;
+        $("#contact-" + buddyObj.identity + "-presence").html(Presence);
+        $("#contact-" + buddyObj.identity + "-presence-main").html(Presence);
     }
 }
 function UnsubscribeAll() {
@@ -4042,7 +4514,7 @@ function UnsubscribeAll() {
 
     for(var b=0; b<Buddies.length; b++) {
         var buddyObj = Buddies[b];
-        if(buddyObj.type == "extension") {
+        if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
             $("#contact-" + buddyObj.identity + "-devstate").prop("class", "dotOffline");
             $("#contact-" + buddyObj.identity + "-devstate-main").prop("class", "dotOffline");
             $("#contact-" + buddyObj.identity + "-presence").html(lang.state_unknown);
@@ -4051,18 +4523,18 @@ function UnsubscribeAll() {
     }
 }
 function UnsubscribeBuddy(buddyObj) {
-    if(buddyObj.type != "extension") return;
-
-    for (var blf = 0; blf < BlfSubs.length; blf++) {
-        var blfObj = BlfSubs[blf];
-        if(blfObj.data.buddyId == buddyObj.identity){
-        console.log("Unsubscribing:", buddyObj.identity);
-            if(blfObj.dialog != null){
-                blfObj.unsubscribe();
-                blfObj.close();
+    if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
+        for (var blf = 0; blf < BlfSubs.length; blf++) {
+            var blfObj = BlfSubs[blf];
+            if(blfObj.data.buddyId == buddyObj.identity){
+            console.log("UNSUBSCRIBE:", buddyObj.ExtNo +"@" + wssServer);
+                if(blfObj.dialog != null){
+                    blfObj.unsubscribe();
+                    blfObj.close();
+                }
+                BlfSubs.splice(blf, 1);
+                break;
             }
-            BlfSubs.splice(blf, 1);
-            break;
         }
     }
 }
@@ -4092,53 +4564,6 @@ function SendChatMessage(buddy) {
 
     var messageId = uID();
     var buddyObj = FindBuddyByIdentity(buddy);
-    if(buddyObj.type == "extension" || buddyObj.type == "group") {
-        var chatBuddy = buddyObj.ExtNo + "@" + wssServer;
-        console.log("MESSAGE: "+ chatBuddy + " (extension)");
-        var messageObj = userAgent.message(chatBuddy, message);
-        messageObj.data.direction = "outbound";
-        messageObj.data.messageId = messageId;
-        messageObj.on("accepted", function (response, cause){
-            if(response.status_code == 202) {
-                console.log("Message Accepted:", messageId);
-
-                // Update DB
-                var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
-                if(currentStream != null || currentStream.DataCollection != null){
-                    $.each(currentStream.DataCollection, function (i, item) {
-                        if (item.ItemType == "MSG" && item.ItemId == messageId) {
-                            // Found
-                            item.Sent = true;
-                            return false;
-                        }
-                    });
-                    localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
-
-                    RefreshStream(buddyObj);
-                }
-            } else {
-                console.warn("Message Error", response.status_code, cause);
-
-                // Update DB
-                var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
-                if(currentStream != null || currentStream.DataCollection != null){
-                    $.each(currentStream.DataCollection, function (i, item) {
-                        if (item.ItemType == "MSG" && item.ItemId == messageId) {
-                            // Found
-                            item.Sent = false;
-                            return false;
-                        }
-                    });
-                    localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
-
-                    RefreshStream(buddyObj);
-                }                
-            }
-        });
-
-        // Custom Web hook
-        if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(messageObj);
-    } 
 
     // Update Stream
     var DateTime = moment.utc().format("YYYY-MM-DD HH:mm:ss UTC");
@@ -4161,6 +4586,46 @@ function SendChatMessage(buddy) {
     currentStream.TotalRows = currentStream.DataCollection.length;
     localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
 
+    // SIP Messages (Note, this may not work as required)
+    // ============
+    if(buddyObj.type == "extension") {
+        var chatBuddy = buddyObj.ExtNo + "@" + wssServer;
+        console.log("MESSAGE: "+ chatBuddy + " (extension)");
+
+        var messageObj = userAgent.message(chatBuddy, message);
+        messageObj.data.direction = "outbound";
+        messageObj.data.messageId = messageId;
+        messageObj.on("accepted", function (response, cause){
+            if(response.status_code == 202) {
+                console.log("Message Accepted:", messageId);
+                MarkMessageSent(buddyObj, messageId, false);
+            } 
+            else {
+                console.warn("Message Error", response.status_code, cause);
+                MarkMessageNotSent(buddyObj, messageId, false);
+            }
+        });
+
+        // Custom Web hook
+        if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(messageObj);
+    }
+
+    // XMPP Messages
+    // =============
+    if(buddyObj.type == "xmpp"){
+        console.log("MESSAGE: "+ buddyObj.jid + " (xmpp)");
+        XmppSendMessage(buddyObj, message, messageId);
+
+        // Custom Web hook
+        if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(message);
+    }
+
+    // Group Chat
+    // ==========
+    if(buddyObj.type == "group"){
+        // TODO
+    }
+
     // Post Add Activity
     $("#contact-" + buddy + "-ChatMessage").val("");
     $("#contact-" + buddy + "-dictate-message").hide();
@@ -4175,6 +4640,82 @@ function SendChatMessage(buddy) {
     UpdateBuddyActivity(buddy);
     RefreshStream(buddyObj);
 }
+function MarkMessageSent(buddyObj, messageId, refresh){
+    var currentStream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
+    if(currentStream != null || currentStream.DataCollection != null){
+        $.each(currentStream.DataCollection, function (i, item) {
+            if (item.ItemType == "MSG" && item.ItemId == messageId) {
+                // Found
+                item.Sent = true;
+                return false;
+            }
+        });
+        localDB.setItem(buddyObj.identity + "-stream", JSON.stringify(currentStream));
+
+        if(refresh) RefreshStream(buddyObj);
+    }
+}
+function MarkMessageNotSent(buddyObj, messageId, refresh){
+    var currentStream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
+    if(currentStream != null || currentStream.DataCollection != null){
+        $.each(currentStream.DataCollection, function (i, item) {
+            if (item.ItemType == "MSG" && item.ItemId == messageId) {
+                // Found
+                item.Sent = false;
+                return false;
+            }
+        });
+        localDB.setItem(buddyObj.identity + "-stream", JSON.stringify(currentStream));
+
+        if(refresh) RefreshStream(buddyObj);
+    }
+}
+function MarkDeliveryReceipt(buddyObj, messageId, refresh){
+    var currentStream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
+    if(currentStream != null || currentStream.DataCollection != null){
+        $.each(currentStream.DataCollection, function (i, item) {
+            if (item.ItemType == "MSG" && item.ItemId == messageId) {
+                // Found
+                item.Delivered = { state : true, eventTime: utcDateNow()};
+                return false;
+            }
+        });
+        localDB.setItem(buddyObj.identity + "-stream", JSON.stringify(currentStream));
+
+        if(refresh) RefreshStream(buddyObj);
+    }
+}
+function MarkDisplayReceipt(buddyObj, messageId, refresh){
+    var currentStream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
+    if(currentStream != null || currentStream.DataCollection != null){
+        $.each(currentStream.DataCollection, function (i, item) {
+            if (item.ItemType == "MSG" && item.ItemId == messageId) {
+                // Found
+                item.Displayed = { state : true, eventTime: utcDateNow()};
+                return false;
+            }
+        });
+        localDB.setItem(buddyObj.identity + "-stream", JSON.stringify(currentStream));
+
+        if(refresh) RefreshStream(buddyObj);
+    }
+}
+function MarkMessageRead(buddyObj, messageId){
+    var currentStream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
+    if(currentStream != null || currentStream.DataCollection != null){
+        $.each(currentStream.DataCollection, function (i, item) {
+            if (item.ItemType == "MSG" && item.ItemId == messageId) {
+                // Found
+                item.Read = { state : true, eventTime: utcDateNow()};
+                // return false; /// Mark all messages matching that id to avoid 
+                // duplicate id issue
+            }
+        });
+        localDB.setItem(buddyObj.identity + "-stream", JSON.stringify(currentStream));
+        console.log("Set message ("+ messageId +") as Read");
+    }
+}
+
 function ReceiveMessage(message) {
     var callerID = message.remoteIdentity.displayName;
     var did = message.remoteIdentity.uri.user;
@@ -4211,14 +4752,18 @@ function ReceiveMessage(message) {
             uID: id,
             cID: null,
             gID: null,
+            jid: null,
             DisplayName: callerID,
-            Position: "",
             Description: "", 
             Email: "",
-            MemberCount: 0
+            MemberCount: 0,
+            EnableDuringDnd: false,
+            Subscribe: false
         });
-        buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "");
-        AddBuddy(buddyObj, true, (CurrentCalls==0), true);
+        buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "", jid, false, false);
+        
+        // Add memory object
+        AddBuddy(buddyObj, true, (CurrentCalls==0), false);
 
         // Update Size: 
         json.TotalRows = json.DataCollection.length;
@@ -4228,11 +4773,11 @@ function ReceiveMessage(message) {
     }
 
     var origionalMessage = message.body;
-    var formattedMessage = ReformatMessage(origionalMessage); // Check if its Json ??
     var messageId = uID();
     var DateTime = utcDateNow();
 
     // Get the actual Person sending (since all group messages come from the group)
+    /*
     var ActualSender = "";
     if(buddyObj.type == "group") {
         var assertedIdentity = message.request.headers["P-Asserted-Identity"][0].raw; // Name Surname <ExtNo> 
@@ -4243,32 +4788,34 @@ function ReceiveMessage(message) {
 
         ActualSender = CallerID; // P-Asserted-Identity;
     }
+    */
 
-    // Current Stream
+    AddMessageToStream(buddyObj, messageId, "MSG", origionalMessage, DateTime)
+    UpdateBuddyActivity(buddyObj.identity);
+    RefreshStream(buddyObj);
+    ActivateStream(buddyObj, origionalMessage);
+}
+function AddMessageToStream(buddyObj, messageId, type, message, DateTime){
     var currentStream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
     if(currentStream == null) currentStream = InitinaliseStream(buddyObj.identity);
 
     // Add New Message
     var newMessageJson = {
         ItemId: messageId,
-        ItemType: "MSG",
+        ItemType: type,
         ItemDate: DateTime,
         SrcUserId: buddyObj.identity,
         Src: "\""+ buddyObj.CallerIDName +"\" <"+ buddyObj.ExtNo +">",
         DstUserId: profileUserID,
         Dst: "",
-        MessageData: origionalMessage
+        MessageData: message
     }
 
     currentStream.DataCollection.push(newMessageJson);
     currentStream.TotalRows = currentStream.DataCollection.length;
     localDB.setItem(buddyObj.identity + "-stream", JSON.stringify(currentStream));
-
-    // Update Last Activity
-    // ====================
-    UpdateBuddyActivity(buddyObj.identity);
-    RefreshStream(buddyObj);
-
+}
+function ActivateStream(buddyObj, message){
     // Handle Stream Not visible
     // =========================
     var streamVisible = $("#stream-"+ buddyObj.identity).is(":visible");
@@ -4278,7 +4825,7 @@ function ReceiveMessage(message) {
         if ("Notification" in window) {
             if (Notification.permission === "granted") {
                 var imageUrl = getPicture(buddyObj.identity);
-                var noticeOptions = { body: origionalMessage.substring(0, 250), icon: imageUrl }
+                var noticeOptions = { body: message.substring(0, 250), icon: imageUrl }
                 var inComingChatNotification = new Notification(lang.message_from + " : " + buddyObj.CallerIDName, noticeOptions);
                 inComingChatNotification.onclick = function (event) {
                     // Show Message
@@ -4306,7 +4853,7 @@ function ReceiveMessage(message) {
                 console.warn("Unable to play audio file.", e);
             });
         }
-        message.data.rinngerObj = rinnger; // Will be attached to this object until its disposed.
+        // message.data.rinngerObj = rinnger;
     } else {
         // Message window is active.
     }
@@ -4331,6 +4878,10 @@ function AddCallMessage(buddy, session, reasonCode, reasonText) {
 
         callDuration = moment.duration(CallEnd.diff(CallAnswer));
         ringTime = moment.duration(CallAnswer.diff(CallStart));
+    } 
+    else {
+        // There was no start time, but on inbound/outbound calls, this would indicate the ring time
+        ringTime = moment.duration(CallEnd.diff(CallStart));
     }
     totalDuration = moment.duration(CallEnd.diff(CallStart));
 
@@ -4525,7 +5076,7 @@ function updateLineScroll(lineNum) {
     RefreshLineActivity(lineNum);
 
     var element = $("#line-"+ lineNum +"-CallDetails").get(0);
-    element.scrollTop = element.scrollHeight;
+    if(element) element.scrollTop = element.scrollHeight;
 }
 function updateScroll(buddy) {
     var history = $("#contact-"+ buddy +"-ChatHistory");
@@ -4563,17 +5114,23 @@ function IncreaseMissedBadge(buddy) {
     // ============
     $("#contact-" + buddy + "-missed").text(buddyObj.missed);
     $("#contact-" + buddy + "-missed").show();
-    console.log("Set Missed badge for "+ buddy +" to: "+ buddyObj.missed);
+
+    console.log("Set Missed badge for "+ buddyObj.CallerIDName +" to: "+ buddyObj.missed);
 }
-function UpdateBuddyActivity(buddy){
+function UpdateBuddyActivity(buddy, lastAct){
     var buddyObj = FindBuddyByIdentity(buddy);
     if(buddyObj == null) return;
 
     // Update Last Activity Time
     // =========================
-    var timeStamp = utcDateNow();
-    buddyObj.lastActivity = timeStamp;
-    console.log("Last Activity is now: "+ timeStamp);
+    if(lastAct){
+        buddyObj.lastActivity = lastAct;
+    } 
+    else {
+        var timeStamp = utcDateNow();
+        buddyObj.lastActivity = timeStamp;
+    }
+    console.log("Last Activity for "+  buddyObj.CallerIDName +" is now: "+ buddyObj.lastActivity);
 
     // Take Out
     var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
@@ -4610,7 +5167,6 @@ function ClearMissedBadge(buddy) {
         // Put Back
         localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
     }
-
 
     $("#contact-" + buddy + "-missed").text(buddyObj.missed);
     $("#contact-" + buddy + "-missed").hide(400);
@@ -4698,9 +5254,6 @@ function VideoCall(lineObj, dialledNumber) {
     if(supportedConstraints.height && videoHeight != "") {
         spdOptions.sessionDescriptionHandlerOptions.constraints.video.height = videoHeight;
     }
-    console.log(supportedConstraints)
-    console.log(supportedConstraints.aspectRatio)
-    console.log(videoAspectRatio)
     if(supportedConstraints.aspectRatio && videoAspectRatio != "") {
         spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
     }
@@ -4728,6 +5281,8 @@ function VideoCall(lineObj, dialledNumber) {
     lineObj.SipSession.data.AudioOutputDevice = getAudioOutputID();
     lineObj.SipSession.data.terminateby = "them";
     lineObj.SipSession.data.withvideo = true;
+    lineObj.SipSession.data.earlyReject = false;
+    UpdateBuddyList();
 
     updateLineScroll(lineObj.LineNumber);
 
@@ -4752,7 +5307,7 @@ function AudioCallMenu(buddy, obj){
     dhtmlxPopup = new dhtmlXPopup();
 
     var buddyObj = FindBuddyByIdentity(buddy);
-    if(buddyObj.type == "extension") {
+    if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         // Extension
         var items = [
             {id: 1, name: "<i class=\"fa fa-phone-square\"></i> "+ lang.call_extension, number: buddyObj.ExtNo},
@@ -4841,14 +5396,11 @@ function AudioCall(lineObj, dialledNumber) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
     }
 
-    // Set ICE/STUN Server
-    // spdOptions.sessionDescriptionHandlerOptions.options.peerConnectionOptions.rtcConfiguration.iceServers = [{urls: 'stun:stun.l.google.com:9999'}]
-
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.starting_audio_call);
     $("#line-" + lineObj.LineNumber + "-timer").show();
 
     // Invite
-    console.log("INVITE (audio): " + dialledNumber + "@" + wssServer);
+    console.log("INVITE (audio): " + dialledNumber + "@" + wssServer, spdOptions);
     lineObj.SipSession = userAgent.invite("sip:" + dialledNumber + "@" + wssServer, spdOptions);
 
     var startTime = moment.utc();
@@ -4867,6 +5419,8 @@ function AudioCall(lineObj, dialledNumber) {
     lineObj.SipSession.data.AudioOutputDevice = getAudioOutputID();
     lineObj.SipSession.data.terminateby = "them";
     lineObj.SipSession.data.withvideo = false;
+    lineObj.SipSession.data.earlyReject = false;
+    UpdateBuddyList();
 
     updateLineScroll(lineObj.LineNumber);
 
@@ -4882,11 +5436,11 @@ function AudioCall(lineObj, dialledNumber) {
 function getSession(buddy) {
     if(userAgent == null) {
         console.warn("userAgent is null");
-        return;
+        return null;
     }
     if(userAgent.isRegistered() == false) {
         console.warn("userAgent is not registered");
-        return;
+        return null;
     }
 
     var rtnSession = null;
@@ -5138,7 +5692,7 @@ function SaveCallRecording(blob, id, buddy, sessionid){
             objectStore.createIndex("mediaBlob", "mediaBlob", { unique: false });
         }
         else {
-            console.warn("IndexDB requested upgrade, but object store was in place");
+            console.warn("IndexDB requested upgrade, but object store was in place.");
         }
     }
     request.onsuccess = function(event) {
@@ -5146,7 +5700,16 @@ function SaveCallRecording(blob, id, buddy, sessionid){
 
         var IDB = event.target.result;
         if(IDB.objectStoreNames.contains("Recordings") == false){
-            console.warn("IndexDB CallRecordings.Recordings does not exists");
+            console.warn("IndexDB CallRecordings.Recordings does not exists, this call recoding will not be saved.");
+            // This will be an ongoing problem as the Database will not be made again
+            // along with the table, as it is now too late and the onupgradeneeded will not
+            // fire now, the best thing we can do now, is drop the Database so the onupgradeneeded
+            // event can fire next time. This recording however will not be saved, but subsequent 
+            // ones will.
+            var DBDeleteRequest = IDB.deleteDatabase("CallRecordings");
+            DBDeleteRequest.onsuccess = function(event) {
+                console.warn("Database deleted successfully, subsequent calls will be saved.");
+            };
             return;
         }
         IDB.onerror = function(event) {
@@ -5201,6 +5764,8 @@ function StopRecording(lineNum, noConfirm){
         if(CallRecordingPolicy == "enabled"){
             console.log("Policy Enabled: Call Recording");
         }
+
+        RestoreVideoArea(lineNum);
 
         Confirm(lang.confirm_stop_recording, lang.stop_recording, function(){
             $("#line-"+ lineObj.LineNumber +"-btn-start-recording").show();
@@ -5681,7 +6246,7 @@ function AttendedTransfer(lineNum){
     }
 
     // Create new call session
-    console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
+    console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer, spdOptions);
     var newSession = userAgent.invite("sip:" + dstNo + "@" + wssServer, spdOptions);
     session.data.childsession = newSession;
     newSession.on('progress', function (response) {
@@ -5975,7 +6540,7 @@ function ConferenceDail(lineNum){
     }
 
     // Create new call session
-    console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
+    console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer, spdOptions);
     var newSession = userAgent.invite("sip:" + dstNo + "@" + wssServer, spdOptions);
     session.data.childsession = newSession;
     newSession.on('progress', function (response) {
@@ -6432,6 +6997,7 @@ function SendVideo(lineNum, src){
         console.warn("Line or Session is Null");
         return;
     }
+
     var session = lineObj.SipSession;
 
     $("#line-"+ lineNum +"-src-camera").prop("disabled", false);
@@ -6791,7 +7357,7 @@ function DialByLine(type, buddy, numToDial, CallerID){
         // Assumption but anyway: If the number starts with a * or # then its probably not a subscribable did,  
         // and is probably a feature code.
         if(buddyType.substring(0,1) == "*" || buddyType.substring(0,1) == "#") buddyType = "contact";
-        buddyObj = MakeBuddy(buddyType, true, false, true, (CallerID)? CallerID : numDial, numDial);
+        buddyObj = MakeBuddy(buddyType, true, false, false, (CallerID)? CallerID : numDial, numDial);
     }
 
     // Create a Line
@@ -6890,6 +7456,17 @@ function AddLineHtml(lineObj){
     html += "<div id=\"line-"+ lineObj.LineNumber +"-timer\" style=\"float: right; margin-top: 5px; margin-right: 10px; display:none;\"></div>";
     html += "<div id=\"line-"+ lineObj.LineNumber +"-msg\" class=callStatus style=\"display:none\">...</div>";
 
+    // Call Answer UI
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-AnswerCall\" class=answerCall style=\"display:none\">";
+    html += "<div>";
+    html += "<button onclick=\"AnswerAudioCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button> ";
+    if(EnableVideoCalling) {
+        html += "<button id=\"line-"+ lineObj.LineNumber +"-answer-video\" onclick=\"AnswerVideoCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button> ";
+    }
+    html += "<button onclick=\"RejectCall('"+ lineObj.LineNumber +"')\" class=hangupButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.reject_call +"</button> ";
+    html += "</div>";
+    html += "</div>";
+
     // Dialing Out Progress
     html += "<div id=\"line-"+ lineObj.LineNumber +"-progress\" style=\"display:none; margin-top: 10px\">";
     html += "<div class=progressCall>";
@@ -6904,7 +7481,7 @@ function AddLineHtml(lineObj){
     html += "<div id=\"line-"+ lineObj.LineNumber +"-conference\" style=\"display:none\"></div>";
 
     // Video UI
-    if(lineObj.BuddyObj.type == "extension") {
+    if(lineObj.BuddyObj.type == "extension" || lineObj.BuddyObj.type == "xmpp") {
         html += "<div id=\"line-"+ lineObj.LineNumber +"-VideoCall\" class=videoCall style=\"display:none\">";
 
         // Presentation
@@ -7039,6 +7616,7 @@ function AddLineHtml(lineObj){
 function RemoveLine(lineObj){
     if(lineObj == null) return;
 
+    var earlyReject = lineObj.SipSession.data.earlyReject;
     for(var l = 0; l < Lines.length; l++) {
         if(Lines[l].LineNumber == lineObj.LineNumber) {
             Lines.splice(l,1);
@@ -7046,18 +7624,22 @@ function RemoveLine(lineObj){
         }
     }
 
-    CloseLine(lineObj.LineNumber);
-    $("#line-ui-"+ lineObj.LineNumber).remove();
+    if(earlyReject != true){
+        CloseLine(lineObj.LineNumber);
+        $("#line-ui-"+ lineObj.LineNumber).remove();
+    }
 
     UpdateBuddyList();
 
-    // Ratehr than showing nothing, go to the last Buddy Selected
-    // Select Last user
-    if(localDB.getItem("SelectedBuddy") != null){
-        console.log("Selecting previously selected buddy...", localDB.getItem("SelectedBuddy"));
-        SelectBuddy(localDB.getItem("SelectedBuddy"));
-        UpdateUI();
-    }
+    if(earlyReject != true){
+        // Rather than showing nothing, go to the last Buddy Selected
+        // Select Last user
+        if(localDB.getItem("SelectedBuddy") != null){
+            console.log("Selecting previously selected buddy...", localDB.getItem("SelectedBuddy"));
+            SelectBuddy(localDB.getItem("SelectedBuddy"));
+            UpdateUI();
+        }
+    } 
 }
 function CloseLine(lineNum){
     // Lines and Buddies (Left)
@@ -7069,7 +7651,7 @@ function CloseLine(lineNum){
         $(this).prop('class', 'stream');
     });
 
-    SwitchLines(0);
+    // SwitchLines(0);
 
     console.log("Closing Line: "+ lineNum);
     for(var l = 0; l < Lines.length; l++){
@@ -7090,13 +7672,15 @@ function CloseLine(lineNum){
 function SwitchLines(lineNum){
     $.each(userAgent.sessions, function (i, session) {
         // All the other calls, not on hold
-        if(session.local_hold == false && session.data.line != lineNum) {
-            console.log("Putting an active call on hold: Line: "+ session.data.line +" buddy: "+ session.data.buddyId);
-            session.hold(); // Check state
+        if(session.status == SIP.Session.C.STATUS_CONFIRMED){
+            if(session.local_hold == false && session.data.line != lineNum) {
+                console.log("Putting an active call on hold: Line: "+ session.data.line +" buddy: "+ session.data.buddyId);
+                session.hold();
 
-            // Log Hold
-            if(!session.data.hold) session.data.hold = [];
-            session.data.hold.push({ event: "hold", eventTime: utcDateNow() });
+                // Log Hold
+                if(!session.data.hold) session.data.hold = [];
+                session.data.hold.push({ event: "hold", eventTime: utcDateNow() });
+            }
         }
         $("#line-" + session.data.line + "-btn-Hold").hide();
         $("#line-" + session.data.line + "-btn-Unhold").show();
@@ -7106,13 +7690,15 @@ function SwitchLines(lineNum){
     var lineObj = FindLineByNumber(lineNum);
     if(lineObj != null && lineObj.SipSession != null) {
         var session = lineObj.SipSession;
-        if(session.local_hold == true) {
-            console.log("Taking call off hold:  Line: "+ lineNum +" buddy: "+ session.data.buddyId);
-            session.unhold();
+        if(session.status == SIP.Session.C.STATUS_CONFIRMED){
+            if(session.local_hold == true) {
+                console.log("Taking call off hold:  Line: "+ lineNum +" buddy: "+ session.data.buddyId);
+                session.unhold();
 
-            // Log Hold
-            if(!session.data.hold) session.data.hold = [];
-            session.data.hold.push({ event: "unhold", eventTime: utcDateNow() });
+                // Log Hold
+                if(!session.data.hold) session.data.hold = [];
+                session.data.hold.push({ event: "unhold", eventTime: utcDateNow() });
+            }
         }
         $("#line-" + lineNum + "-btn-Hold").show();
         $("#line-" + lineNum + "-btn-Unhold").hide();
@@ -7244,9 +7830,10 @@ function RefreshLineActivity(lineNum){
 
 // Buddy & Contacts
 // ================
-var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactNumber1, ContactNumber2, lastActivity, desc, Email){
+var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactNumber1, ContactNumber2, lastActivity, desc, Email, jid, dnd, subscribe){
     this.type = type; // extension | contact | group
     this.identity = identity;
+    this.jid = jid;
     this.CallerIDName = CallerIDName;
     this.Email = Email;
     this.Desc = desc;
@@ -7260,42 +7847,24 @@ var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactN
     this.missed = 0;
     this.IsSelected = false;
     this.imageObjectURL = "";
+    this.presenceText = lang.default_status;
+    this.EnableDuringDnd = dnd;
+    this.EnableSubscribe = subscribe;
 }
 function InitUserBuddies(){
     var template = { TotalRows:0, DataCollection:[] }
     localDB.setItem(profileUserID + "-Buddies", JSON.stringify(template));
     return JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
 }
-function MakeBuddy(type, update, focus, subscribe, callerID, did){
+function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuringDnd){
     var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
     if(json == null) json = InitUserBuddies();
 
+    var dateNow = utcDateNow();
     var buddyObj = null;
-    if(type == "contact"){
-        var id = uID();
-        var dateNow = utcDateNow();
-        json.DataCollection.push({
-            Type: "contact", 
-            LastActivity: dateNow,
-            ExtensionNumber: "", 
-            MobileNumber: "",
-            ContactNumber1: did,
-            ContactNumber2: "",
-            uID: null,
-            cID: id,
-            gID: null,
-            DisplayName: callerID,
-            Position: "",
-            Description: "",
-            Email: "",
-            MemberCount: 0
-        });
-        buddyObj = new Buddy("contact", id, callerID, "", "", did, "", dateNow, "", "");
-        AddBuddy(buddyObj, update, focus);
-    }
-    else {
-        var id = uID();
-        var dateNow = utcDateNow();
+    var id = uID();
+
+    if(type == "extension") {
         json.DataCollection.push({
             Type: "extension",
             LastActivity: dateNow,
@@ -7306,14 +7875,82 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did){
             uID: id,
             cID: null,
             gID: null,
+            jid: null,
             DisplayName: callerID,
-            Position: "",
             Description: "", 
             Email: "",
-            MemberCount: 0
+            MemberCount: 0,
+            EnableDuringDnd: AllowDuringDnd,
+            Subscribe: subscribe
         });
-        buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "");
+        buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "", null, AllowDuringDnd, subscribe);
         AddBuddy(buddyObj, update, focus, subscribe);
+    }
+    if(type == "xmpp") {
+        json.DataCollection.push({
+            Type: "xmpp",
+            LastActivity: dateNow,
+            ExtensionNumber: did,
+            MobileNumber: "",
+            ContactNumber1: "",
+            ContactNumber2: "",
+            uID: id,
+            cID: null,
+            gID: null,
+            jid: jid,
+            DisplayName: callerID,
+            Description: "", 
+            Email: "",
+            MemberCount: 0,
+            EnableDuringDnd: AllowDuringDnd,
+            Subscribe: subscribe
+        });
+        buddyObj = new Buddy("xmpp", id, callerID, did, "", "", "", dateNow, "", "", jid, AllowDuringDnd, subscribe);
+        AddBuddy(buddyObj, update, focus, subscribe);
+    }
+    if(type == "contact"){
+        json.DataCollection.push({
+            Type: "contact", 
+            LastActivity: dateNow,
+            ExtensionNumber: "", 
+            MobileNumber: "",
+            ContactNumber1: did,
+            ContactNumber2: "",
+            uID: null,
+            cID: id,
+            gID: null,
+            jid: null,
+            DisplayName: callerID,
+            Description: "",
+            Email: "",
+            MemberCount: 0,
+            EnableDuringDnd: AllowDuringDnd,
+            Subscribe: false
+        });
+        buddyObj = new Buddy("contact", id, callerID, "", "", did, "", dateNow, "", "", null, AllowDuringDnd, false);
+        AddBuddy(buddyObj, update, focus, false);
+    }
+    if(type == "group") {
+        json.DataCollection.push({
+            Type: "group",
+            LastActivity: dateNow,
+            ExtensionNumber: did,
+            MobileNumber: "",
+            ContactNumber1: "",
+            ContactNumber2: "",
+            uID: null,
+            cID: null,
+            gID: id,
+            jid: null,
+            DisplayName: callerID,
+            Description: "", 
+            Email: "",
+            MemberCount: 0,
+            EnableDuringDnd: false,
+            Subscribe: false
+        });
+        buddyObj = new Buddy("group", id, callerID, did, "", "", "", dateNow, "", "", null, false, false);
+        AddBuddy(buddyObj, update, focus, false);
     }
     // Update Size: 
     json.TotalRows = json.DataCollection.length;
@@ -7361,18 +7998,23 @@ function PopulateBuddyList() {
     $.each(json.DataCollection, function (i, item) {
         if(item.Type == "extension"){
             // extension
-            var buddy = new Buddy("extension", item.uID, item.DisplayName, item.ExtensionNumber, item.MobileNumber, item.ContactNumber1, item.ContactNumber2, item.LastActivity, item.Position, item.Email);
-            AddBuddy(buddy, false, false);
+            var buddy = new Buddy("extension", item.uID, item.DisplayName, item.ExtensionNumber, item.MobileNumber, item.ContactNumber1, item.ContactNumber2, item.LastActivity, item.Description, item.Email, null, item.EnableDuringDnd, item.Subscribe);
+            AddBuddy(buddy, false, false, false);
+        }
+        else if(item.Type == "xmpp"){
+            // xmpp
+            var buddy = new Buddy("xmpp", item.uID, item.DisplayName, item.ExtensionNumber, "", "", "", item.LastActivity, "", "", item.jid, item.EnableDuringDnd, item.Subscribe);
+            AddBuddy(buddy, false, false, false);
         }
         else if(item.Type == "contact"){
             // contact
-            var buddy = new Buddy("contact", item.cID, item.DisplayName, "", item.MobileNumber, item.ContactNumber1, item.ContactNumber2, item.LastActivity, item.Description, item.Email);
-            AddBuddy(buddy, false, false);
+            var buddy = new Buddy("contact", item.cID, item.DisplayName, "", item.MobileNumber, item.ContactNumber1, item.ContactNumber2, item.LastActivity, item.Description, item.Email, null, item.EnableDuringDnd, item.Subscribe);
+            AddBuddy(buddy, false, false, false);
         }
         else if(item.Type == "group"){
             // group
-            var buddy = new Buddy("group", item.gID, item.DisplayName, item.ExtensionNumber, "", "", "", item.LastActivity, item.MemberCount + " member(s)", item.Email);
-            AddBuddy(buddy, false, false);
+            var buddy = new Buddy("group", item.gID, item.DisplayName, item.ExtensionNumber, "", "", "", item.LastActivity, item.MemberCount + " member(s)", item.Email, null, item.EnableDuringDnd, item.Subscribe);
+            AddBuddy(buddy, false, false, false);
         }
     });
 
@@ -7385,7 +8027,9 @@ function UpdateBuddyList(){
 
     $("#myContacts").empty();
 
+    var callCount = 0
     for(var l = 0; l < Lines.length; l++) {
+
         var classStr = (Lines[l].IsSelected)? "buddySelected" : "buddy";
         if(Lines[l].SipSession != null) classStr = (Lines[l].SipSession.local_hold)? "buddyActiveCallHollding" : "buddyActiveCall";
 
@@ -7395,10 +8039,13 @@ function UpdateBuddyList(){
         html += "<div id=\"Line-"+ Lines[l].ExtNo +"-datetime\" class=contactDate>&nbsp;</div>";
         html += "<div class=presenceText>"+ Lines[l].DisplayName +" <"+ Lines[l].DisplayNumber +">" +"</div>";
         html += "</div>";
-        $("#myContacts").append(html);
+        // SIP.Session.C.STATUS_TERMINATED
+        if(Lines[l].SipSession && Lines[l].SipSession.data.earlyReject != true){
+            $("#myContacts").append(html);
+            callCount ++;
+        }
     }
-
-    if(Lines.length > 0 & Buddies.length > 0){
+    if(callCount > 0){
         $("#myContacts").append("<hr style=\"height:1px; background-color:#696969\">");
     }
     
@@ -7412,7 +8059,6 @@ function UpdateBuddyList(){
         } else return 1;
         return 0;
     });
-
 
     for(var b = 0; b < Buddies.length; b++) {
         var buddyObj = Buddies[b];
@@ -7440,49 +8086,72 @@ function UpdateBuddyList(){
         var classStr = (buddyObj.IsSelected)? "buddySelected" : "buddy";
         if(buddyObj.type == "extension") { 
             var friendlyState = buddyObj.presence;
-            if (friendlyState == "Unknown") friendlyState = lang.state_unknown;
-            if (friendlyState == "Not online") friendlyState = lang.state_not_online;
-            if (friendlyState == "Ready") friendlyState = lang.state_ready;
-            if (friendlyState == "On the phone") friendlyState = lang.state_on_the_phone;
-            if (friendlyState == "Ringing") friendlyState = lang.state_ringing;
-            if (friendlyState == "On hold") friendlyState = lang.state_on_hold;
-            if (friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
-
-            // An extension on the same system
-            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onmouseenter=\"ShowBuddyDial(this, '"+ buddyObj.identity +"')\" onmouseleave=\"HideBuddyDial(this, '"+ buddyObj.identity +"')\" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
+            if(friendlyState == "Unknown") friendlyState = lang.state_unknown;
+            if(friendlyState == "Not online") friendlyState = lang.state_not_online;
+            if(friendlyState == "Ready") friendlyState = lang.state_ready;
+            if(friendlyState == "On the phone") friendlyState = lang.state_on_the_phone;
+            if(friendlyState == "Ringing") friendlyState = lang.state_ringing;
+            if(friendlyState == "On hold") friendlyState = lang.state_on_hold;
+            if(friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
+            if(buddyObj.EnableSubscribe != true) friendlyState = buddyObj.Desc;
+            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
+            if(buddyObj.missed && buddyObj.missed > 0){
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
+            }
+            else{
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
+            }
+            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += "<div class=contactNameText>";
             html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
-            if(EnableVideoCalling){
-                html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 44px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
-                html += "<span id=\"contact-"+ buddyObj.identity +"-video-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.video_call +" onclick=\"QuickDialVideo('"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"', event)\"><i class=\"fa fa-video-camera\"></i></span>";
-            }
-            else {
-                html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
-            }
-            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
-            html += "<div class=contactNameText><i class=\"fa fa-phone-square\"></i> "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName +"</div>";
+            html += " "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName
+            html += "</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText>"+ friendlyState +"</div>";
             html += "</div>";
             $("#myContacts").append(html);
+        } else if(buddyObj.type == "xmpp") { 
+            var friendlyState = buddyObj.presenceText;
+            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
+            if(buddyObj.missed && buddyObj.missed > 0){
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
+            }
+            else{
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
+            }
+            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += "<div class=contactNameText>";
+            html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
+            html += " "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName;
+            html += "</div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText><i class=\"fa fa-comments\"></i> "+ friendlyState +"</div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-chatstate-menu\" class=presenceText style=\"display:none\"><i class=\"fa fa-keyboard-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
+            html += "</div>";
+            $("#myContacts").append(html);
         } else if(buddyObj.type == "contact") { 
-            // An Addressbook Contact
-            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onmouseenter=\"ShowBuddyDial(this, '"+ buddyObj.identity +"')\" onmouseleave=\"HideBuddyDial(this, '"+ buddyObj.identity +"')\" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'contact')\">";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">0</span>";
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"contact") +"')\"></div>";
+            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'contact')\">";
+            if(buddyObj.missed && buddyObj.missed > 0){
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
+            }
+            else{
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
+            }
+            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
             html += "<div class=contactNameText><i class=\"fa fa-address-card\"></i> "+ buddyObj.CallerIDName +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
             html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
             html += "</div>";
             $("#myContacts").append(html);
         } else if(buddyObj.type == "group"){ 
-            // A collection of extensions and contacts
-            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onmouseenter=\"ShowBuddyDial(this, '"+ buddyObj.identity +"')\" onmouseleave=\"HideBuddyDial(this, '"+ buddyObj.identity +"')\" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'group')\">";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-audio-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.audio_call +" onclick=\"QuickDialAudio('"+ buddyObj.identity +"', this, event)\"><i class=\"fa fa-phone\"></i></span>";
-            // html += "<span id=\"contact-"+ buddyObj.identity +"-video-dial\" class=quickDial style=\"right: 23px; display:none\" title="+ lang.video_call +"><i class=\"fa fa-video-camera\"></i></span>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">0</span>";
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"group") +"')\"></div>";
+            var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'group')\">";
+            if(buddyObj.missed && buddyObj.missed > 0){
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
+            }
+            else{
+                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
+            }
+            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
             html += "<div class=contactNameText><i class=\"fa fa-users\"></i> "+ buddyObj.CallerIDName +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
             html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
@@ -7511,23 +8180,23 @@ function AddBuddyMessageStream(buddyObj) {
     
     // Profile UI
     html += "<div class=contact style=\"float: left; position: absolute; left: 47px; right: 160px;\" onclick=\"ShowBuddyProfileMenu('"+ buddyObj.identity +"', this, '"+ buddyObj.type +"')\">";
-    if(buddyObj.type == "extension") {
-        html += "<span id=\"contact-"+ buddyObj.identity +"-devstate-main\" class=\""+ buddyObj.devState +"\"></span>";
-    }
 
-    if(buddyObj.type == "extension") {
+    if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         html += "<div id=\"contact-"+ buddyObj.identity +"-picture-main\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
     }
     else if(buddyObj.type == "contact") {
-        html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"contact") +"')\"></div>";
+        html += "<div id=\"contact-"+ buddyObj.identity +"-picture-main\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"contact") +"')\"></div>";
     }
     else if(buddyObj.type == "group")
     {
-        html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"group") +"')\"></div>";
+        html += "<div id=\"contact-"+ buddyObj.identity +"-picture-main\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"group") +"')\"></div>";
     }
 
-    if(buddyObj.type == "extension") {
-        html += "<div class=contactNameText style=\"margin-right: 0px;\"><i class=\"fa fa-phone-square\"></i> "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName +"</div>";
+    if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
+        html += "<div class=contactNameText style=\"margin-right: 0px;\">";
+        html += "<span id=\"contact-"+ buddyObj.identity +"-devstate-main\" class=\""+ buddyObj.devState +"\"></span>";
+        html += " "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName 
+        html += "</div>";
     }
     else if(buddyObj.type == "contact") {
         html += "<div class=contactNameText style=\"margin-right: 0px;\"><i class=\"fa fa-address-card\"></i> "+ buddyObj.CallerIDName +"</div>";
@@ -7544,9 +8213,13 @@ function AddBuddyMessageStream(buddyObj) {
         if (friendlyState == "Ringing") friendlyState = lang.state_ringing;
         if (friendlyState == "On hold") friendlyState = lang.state_on_hold;
         if (friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
-
         html += "<div id=\"contact-"+ buddyObj.identity +"-presence-main\" class=presenceText>"+ friendlyState +"</div>";
-    } else{
+    } 
+    else if(buddyObj.type == "xmpp"){
+        html += "<div id=\"contact-"+ buddyObj.identity +"-presence-main\" class=presenceText><i class=\"fa fa-comments\"></i> "+ buddyObj.presenceText +"</div>";
+        html += "<div id=\"contact-"+ buddyObj.identity +"-chatstate-main\" class=presenceText style=\"display:none\"><i class=\"fa fa-keyboard-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
+    }
+    else{
         html += "<div id=\"contact-"+ buddyObj.identity +"-presence-main\" class=presenceText>"+ buddyObj.Desc +"</div>";
     }
     html += "</div>";
@@ -7554,7 +8227,7 @@ function AddBuddyMessageStream(buddyObj) {
     // Action Buttons
     html += "<div style=\"float:right; line-height: 46px;\">";
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-audioCall\" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\" class=roundButtons title=\""+ lang.audio_call +"\"><i class=\"fa fa-phone\"></i></button> ";
-    if(buddyObj.type == "extension" && EnableVideoCalling) {
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
         html += "<button id=\"contact-"+ buddyObj.identity +"-btn-videoCall\" onclick=\"DialByLine('video', '"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"');\" class=roundButtons title=\""+ lang.video_call +"\"><i class=\"fa fa-video-camera\"></i></button> ";
     }
     html += "<button id=\"contact-"+ buddyObj.identity +"-btn-search\" onclick=\"FindSomething('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.find_something +"\"><i class=\"fa fa-search\"></i></button> ";
@@ -7563,7 +8236,7 @@ function AddBuddyMessageStream(buddyObj) {
 
     // Separator --------------------------------------------------------------------------
     html += "<div style=\"clear:both; height:0px\"></div>"
-
+/*
     // Calling UI --------------------------------------------------------------------------
     html += "<div id=\"contact-"+ buddyObj.identity +"-calling\">";
 
@@ -7575,7 +8248,7 @@ function AddBuddyMessageStream(buddyObj) {
     html += "<div id=\"contact-"+ buddyObj.identity +"-AnswerCall\" class=answerCall style=\"display:none\">";
     html += "<div>";
     html += "<button onclick=\"AnswerAudioCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button> ";
-    if(buddyObj.type == "extension" && EnableVideoCalling) {
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
         html += "<button id=\"contact-"+ buddyObj.identity +"-answer-video\" onclick=\"AnswerVideoCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button> ";
     }
     html += "<button onclick=\"RejectCall('"+ buddyObj.identity +"')\" class=hangupButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.reject_call +"</button> ";
@@ -7583,7 +8256,7 @@ function AddBuddyMessageStream(buddyObj) {
     html += "</div>";
 
     html += "</div>";
-
+*/
     // Search & Related Elements
     html += "<div id=\"contact-"+ buddyObj.identity +"-search\" style=\"margin-top:6px; display:none\">";
     html += "<span class=searchClean style=\"width:100%\"><input type=text style=\"width:90%\" autocomplete=none oninput=SearchStream(this,'"+ buddyObj.identity +"') placeholder=\""+ lang.find_something_in_the_message_stream +"\"></span>";
@@ -7597,7 +8270,7 @@ function AddBuddyMessageStream(buddyObj) {
     html += "</div>";
 
     html += "</td></tr>";
-    if((buddyObj.type == "extension" || buddyObj.type == "group") && EnableTextMessaging) {
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp" || buddyObj.type == "group") && EnableTextMessaging) {
         html += "<tr><td  class=streamSection style=\"height:80px\">";
 
         // Send Paste Image
@@ -7626,6 +8299,9 @@ function AddBuddyMessageStream(buddyObj) {
 
         // Emoji Menu Bar
         html += "<div id=\"contact-"+ buddyObj.identity +"-emoji-menu\" style=\"display:none\"></div>";
+
+        // ChatState
+        html += "<div id=\"contact-"+ buddyObj.identity +"-chatstate\" style=\"display:none\"><i class=\"fa fa-keyboard-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
 
         // =====================================
         // Type Area
@@ -7754,6 +8430,30 @@ function SelectBuddy(buddy) {
     var buddyObj = FindBuddyByIdentity(buddy);
     if(buddyObj == null) return;
 
+    var presence = "";
+
+    if(buddyObj.type == "extension"){
+        presence += buddyObj.presence;
+        if(presence == "Unknown") presence = lang.state_unknown;
+        if(presence == "Not online") presence = lang.state_not_online;
+        if(presence == "Ready") presence = lang.state_ready;
+        if(presence == "On the phone") presence = lang.state_on_the_phone;
+        if(presence == "Ringing") presence = lang.state_ringing;
+        if(presence == "On hold") presence = lang.state_on_hold;
+        if(presence == "Unavailable") presence = lang.state_unavailable;
+        if(buddyObj.EnableSubscribe != true) presence = buddyObj.Desc;
+    } else if(buddyObj.type == "xmpp"){
+        presence += "<i class=\"fa fa-comments\"></i> ";
+        presence += buddyObj.presenceText;
+    } else if(buddyObj.type == "contact"){
+        presence += buddyObj.Desc;
+    } else if(buddyObj.type == "group"){
+        presence += buddyObj.Desc;
+    }
+    $("#contact-" + buddyObj.identity + "-presence-main").html(presence);
+
+    $("#contact-"+ buddyObj.identity +"-picture-main").css("background-image", $("#contact-"+ buddyObj.identity +"-picture-main").css("background-image"));
+
     for(var b = 0; b < Buddies.length; b++) {
         if(Buddies[b].IsSelected == true && Buddies[b].identity == buddy){
             // Nothing to do, you re-selected the same buddy;
@@ -7761,7 +8461,7 @@ function SelectBuddy(buddy) {
         }
     }
 
-    console.log("Selecting Buddy: "+ buddy);
+    console.log("Selecting Buddy: "+ buddyObj.CallerIDName);
 
     selectedBuddy = buddyObj;
 
@@ -7836,7 +8536,8 @@ function RemoveBuddy(buddy){
         for(var b = 0; b < Buddies.length; b++) {
             if(Buddies[b].identity == buddy) {
                 RemoveBuddyMessageStream(Buddies[b]);
-                UnsubscribeBuddy(Buddies[b])
+                UnsubscribeBuddy(Buddies[b]);
+                if(ChatEngine == "XMPP") XmppRemoveBuddyFromRoster(Buddies[b]);
                 Buddies.splice(b, 1);
                 break;
             }
@@ -7855,7 +8556,7 @@ function FindBuddyByDid(did){
 }
 function FindBuddyByExtNo(ExtNo){
     for(var b = 0; b < Buddies.length; b++){
-        if(Buddies[b].type == "extension" && Buddies[b].ExtNo == ExtNo) return Buddies[b];
+        if(Buddies[b].ExtNo == ExtNo) return Buddies[b];
     }
     return null;
 }
@@ -7873,6 +8574,13 @@ function FindBuddyByIdentity(identity){
     for(var b = 0; b < Buddies.length; b++){
         if(Buddies[b].identity == identity) return Buddies[b];
     }
+    return null;
+}
+function FindBuddyByJid(jid){
+    for(var b = 0; b < Buddies.length; b++){
+        if(Buddies[b].jid == jid) return Buddies[b];
+    }
+    console.warn("Buddy not found on jid: "+ jid);
     return null;
 }
 function SearchStream(obj, buddy){
@@ -7975,7 +8683,12 @@ function RefreshStream(buddyObj, filter) {
             var deliveryStatus = "<i class=\"fa fa-question-circle-o SendingMessage\"></i>"
             if(item.Sent == true) deliveryStatus = "<i class=\"fa fa-check SentMessage\"></i>";
             if(item.Sent == false) deliveryStatus = "<i class=\"fa fa-exclamation-circle FailedMessage\"></i>";
-            if(item.Delivered) deliveryStatus += "<i class=\"fa fa-check DeliveredMessage\"></i>";
+            if(item.Delivered && item.Delivered.state == true) {
+                deliveryStatus += " <i class=\"fa fa-check DeliveredMessage\"></i>";
+            }
+            if(item.Displayed && item.Displayed.state == true){
+                deliveryStatus = "<i class=\"fa fa-check CompletedMessage\"></i>";
+            }
 
             var formattedMessage = ReformatMessage(item.MessageData);
             var longMessage = (formattedMessage.length > 1000);
@@ -8009,6 +8722,17 @@ function RefreshStream(buddyObj, filter) {
                 messageString += "<div class=messageDate>"+ DateTime + "</div>";
                 messageString += "</td>";
                 messageString += "</tr></table>";
+
+                // Update any received messages
+                if(buddyObj.type == "xmpp") {
+                    var streamVisible = $("#stream-"+ buddyObj.identity).is(":visible");
+                    if (streamVisible && !item.Read) {
+                        console.log("Buddy stream is now visible, marking XMPP message("+ item.ItemId +") as read")
+                        MarkMessageRead(buddyObj, item.ItemId);
+                        XmppSendDisplayReceipt(buddyObj, item.ItemId);
+                    }
+                }
+
             }
             $("#contact-" + buddyObj.identity + "-ChatHistory").prepend(messageString);
         } 
@@ -8167,24 +8891,6 @@ function ExpandMessage(obj, ItemId, buddy){
 
     HidePopup(500);
 }
-function ShowBuddyDial(obj, buddy){
-    $("#contact-"+ buddy +"-audio-dial").show();
-    $("#contact-"+ buddy +"-video-dial").show();
-}
-function HideBuddyDial(obj, buddy){
-    $("#contact-"+ buddy +"-audio-dial").hide();
-    $("#contact-"+ buddy +"-video-dial").hide();
-}
-function QuickDialAudio(buddy, obj, event){
-    AudioCallMenu(buddy, obj);
-    event.stopPropagation();
-}
-function QuickDialVideo(buddy, ExtNo, event){
-    event.stopPropagation();
-    window.setTimeout(function(){
-        DialByLine('video', buddy, ExtNo);
-    }, 300);
-}
 
 // Sessions
 // ========
@@ -8285,6 +8991,9 @@ function UnmuteSession(lineNum){
     if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("unmute", session);
 }
 function ShowDtmfMenu(obj, lineNum){
+
+    RestoreVideoArea(lineNum);
+
     var x = window.dhx4.absLeft(obj);
     var y = window.dhx4.absTop(obj);
     var w = obj.offsetWidth;
@@ -8369,19 +9078,19 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
             var html = "<div class=\"UiWindowField scroller\">";
 
             // Billsec: 2.461
-            // CallAnswer: "2020-06-22 09:47:52 UTC"
+            // CallAnswer: "2020-06-22 09:47:52 UTC" | null
             // CallDirection: "outbound"
             // CallEnd: "2020-06-22 09:47:54 UTC"
             // CdrId: "15928192748351E9D"
-            // ConfCalls: []
+            // ConfCalls: [{…}]
             // Dst: "*65"
             // DstUserId: "15919450411467CC"
-            // Holds: []
+            // Holds: [{…}]
             // ItemDate: "2020-06-22 09:47:50 UTC"
             // ItemType: "CDR"
             // MessageData: null
-            // Mutes: []
-            // QOS: []
+            // Mutes: [{…}]
+            // QOS: [{…}]
             // ReasonCode: 16
             // ReasonText: "Normal Call clearing"
             // Recordings: [{…}]
@@ -8389,10 +9098,10 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
             // SessionId: "67sv8o86msa7df23bulpnjrca7fton"
             // Src: "<100> Conrad de Wet"
             // SrcUserId: "17186D5983F"
-            // Tags: []
+            // Tags: [{…}]
             // Terminate: "us"
             // TotalDuration: 4.835
-            // Transfers: []
+            // Transfers: [{…}]
             // WithVideo: false
 
             var CallDate = moment.utc(cdr.ItemDate.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat);
@@ -8498,7 +9207,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                 });
             });
             callDetails.push({
-                Message: (cdr.Terminate == "us")? "You ended the call." : "They ended the call",
+                Message: (cdr.Terminate == "us")? lang.you_ended_the_call : lang.they_ended_the_call,
                 TimeStr : cdr.CallEnd
             });
 
@@ -8543,19 +9252,20 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                 }
             });
             html += recordingsHtml;
-
-            html += "<h2 style=\"font-size: 16px\">"+ lang.send_statistics +"</h2>";
-            html += "<hr>";
-            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioSendBitRate\"></canvas></div>";
-            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioSendPacketRate\"></canvas></div>";
-
-            html += "<h2 style=\"font-size: 16px\">"+ lang.receive_statistics +"</h2>";
-            html += "<hr>";
-            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveBitRate\"></canvas></div>";
-            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceivePacketRate\"></canvas></div>";
-            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceivePacketLoss\"></canvas></div>";
-            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveJitter\"></canvas></div>";
-            html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveLevels\"></canvas></div>";
+            if(cdr.CallAnswer) {
+                html += "<h2 style=\"font-size: 16px\">"+ lang.send_statistics +"</h2>";
+                html += "<hr>";
+                html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioSendBitRate\"></canvas></div>";
+                html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioSendPacketRate\"></canvas></div>";
+    
+                html += "<h2 style=\"font-size: 16px\">"+ lang.receive_statistics +"</h2>";
+                html += "<hr>";
+                html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveBitRate\"></canvas></div>";
+                html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceivePacketRate\"></canvas></div>";
+                html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceivePacketLoss\"></canvas></div>";
+                html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveJitter\"></canvas></div>";
+                html += "<div style=\"position: relative; margin: auto; height: 160px; width: 100%;\"><canvas id=\"cdr-AudioReceiveLevels\"></canvas></div>";
+            }
 
             html += "<br><br></div>";
             OpenWindow(html, lang.call_detail_record, 480, 640, false, true, null, null, lang.cancel, function(){
@@ -8625,7 +9335,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                 });
 
                 // Display QOS data
-                DisplayQosData(cdr.SessionId);
+                if(cdr.CallAnswer) DisplayQosData(cdr.SessionId);
             });
         }
         if(id == 2){
@@ -8850,12 +9560,10 @@ function AddMenu(obj, buddy){
         { id: 1, name: "<i class=\"fa fa-smile-o\"></i> " + lang.select_expression },
         { id: 2, name: "<i class=\"fa fa-microphone\"></i> " + lang.dictate_message  }
     ];
-    if(enabledExtendedServices){
-        menu.push({ id: 3, name: "<i class=\"fa fa-share-alt\"></i> Share File" });
-        menu.push({ id: 4, name: "<i class=\"fa fa-camera\"></i> Take Picture" });
-        menu.push({ id: 5, name: "<i class=\"fa fa-file-audio-o\"></i> Record Audio Message" });
-        menu.push({ id: 6, name: "<i class=\"fa fa-file-video-o\"></i> Record Video Message" });
-    }
+    if(EnableSendFiles) menu.push({ id: 3, name: "<i class=\"fa fa-share-alt\"></i> Share File" });
+    if(EnableSendImages) menu.push({ id: 4, name: "<i class=\"fa fa-camera\"></i> Take/Share Picture" });
+    if(EnableAudioRecording) menu.push({ id: 5, name: "<i class=\"fa fa-file-audio-o\"></i> Record Audio Message" });
+    if(EnableVideoRecording) menu.push({ id: 6, name: "<i class=\"fa fa-file-video-o\"></i> Record Video Message" });
 
     dhtmlxPopup.attachList("name", menu);
     dhtmlxPopup.attachEvent("onClick", function(id){
@@ -8998,34 +9706,26 @@ function ShowMyProfileMenu(obj){
 
     HidePopup();
     dhtmlxPopup = new dhtmlXPopup();
-    var menu = [
-        {id: 2, name: "<i class=\"fa fa-refresh\"></i> "+ lang.refresh_registration , enabled: ""},
-        {id: 3, name: "<i class=\"fa fa-wrench\"></i> "+ lang.configure_extension, enabled: ""},
-        dhtmlxPopup.separator,
-        {id: 4, name: "<i class=\"fa fa-user-plus\"></i> "+ lang.add_someone, enabled: ""},
-        {id: 5, name: "<i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i> "+ lang.create_group, enabled: ""},
-        dhtmlxPopup.separator,
-        {id: 6, name: "<i class=\"fa fa-phone\"></i> "+ lang.auto_answer , enabled: AutoAnswerEnabled? "<i class=\"fa fa-check\"></i>" : "" },
-        {id: 7, name: "<i class=\"fa fa-ban\"></i> "+ lang.do_no_disturb, enabled: DoNotDisturbEnabled? "<i class=\"fa fa-check\"></i>" : "" },
-        {id: 8, name: "<i class=\"fa fa-volume-control-phone\"></i> "+ lang.call_waiting, enabled: CallWaitingEnabled? "<i class=\"fa fa-check\"></i>" : ""},
-        {id: 9, name: "<i class=\"fa fa-dot-circle-o\"></i> "+ lang.record_all_calls, enabled: RecordAllCalls? "<i class=\"fa fa-check\"></i>" : "" },
-    ];
-    if(DisableBuddies == true) {
-        $.each(menu, function(i, item){
-            if(item.id == 4) {
-                menu.splice(i, 1);
-                return false;
-            }
-        });
+    var menu = [];
+    menu.push({id: 2, name: "<i class=\"fa fa-refresh\"></i> "+ lang.refresh_registration , enabled: ""});
+    menu.push({id: 3, name: "<i class=\"fa fa-wrench\"></i> "+ lang.configure_extension, enabled: ""});
+    menu.push(dhtmlxPopup.separator);
+    if(DisableBuddies != true) {
+        menu.push({id: 4, name: "<i class=\"fa fa-user-plus\"></i> "+ lang.add_someone, enabled: ""});
     }
-    if(enabledGroupServices == false) {
-        $.each(menu, function(i, item){
-            if(item.id == 5) {
-                menu.splice(i, 1);
-                return false;
-            }
-        });
+    if(ChatEngine == "XMPP") {
+        menu.push({id: 5, name: "<i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i> "+ lang.create_group, enabled: ""});
     }
+    menu.push(dhtmlxPopup.separator);
+    menu.push({id: 6, name: "<i class=\"fa fa-phone\"></i> "+ lang.auto_answer , enabled: AutoAnswerEnabled? "<i class=\"fa fa-check\"></i>" : "" });
+    menu.push({id: 7, name: "<i class=\"fa fa-ban\"></i> "+ lang.do_no_disturb, enabled: DoNotDisturbEnabled? "<i class=\"fa fa-check\"></i>" : "" });
+    menu.push({id: 8, name: "<i class=\"fa fa-volume-control-phone\"></i> "+ lang.call_waiting, enabled: CallWaitingEnabled? "<i class=\"fa fa-check\"></i>" : ""});
+    menu.push({id: 9, name: "<i class=\"fa fa-dot-circle-o\"></i> "+ lang.record_all_calls, enabled: RecordAllCalls? "<i class=\"fa fa-check\"></i>" : "" });
+    if(ChatEngine == "XMPP") {
+        menu.push(dhtmlxPopup.separator);
+        menu.push({id: 10, name: "<i class=\"fa fa-comments\"></i> "+ lang.set_status , enabled: "" });
+    }
+
     dhtmlxPopup.attachList("name,enabled", menu);
     dhtmlxPopup.attachEvent("onClick", function(id){
         HidePopup();
@@ -9040,7 +9740,8 @@ function ShowMyProfileMenu(obj){
         if(id == 7) ToggleDoNoDisturb();
         if(id == 8) ToggleCallWaiting();
         if(id == 9) ToggleRecordAllCalls();
-
+        // ----
+        if(id == 10) SetStatusWindow();
     });
     dhtmlxPopup.show(x, y, w, h);
 }
@@ -9073,6 +9774,7 @@ function ToggleDoNoDisturb(){
     DoNotDisturbEnabled = (DoNotDisturbEnabled == true)? false : true;
     if(DoNotDisturbPolicy == "enabled") DoNotDisturbEnabled = true;
     localDB.setItem("DoNotDisturbEnabled", (DoNotDisturbEnabled == true)? "1" : "0");
+    $("#dereglink").attr("class", (DoNotDisturbEnabled == true)? "dotDoNotDisturb" : "dotOnline" );
     console.log("DoNotDisturb", DoNotDisturbEnabled);
 }
 function ToggleCallWaiting(){
@@ -9109,8 +9811,7 @@ function ShowBuddyProfileMenu(buddy, obj, typeStr){
 
     var buddyObj = FindBuddyByIdentity(buddy);
 
-    if(typeStr == "extension")
-    {
+    if(typeStr == "extension" || typeStr == "xmpp") {
         var html = "<div style=\"width:200px; cursor:pointer\" onclick=\"EditBuddyWindow('"+ buddy +"')\">";
         html += "<div class=\"buddyProfilePic\" style=\"background-image:url('"+ getPicture(buddy, "extension") +"')\"></div>";
         html += "<div id=ProfileInfo style=\"text-align:center\"><i class=\"fa fa-spinner fa-spin\"></i></div>"
@@ -9469,6 +10170,8 @@ function PresentVideo(lineNum){
     }
     var session = lineObj.SipSession;
 
+    RestoreVideoArea(lineNum);
+
     var html = "<div class=\"UiWindowField\"><input type=file  accept=\"video/*\" id=SelectVideoToSend></div>";
     OpenWindow(html, lang.select_video, 150, 360, false, false, null, null, lang.cancel, function(){
         // Cancel
@@ -9594,7 +10297,11 @@ function chatOnkeydown(event, obj, buddy) {
             SendChatMessage(buddy);
             return false;
         }
-    } 
+    } else{
+        // Consult the chatstates
+        var buddyObj = FindBuddyByIdentity(buddy);
+        if(buddyObj != null && buddyObj.type == "xmpp") XmppStartComposing(buddyObj);
+    }
 
     // handle paste, etc
     RefreshChatPreview(event, $.trim($(obj).val()), buddy);
@@ -9655,7 +10362,7 @@ function ReformatMessage(str) {
     });
     return msg;
 }
-function getPicture(buddy, typestr){
+function getPicture(buddy, typestr, ignoreCache){
     if(buddy == "profilePicture"){
         // Special handling for profile image
         var dbImg = localDB.getItem("profilePicture");
@@ -9670,7 +10377,10 @@ function getPicture(buddy, typestr){
 
     typestr = (typestr)? typestr : "extension";
     var buddyObj = FindBuddyByIdentity(buddy);
-    if(buddyObj.imageObjectURL != ""){
+    if(buddyObj == null){
+        return hostingPrefex + "default.png";
+    }
+    if(ignoreCache != true && buddyObj.imageObjectURL != ""){
         // Use Cache
         return buddyObj.imageObjectURL;
     }
@@ -10528,3 +11238,970 @@ window.setInterval(function(){
 
 // =================================================================================
 // End Of File
+
+
+
+
+function onStatusChange(status) {
+    // Strophe.ConnectionStatus = status;
+    if (status == Strophe.Status.CONNECTING) {
+        console.log('XMPP is connecting...');
+    } 
+    else if (status == Strophe.Status.CONNFAIL) {
+        console.warn('XMPP failed to connect.');
+    } 
+    else if (status == Strophe.Status.DISCONNECTING) {
+        console.log('XMPP is disconnecting.');
+    } 
+    else if (status == Strophe.Status.DISCONNECTED) {
+        console.log('XMPP is disconnected.');
+        
+        // Keep connected
+        window.setTimeout(function(){
+            // reconnectXmpp();
+        }, 5 * 1000);
+    } 
+    else if (status == Strophe.Status.CONNECTED) {
+        console.log('XMPP is connected!');
+
+        // Re-publish my vCard
+        XmppSetMyVcard();
+
+        // Get buddies
+        XmppGetBuddies();
+
+        XMPP.ping = window.setTimeout(function(){
+            XmppSendPing();
+        }, 45 * 1000);
+    }
+    else {
+        console.log('XMPP is: ', Strophe.Status);
+    }
+}
+
+function XmppSendPing(){
+    // return;
+
+    if(!XMPP || XMPP.connected == false) reconnectXmpp();
+
+    var iq_request = $iq({"type":"get", "id":XMPP.getUniqueId(), "to":XmppDomain, "from":XMPP.jid});
+    iq_request.c("ping", {"xmlns":"urn:xmpp:ping"});
+
+    XMPP.sendIQ(iq_request, function (result){
+        // console.log("XmppSendPing Response: ", result);
+    }, function(e){
+        console.warn("Error in Ping", e);
+    }, 30 * 1000);
+
+    XMPP.ping = window.setTimeout(function(){
+        XmppSendPing();
+    }, 45 * 1000);
+}
+
+// XMPP Presence
+// =============
+function XmppSetMyPresence(str, desc, updateVcard){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    // ["away", "chat", "dnd", "xa"] => ["Away", "Available", "Busy", "Gone"]
+
+    console.log("Setting My Own Presence to: "+ str + "("+ desc +")");
+
+    if(desc == "") desc = lang.default_status;
+    $("#regStatus").html("<i class=\"fa fa-comments\"></i> "+ desc);
+
+    var pres_request = $pres({"id": XMPP.getUniqueId(), "from": XMPP.jid });
+    pres_request.c("show").t(str);
+    if(desc && desc != ""){
+        pres_request.root();
+        pres_request.c("status").t(desc);
+    }
+    if(updateVcard == true){
+        var base64 = getPicture("profilePicture");
+        var imgBase64 = base64.split(",")[1];
+        var photoHash = $.md5(imgBase64);
+
+        pres_request.root();
+        pres_request.c("x", {"xmlns": "vcard-temp:x:update"});
+        if(photoHash){
+            pres_request.c("photo", {}, photoHash);
+        }
+    }
+
+    XMPP.sendPresence(pres_request, function (result){
+        // console.log("XmppSetMyPresence Response: ", result);
+    }, function(e){
+        console.warn("Error in XmppSetMyPresence", e);
+    }, 30 * 1000);
+}
+function onPresenceChange(presence) {
+    // console.log('onPresenceChange', presence);
+
+    var from = presence.getAttribute("from");
+    var to = presence.getAttribute("to");
+
+    var subscription = presence.getAttribute("subscription");
+    var type = (presence.getAttribute("type"))? presence.getAttribute("type") : "presence"; // subscribe | subscribed | unavailable
+    var pres = "";
+    var status = "";
+    var xmlns = "";
+    Strophe.forEachChild(presence, "show", function(elem) {
+        pres = elem.textContent;
+    });
+    Strophe.forEachChild(presence, "status", function(elem) {
+        status = elem.textContent;
+    });
+    Strophe.forEachChild(presence, "x", function(elem) {
+        xmlns = elem.getAttribute("xmlns");
+    });
+
+    var fromJid = Strophe.getBareJidFromJid(from);
+
+    // Presence notification from me to me
+    if(from == to){
+        // Either my vCard updated, or my Presence updated
+        return true;
+    }
+
+    // Find the buddy this message is coming from
+    var buddyObj = FindBuddyByJid(fromJid);
+    if(buddyObj == null) {
+
+        // TODO: What to do here?
+
+        console.warn("Buddy Not Found: ", fromJid);
+        return true;
+    }
+
+    if(type == "subscribe"){
+        // <presence xmlns="jabber:client" type="subscribe" from="58347g3721h~800@...com" id="1" subscription="both" to="58347g3721h~100@...com"/>
+        // <presence xmlns="jabber:client" type="subscribe" from="58347g3721h~800@...com" id="1" subscription="both" to="58347g3721h~100@...com"/>
+        
+        // One of your buddies is requestion subscription
+        console.log("Presence: "+ buddyObj.CallerIDName +" requesting subscrption");
+
+        XmppConfirmSubscription(buddyObj);
+
+        // Also Subscribe to them
+        XmppSendSubscriptionRequest(buddyObj);
+
+        UpdateBuddyList();
+        return true;
+    }
+    if(type == "subscribed"){
+        // One of your buddies has confimed subscription
+        console.log("Presence: "+ buddyObj.CallerIDName +" confimed subscrption");
+
+        UpdateBuddyList();
+        return true;
+    }
+    if(type == "unavailable"){
+        // <presence xmlns="jabber:client" type="unavailable" from="58347g3721h~800@...com/63zy33arw5" to="yas43lag8l@...com"/>
+        console.log("Presence: "+ buddyObj.CallerIDName +" unavailable");
+
+        UpdateBuddyList();
+        return true;
+    }
+
+    if(xmlns == "vcard-temp:x:update"){
+        // This is a presence update for the picture change
+        console.log("Presence: "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName +" vCard change");
+
+        // Should check if the hash is different, could have been a non-picture change..
+        // However, either way you would need to update the vCard, as there isnt a awy to just get the picture
+        XmppGetBuddyVcard(buddyObj);
+        
+        UpdateBuddyList();
+    }
+
+    if(pres != "") {
+        // This is a regulare 
+        console.log("Presence: "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName +" is now: "+ pres +"("+ status +")");
+
+        buddyObj.presence = pres;
+        buddyObj.presenceText = (status == "")? lang.default_status : status;
+
+        UpdateBuddyList();
+    }
+
+    return true;
+}
+function XmppConfirmSubscription(buddyObj){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var pres_request = $pres({"to": buddyObj.jid, "from": XMPP.jid, "type": "subscribed"});
+    XMPP.sendPresence(pres_request);
+    // Responses are handled in the main handler
+}
+function XmppSendSubscriptionRequest(buddyObj){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var pres_request = $pres({"to": buddyObj.jid, "from":XMPP.jid, "type": "subscribe" });
+    XMPP.sendPresence(pres_request);
+    // Responses are handled in the main handler
+}
+
+// XMPP Roster
+// ===========
+function XmppRemoveBuddyFromRoster(buddyObj){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var iq_request = $iq({"type":"set", "id":XMPP.getUniqueId(), "from":XMPP.jid});
+    iq_request.c("query", {"xmlns": "jabber:iq:roster"});
+    iq_request.c("item", {"jid": buddyObj.jid, "subscription":"remove"});
+    if(buddyObj.jid == null){
+        console.warn("Missing JID", buddyObj);
+        return;
+    }
+    console.log("Removing "+ buddyObj.CallerIDName +"  from roster...")
+
+    XMPP.sendIQ(iq_request, function (result){
+        // console.log(result);
+    });
+}
+function XmppAddBuddyToRoster(buddyObj){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var iq_request = $iq({"type":"set", "id":XMPP.getUniqueId(), "from":XMPP.jid});
+    iq_request.c("query", {"xmlns": "jabber:iq:roster"});
+    iq_request.c("item", {"jid": buddyObj.jid, "name": buddyObj.CallerIDName});
+    if(buddyObj.jid == null){
+        console.warn("Missing JID", buddyObj);
+        return;
+    }
+    console.log("Adding "+ buddyObj.CallerIDName +"  to roster...")
+
+    XMPP.sendIQ(iq_request, function (result){
+        // console.log(result);
+        XmppGetBuddyVcard(buddyObj);
+
+        XmppSendSubscriptionRequest(buddyObj);
+    });
+}
+
+function XmppGetBuddies(){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var iq_request = $iq({"type":"get", "id":XMPP.getUniqueId(), "from":XMPP.jid});
+    iq_request.c("query", {"xmlns":"jabber:iq:roster"});
+    console.log("Getting Buddy List (roster)...")
+
+    XMPP.sendIQ(iq_request, function (result){
+        // console.log("XmppGetBuddies Response: ", result);
+
+        // Clear out only XMPP
+
+        Strophe.forEachChild(result, "query", function(query) {
+            Strophe.forEachChild(query, "item", function(buddyItem) {
+
+                // console.log("Register Buddy", buddyItem);
+
+                // <item xmlns="jabber:iq:roster" jid="58347g3721h~800@xmpp-eu-west-1.innovateasterisk.com" name="Alfredo Dixon" subscription="both"/>
+                // <item xmlns="jabber:iq:roster" jid="58347g3721h~123456@conference.xmpp-eu-west-1.innovateasterisk.com" name="Some Group Name" subscription="both"/>
+
+                var jid = buddyItem.getAttribute("jid");
+                var displayName = buddyItem.getAttribute("name");
+                var node = Strophe.getNodeFromJid(jid);
+                var buddyDid = node;
+                if(XmppRealm != "" && XmppRealmSeperator !="") {
+                    buddyDid = node.split(XmppRealmSeperator,2)[1];
+                }
+                var ask = (buddyItem.getAttribute("ask"))? buddyItem.getAttribute("ask") : "none";
+                var sub = (buddyItem.getAttribute("subscription"))? buddyItem.getAttribute("subscription") : "none";
+                var isGroup = (jid.indexOf("@"+ XmppChatGroupService +".") > -1);
+
+                var buddyObj = FindBuddyByJid(jid);
+                if(buddyObj == null){
+                    // Create Cache
+                    if(isGroup == true){
+                        console.log("Adding roster (group):", buddyDid, "-", displayName);
+                        buddyObj = MakeBuddy("group", false, false, false, displayName, buddyDid, jid);
+                    }
+                    else {
+                        console.log("Adding roster (xmpp):", buddyDid, "-", displayName);
+                        buddyObj = MakeBuddy("xmpp", false, false, true, displayName, buddyDid, jid);
+                    }
+
+                    // RefreshBuddyData(buddyObj);
+                    XmppGetBuddyVcard(buddyObj);
+                }
+                else {
+                    // Buddy cache exists
+                    console.log("Existing roster item:", buddyDid, "-", displayName);
+
+                    // RefreshBuddyData(buddyObj);
+                    XmppGetBuddyVcard(buddyObj);
+                }
+
+            });
+        });
+
+        // Update your own status, and get the status of others
+        XmppSetMyPresence(getDbItem("XmppLastPresence", "chat"), getDbItem("XmppLastStatus", ""), true);
+
+        // Populate the buddy list
+        UpdateBuddyList();
+
+    }, function(e){
+        console.warn("Error Getting Roster", e);
+    }, 30 * 1000);
+}
+function onBuddySetRequest(iq){
+    console.log('onBuddySetRequest', iq);
+
+    // <iq xmlns="jabber:client" type="result" id="4e9dadc7-145b-4ea2-ae82-3220130231ba" to="yas43lag8l@xmpp-eu-west-1.innovateasterisk.com/4gte25lhkh">
+    //     <query xmlns="jabber:iq:roster" ver="1386244571">
+    //          <item jid="800@xmpp-eu-west-1.innovateasterisk.com" name="Alfredo Dixon" subscription="both"/>
+    //     </query>
+    // </iq>
+
+    return true;
+}
+function onBuddyUpdate(iq){
+
+    return true;
+}
+function RefreshBuddyData(buddyObj){
+
+    // Get vCard
+    
+    return;
+
+    // Get Last Activity
+    var iq_request = $iq({"type":"get", "id":XMPP.getUniqueId(), "to":buddyObj.jid, "from":XMPP.jid});
+    iq_request.c("query", {"xmlns":"jabber:iq:last"});
+    XMPP.sendIQ(iq_request, function (result){
+        console.log("jabber:iq:last Response: ", result);
+
+        if(result.children[0].getAttribute("seconds")){
+            var seconds = Number(result.children[0].getAttribute("seconds"));
+            lastActivity = moment().utc().subtract(seconds, 'seconds').format("YYYY-MM-DD HH:mm:ss UTC");
+    
+            UpdateBuddyActivity(buddyObj.identity, lastActivity);
+        }
+
+    }, function(e){
+        console.warn("Error in jabber:iq:last", e);
+    }, 30 * 1000);
+
+}
+
+// Profile (vCard)
+// ===============
+function XmppGetMyVcard(){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "from" : XMPP.jid});
+    iq_request.c("vCard", {"xmlns" : "vcard-temp"});
+
+    XMPP.sendIQ(iq_request, function (result){
+        console.log("XmppGetMyVcard Response: ", result);
+
+
+
+    }, function(e){
+        console.warn("Error in XmppGetMyVcard", e);
+    }, 30 * 1000);
+}
+function XmppSetMyVcard(){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var profileVcard = getDbItem("profileVcard", null);
+    if(profileVcard == null || profileVcard == ""){
+        console.warn("No vCard created yet");
+        return;
+    }
+    profileVcard = JSON.parse(profileVcard);
+
+    var base64 = getPicture("profilePicture");
+    var imgBase64 = base64.split(",")[1];
+
+    var iq_request = $iq({"type" : "set", "id" : XMPP.getUniqueId(), "from" : XMPP.jid});
+    iq_request.c("vCard", {"xmlns" : "vcard-temp"});
+    iq_request.c("FN", {}, profileName);
+    iq_request.c("TITLE", {}, profileVcard.TitleDesc);
+    iq_request.c("TEL");
+    iq_request.c("NUMBER", {}, profileUser);
+    iq_request.up();
+    iq_request.c("TEL");
+    iq_request.c("CELL", {}, profileVcard.Mobile);
+    iq_request.up();
+    iq_request.c("TEL");
+    iq_request.c("VOICE", {}, profileVcard.Number1);
+    iq_request.up();
+    iq_request.c("TEL");
+    iq_request.c("FAX", {}, profileVcard.Number2);
+    iq_request.up();
+    iq_request.c("EMAIL");
+    iq_request.c("USERID", {}, profileVcard.Email);
+    iq_request.up();
+    iq_request.c("PHOTO");
+    iq_request.c("TYPE", {}, "image/png");
+    iq_request.c("BINVAL", {}, imgBase64);
+    iq_request.up();
+    iq_request.c("JABBERID", {}, Strophe.getBareJidFromJid(XMPP.jid));
+
+    console.log("Sending vCard update");
+    XMPP.sendIQ(iq_request, function (result){
+        // console.log("XmppSetMyVcard Response: ", result);
+    }, function(e){
+        console.warn("Error in XmppSetMyVcard", e);
+    }, 30 * 1000);
+}
+function XmppGetBuddyVcard(buddyObj){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    if(buddyObj == null) return;
+    if(buddyObj.jid == null) return;
+
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "from" : XMPP.jid, "to": buddyObj.jid});
+    iq_request.c("vCard", {"xmlns" : "vcard-temp"});
+    XMPP.sendIQ(iq_request, function (result){
+
+        var jid = result.getAttribute("from");
+        console.log("Got vCard for: "+ jid);
+
+        var buddyObj = FindBuddyByJid(jid);
+        if(buddyObj == null) {
+            console.warn("Received a vCard for non-existing buddy", jid)
+            return;
+        }
+
+        var imgBase64 = "";
+
+        Strophe.forEachChild(result, "vCard", function(vcard) {
+            Strophe.forEachChild(vcard, null, function(element) {
+                if(element.tagName == "FN"){
+                    buddyObj.CallerIDName = element.textContent;
+                }
+                if(element.tagName == "TITLE"){
+                    buddyObj.Desc = element.textContent;
+                }
+                if(element.tagName == "JABBERID"){
+                    if(element.textContent != jid){
+                        console.warn("JID does not match: ", element.textContent, jid);
+                    }
+                }
+                if(element.tagName == "TEL"){
+                    Strophe.forEachChild(element, "NUMBER", function(ExtNo) {
+                        // Voip Number (Subscribe)
+                        if(ExtNo.textContent != buddyObj.ExtNo){
+                            console.warn("Subscribe Extension does not match: ", ExtNo.textContent, buddyObj.ExtNo);
+                        }
+                    });
+                    Strophe.forEachChild(element, "CELL", function(cell) {
+                        // Mobile
+                        buddyObj.MobileNumber = cell.textContent;
+                    });
+                    Strophe.forEachChild(element, "VOICE", function(Alt1) {
+                        // Alt1
+                        buddyObj.ContactNumber1 = Alt1.textContent;
+                    });
+                    Strophe.forEachChild(element, "FAX", function(Alt2) {
+                        // Alt2
+                        buddyObj.ContactNumber2 = Alt2.textContent;
+                    });
+                }
+                if(element.tagName == "EMAIL"){
+                    Strophe.forEachChild(element, "USERID", function(email) {
+                        buddyObj.Email = email.textContent;
+                    });
+                }
+                if(element.tagName == "PHOTO"){
+                    Strophe.forEachChild(element, "BINVAL", function(base64) {
+                        imgBase64 = "data:image/png;base64,"+ base64.textContent;
+                    });
+                }
+            });
+        });
+
+        // Save To DB
+        var buddyJson = {};
+        var itemId = -1;
+        var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
+        $.each(json.DataCollection, function (i, item) {
+            if(item.uID == buddyObj.identity){
+                buddyJson = item;
+                itemId = i;
+                return false;
+            }
+        });
+
+        if(itemId != -1){
+
+            buddyJson.MobileNumber = buddyObj.MobileNumber;
+            buddyJson.ContactNumber1 = buddyObj.ContactNumber1;
+            buddyJson.ContactNumber2 = buddyObj.ContactNumber2;
+            buddyJson.DisplayName = buddyObj.CallerIDName;
+            buddyJson.Description = buddyObj.Desc;
+            buddyJson.Email = buddyObj.Email;
+
+            json.DataCollection[itemId] = buddyJson;
+            localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
+        }
+
+        if(imgBase64 != ""){
+            // console.log(buddyObj);
+            console.log("Buddy: "+  buddyObj.CallerIDName + " picture updated");
+
+            localDB.setItem("img-"+ buddyObj.identity + "-"+ buddyObj.type, imgBase64);
+            $("#contact-"+ buddyObj.identity +"-picture-main").css("background-image", 'url('+ getPicture(buddyObj.identity, buddyObj.type, true) +')');
+        }
+        UpdateBuddyList();
+
+    }, function(e){
+        console.warn("Error in XmppGetBuddyVcard", e);
+    }, 30 * 1000);
+}
+
+// XMPP Messaging
+// ==============
+function onMessage(message){
+    // console.log('onMessage', message);
+
+    var from = message.getAttribute("from");
+    var fromJid = Strophe.getBareJidFromJid(from);
+    var to = message.getAttribute("to");
+    var messageId = message.getAttribute("id");
+
+    // Determin Buddy
+    var buddyObj = FindBuddyByJid(fromJid);
+    if(buddyObj == null) {
+        // You don't appear to be a buddy of mine
+
+        // TODO: Handle this
+        console.warn("Spam!"); // LOL :)
+        return true;
+    }
+
+    var isDelayed = false;
+    var DateTime = utcDateNow();
+    Strophe.forEachChild(message, "delay", function(elem) {
+        // Delay message received
+        if(elem.getAttribute("xmlns") == "urn:xmpp:delay"){
+            isDelayed = true;
+            DateTime = moment(elem.getAttribute("stamp")).utc().format("YYYY-MM-DD HH:mm:ss UTC");
+        }
+    });
+    var origionalMessage = "";
+    Strophe.forEachChild(message, "body", function(elem) {
+        // For simplicity, this code is assumed to take the last body
+        origionalMessage = elem.textContent;
+    });
+
+
+    // chatstate
+    var chatstate = "";
+    Strophe.forEachChild(message, "composing", function(elem) {
+        if(elem.getAttribute("xmlns") == "http://jabber.org/protocol/chatstates"){
+            chatstate = "composing";
+        }
+    });
+    Strophe.forEachChild(message, "paused", function(elem) {
+        if(elem.getAttribute("xmlns") == "http://jabber.org/protocol/chatstates"){
+            chatstate = "paused";
+        }
+    });
+    Strophe.forEachChild(message, "active", function(elem) {
+        if(elem.getAttribute("xmlns") == "http://jabber.org/protocol/chatstates"){
+            chatstate = "active";
+        }
+    });
+    if(chatstate == "composing"){
+        if(!isDelayed) XmppShowComposing(buddyObj);
+        return true;
+    }
+    else {
+        XmppHideComposing(buddyObj);
+    }
+
+    // Message Correction
+    var isCorrection = false;
+    var targetCorrectionMsg = "";
+    Strophe.forEachChild(message, "replace", function(elem) {
+        if(elem.getAttribute("xmlns") == "urn:xmpp:message-correct:0"){
+            isCorrection = true;
+            Strophe.forEachChild(elem, "id", function(idElem) {
+                targetCorrectionMsg = idElem.textContent;
+            });
+        }
+    });
+    if(isCorrection && targetCorrectionMsg != "") {
+        console.log("Message "+ targetCorrectionMsg +" for "+ buddyObj.CallerIDName +" was corrected");
+        CorrectMessage(buddyObj, targetCorrectionMsg, origionalMessage);
+    }
+
+    // Delivery Events
+    var eventStr = "";
+    var targetDeliveryMsg = "";
+    Strophe.forEachChild(message, "x", function(elem) {
+        if(elem.getAttribute("xmlns") == "jabber:x:event"){
+            // One of the delivery events occured
+            Strophe.forEachChild(elem, "delivered", function(delElem) {
+                eventStr = "delivered";
+            });
+            Strophe.forEachChild(elem, "displayed", function(delElem) {
+                eventStr = "displayed";
+            });
+            Strophe.forEachChild(elem, "id", function(idElem) {
+                targetDeliveryMsg = idElem.textContent;
+            });
+        }
+    });
+    if(eventStr == "delivered" && targetDeliveryMsg != "") {
+        console.log("Message "+ targetDeliveryMsg +" for "+ buddyObj.CallerIDName +" was delivered");
+        MarkDeliveryReceipt(buddyObj, targetDeliveryMsg, true);
+
+        return true;
+    }
+    if(eventStr == "displayed" && targetDeliveryMsg != "") {
+        console.log("Message "+ targetDeliveryMsg +" for "+ buddyObj.CallerIDName +" was displayed");
+        MarkDisplayReceipt(buddyObj, targetDeliveryMsg, true);
+
+        return true;
+    }
+
+    // Messages
+    if(origionalMessage == ""){
+        // Not a full message
+    }
+    else {
+        if(messageId) {
+            // Although XMPP does not require message ID's, this application does
+            XmppSendDeliveryReceipt(buddyObj, messageId);
+
+            AddMessageToStream(buddyObj, messageId, "MSG", origionalMessage, DateTime)
+            UpdateBuddyActivity(buddyObj.identity);
+            var streamVisible = $("#stream-"+ buddyObj.identity).is(":visible");
+            if (streamVisible) {
+                MarkMessageRead(buddyObj, messageId);
+                XmppSendDisplayReceipt(buddyObj, messageId);
+            }
+            RefreshStream(buddyObj);
+            ActivateStream(buddyObj, origionalMessage);
+        }
+        else {
+            console.warn("Sorry, messages must have an id ", message)
+        }
+    }
+
+    return true;
+}
+function XmppShowComposing(buddyObj){
+    console.log("Buddy is composing a message...");
+    $("#contact-"+ buddyObj.identity +"-chatstate").show();
+    $("#contact-"+ buddyObj.identity +"-presence").hide();
+    $("#contact-"+ buddyObj.identity +"-presence-main").hide();
+    $("#contact-"+ buddyObj.identity +"-chatstate-menu").show();
+    $("#contact-"+ buddyObj.identity +"-chatstate-main").show();
+
+    updateScroll(buddyObj.identity);
+}
+function XmppHideComposing(buddyObj){
+    console.log("Buddy composing is done...");
+    $("#contact-"+ buddyObj.identity +"-chatstate").hide();
+    $("#contact-"+ buddyObj.identity +"-chatstate-menu").hide();
+    $("#contact-"+ buddyObj.identity +"-chatstate-main").hide();
+    $("#contact-"+ buddyObj.identity +"-presence").show();
+    $("#contact-"+ buddyObj.identity +"-presence-main").show();
+
+    updateScroll(buddyObj.identity);
+}
+function XmppSendMessage(buddyObj,message, messageId, thread, markable, type){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    if(!type) type = "normal"; // chat | error | normal | groupchat | headline
+    var msg = $msg({"to": buddyObj.jid, "type": type, "id" : messageId, "from" : XMPP.jid})
+    if(thread && thread != ""){
+        msg.c("thread").t(thread);
+        msg.up();
+    }
+    msg.c("body").t(message); 
+    // XHTML-IM
+    msg.up();
+    msg.c("active", {"xmlns": "http://jabber.org/protocol/chatstates"});
+    msg.up();
+    msg.c("x", {"xmlns": "jabber:x:event"});
+    msg.c("delivered");
+    msg.up();
+    msg.c("displayed");
+
+    console.log("sending message...");
+    buddyObj.chatstate = "active";
+    if(buddyObj.chatstateTimeout){
+        window.clearTimeout(buddyObj.chatstateTimeout);
+    }
+    buddyObj.chatstateTimeout = null;
+
+    try{
+        XMPP.send(msg);
+        MarkMessageSent(buddyObj, messageId, false);
+    }
+    catch(e){
+        MarkMessageNotSent(buddyObj, messageId, false);
+    }
+}
+function XmppStartComposing(buddyObj, thread){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    if(buddyObj.jid == null || buddyObj.jid == "") return;
+
+    if(buddyObj.chatstateTimeout){
+        window.clearTimeout(buddyObj.chatstateTimeout);
+    }
+    buddyObj.chatstateTimeout = window.setTimeout(function(){
+        XmppPauseComposing(buddyObj, thread);
+    }, 10 * 1000);
+
+    if(buddyObj.chatstate && buddyObj.chatstate == "composing") return;
+
+    var msg = $msg({"to": buddyObj.jid, "from" : XMPP.jid})
+    if(thread && thread != ""){
+        msg.c("thread").t(thread);
+        msg.up();
+    }
+    msg.c("composing", {"xmlns": "http://jabber.org/protocol/chatstates"});
+
+    console.log("you are composing a message...")
+    buddyObj.chatstate = "composing";
+
+    XMPP.send(msg);
+}
+function XmppPauseComposing(buddyObj, thread){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    if(buddyObj.jid == null || buddyObj.jid == "") return;
+
+    if(buddyObj.chatstate && buddyObj.chatstate == "paused") return;
+
+    var msg = $msg({"to": buddyObj.jid, "from" : XMPP.jid})
+    if(thread && thread != ""){
+        msg.c("thread").t(thread);
+        msg.up();
+    }
+    msg.c("paused", {"xmlns": "http://jabber.org/protocol/chatstates"});
+
+    console.log("You have paused your message...");
+    buddyObj.chatstate = "paused";
+    if(buddyObj.chatstateTimeout){
+        window.clearTimeout(buddyObj.chatstateTimeout);
+    }
+    buddyObj.chatstateTimeout = null;
+
+    XMPP.send(msg);
+}
+function XmppSendDeliveryReceipt(buddyObj, id){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var msg = $msg({"to": buddyObj.jid, "from" : XMPP.jid});
+    msg.c("x", {"xmlns": "jabber:x:event"});
+    msg.c("delivered");
+    msg.up();
+    msg.c("id").t(id);
+
+    console.log("sending delivery notice for "+ id +"...");
+
+    XMPP.send(msg);
+}
+function XmppSendDisplayReceipt(buddyObj, id){
+    if(!XMPP || XMPP.connected == false) {
+        console.warn("XMPP not connected");
+        return;
+    }
+
+    var msg = $msg({"to": buddyObj.jid, "from" : XMPP.jid});
+    msg.c("x", {"xmlns": "jabber:x:event"});
+    msg.c("displayed");
+    msg.up();
+    msg.c("id").t(id);
+
+    console.log("sending display notice for "+ id +"...");
+
+    XMPP.send(msg);
+}
+
+// XMPP Other
+// ==========
+function onPingRequest(iq){
+    // Handle Ping Pong
+    // <iq type="get" id="86-14" from="localhost" to="websocketuser@localhost/cc9fd219" >
+    //     <ping xmlns="urn:xmpp:ping"/>
+    // </iq>
+    var id = iq.getAttribute("id");
+    var to = iq.getAttribute("to");
+    var from = iq.getAttribute("from");
+
+    var iq_response = $iq({'type':'result', 'id':id, 'to':from, 'from':to});
+    XMPP.send(iq_response);
+
+    return true;
+}
+function onVersionRequest(iq){
+    // Handle Request for our version etc
+    // <iq xmlns="jabber:client" type="get" id="419-24" to=".../..." from="innovateasterisk.com">
+    //     <query xmlns="jabber:iq:version"/>
+    // </iq>
+    var id = iq.getAttribute("id");
+    var to = iq.getAttribute("to");
+    var from = iq.getAttribute("from");
+
+    var iq_response = $iq({'type':'result', 'id':id, 'to':from, 'from':to});
+    iq_response.c('query', {'xmlns':'jabber:iq:version'});
+    iq_response.c('name', null, 'Browser Phone');
+    iq_response.c('version', null, '0.0.1');
+    iq_response.c('os', null, 'Browser');
+    XMPP.send(iq_response);
+
+    return true;
+}
+
+
+function onInfoQuery(iq){
+    console.log('onInfoQuery', iq);
+
+    // Probably a result
+    return true;
+}
+function onInfoQueryRequest(iq){
+    console.log('onInfoQueryRequest', iq);
+
+    var query = ""; // xml.find("iq").find("query").attr("xmlns");
+    Strophe.forEachChild(iq, "query", function(elem) {
+        query = elem.getAttribute("xmlns");
+    });
+    console.log(query);
+
+    // ??
+    return true;
+}
+function onInfoQueryCommand(iq){
+    console.log('onInfoQueryCommand', iq);
+
+    var query = ""; // xml.find("iq").find("query").attr("xmlns");
+    Strophe.forEachChild(iq, "query", function(elem) {
+        query = elem.getAttribute("xmlns");
+    });
+    console.log(query);
+
+    // ??
+    return true;
+}
+function XMPP_GetGroups(){
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : XmppChatGroupService +"."+ XmppDomain, "from" : XMPP.jid});
+    iq_request.c("query", {"xmlns" : "http://jabber.org/protocol/disco#items", "node" : "http://jabber.org/protocol/muc#rooms"});
+
+    XMPP.sendIQ(iq_request, function (result){
+        console.log("GetGroups Response: ", result);
+    }, function(e){
+        console.warn("Error in GetGroups", e);
+    }, 30 * 1000);
+}
+function XMPP_GetGroupMembers(){
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : "directors@"+ XmppChatGroupService +"."+ XmppDomain, "from" : XMPP.jid});
+    iq_request.c("query", {"xmlns":"http://jabber.org/protocol/disco#items"});
+
+    XMPP.sendIQ(iq_request, function (result){
+        console.log("GetGroupMembers Response: ", result);
+    }, function(e){
+        console.warn("Error in GetGroupMembers", e);
+    }, 30 * 1000);
+}
+function XMPP_JoinGroup(){
+    var pres_request = $pres({"id" : XMPP.getUniqueId(), "from" : XMPP.jid, "to" : "directors@"+ XmppChatGroupService +"."+ XmppDomain +"/nickname" });
+    pres_request.c("x", {"xmlns" : "http://jabber.org/protocol/muc" });
+
+    XMPP.sendPresence(pres_request, function (result){
+        console.log("JoinGroup Response: ", result);
+    }, function(e){
+        console.warn("Error in Set Presence", e);
+    }, 30 * 1000);
+}
+function XMPP_QueryMix(){
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "from" : XMPP.jid});
+    iq_request.c("query", {"xmlns" : "http://jabber.org/protocol/disco#info"});
+
+    XMPP.sendIQ(iq_request, function (result){
+        console.log("XMPP_QueryMix Response: ", result);
+    }, function(e){
+        console.warn("Error in XMPP_QueryMix", e);
+    }, 30 * 1000);
+}
+
+
+var XMPP = null;
+var reconnectXmpp = function(){
+    console.log("Connect/Reconnect XMPP connection...");
+
+    if(XMPP) XMPP.disconnect("");
+    if(XMPP) XMPP.reset();
+
+    var xmpp_websocket_uri = "wss://"+ XmppServer +":"+ XmppWebsocketPort +""+ XmppWebsocketPath; 
+    var xmpp_username = profileUser +"@"+ XmppDomain;
+    if(XmppRealm != "" && XmppRealmSeperator) xmpp_username = XmppRealm + XmppRealmSeperator + xmpp_username;
+    var xmpp_password = SipPassword;
+
+    XMPP = null;
+    if(XmppDomain == "" || XmppServer == "" || XmppWebsocketPort == "" || XmppWebsocketPath == ""){
+        return;
+    }
+    XMPP = new Strophe.Connection(xmpp_websocket_uri);
+
+    // XMPP.rawInput = function(data){
+    //     console.log('RECV:', data);
+    // }
+    // XMPP.rawOutput = function(data){
+    //     console.log('SENT:', data);
+    // }
+
+    // Information Query
+    XMPP.addHandler(onPingRequest, "urn:xmpp:ping", "iq", "get");
+    XMPP.addHandler(onVersionRequest, "jabber:iq:version", "iq", "get");
+
+    // Presence
+    XMPP.addHandler(onPresenceChange, null, "presence", null);
+    // Message
+    XMPP.addHandler(onMessage, null, "message", null);
+
+    console.log("XMPP connect...");
+
+    XMPP.connect(xmpp_username, xmpp_password, onStatusChange);
+}

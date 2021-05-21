@@ -657,7 +657,6 @@ input[type=radio] {
 }
 
 input[type=radio] + label {
-    color: #416493;
     padding-top: 5px;
     padding-bottom: 5px;
     vertical-align: middle;
@@ -670,8 +669,9 @@ input[type=radio] + label {
 }
 
 input[type=radio] + label:before {
-    font-family: FontAwesome;
     content: "\f10c";
+    font-family: FontAwesome;
+    color: #416493;
     margin-right: 3px;
     font-size: 16px;
     vertical-align: middle;
@@ -1581,154 +1581,91 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .dotOnline {
-    background-color: #3fbd3f;
-    border: 1px solid #148014;
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 20px;
-    color: #FFFFFF;
-    min-width: 0px;
-    padding: 0px;
-    left: 30px;
-    top: 30px;
-    font-size: 9px;
+    display: inline-block;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-    margin: 0px;
+}
+.dotOnline:before {
+    content: "\f098";
+    font-family: FontAwesome;
+    color: #3fbd3f;
 }
 
 .dotOffline {
-    background-color: #b5b5b5;
-    border: 1px solid #808080;
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 20px;
-    color: #FFFFFF;
-    min-width: 0px;
-    padding: 0px;
-    left: 30px;
-    top: 30px;
-    font-size: 9px;
+    display: inline-block;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-    margin: 0px;
+}
+.dotOffline:before {
+    content: "\f098";
+    font-family: FontAwesome;
+    color: #666666;
 }
 
 .dotRinging {
-    background-color: #3fbd3f;
-    border: 1px solid #148014;
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 20px;
-    color: #FFFFFF;
-    min-width: 0px;
-    padding: 0px;
-    left: 30px;
-    top: 30px;
-    font-size: 9px;
+    display: inline-block;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-    margin: 0px;
 }
-
 .dotRinging:before {
-    content: "\f2a0";
+    content: "\f098";
     font-family: FontAwesome;
-    position: absolute;
-    left: 2.5px;
-    top: 0px;
+    color: #ff7300;
 }
 
 .dotInUse {
-    background-color: #3fbd3f;
-    border: 1px solid #148014;
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 20px;
-    color: #FFFFFF;
-    min-width: 0px;
-    padding: 0px;
-    left: 30px;
-    top: 30px;
-    font-size: 9px;
+    display: inline-block;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-    margin: 0px;
+}
+.dotInUse:before {
+    content: "\f098";
+    font-family: FontAwesome;
+    color: #ff0000;
 }
 
-.dotInUse:before {
-    content: "\f095";
+.dotDoNotDisturb {
+    display: inline-block;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+.dotDoNotDisturb:before {
+    content: "\f098";
     font-family: FontAwesome;
-    position: absolute;
-    left: 2.5px;
-    top: 0px;
+    color: #ff6600;
 }
 
 .dotReady {
-    background-color: #3fbd3f;
-    border: 1px solid #148014;
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 20px;
-    color: #FFFFFF;
-    min-width: 0px;
-    padding: 0px;
-    left: 30px;
-    top: 30px;
-    font-size: 9px;
+    display: inline-block;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-    margin: 0px;
+}
+.dotReady:before {
+    content: "\f098";
+    font-family: FontAwesome;
+    color: #3fbd3f;
 }
 
 .dotOnHold {
-    background-color: #3fbd3f;
-    border: 1px solid #148014;
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 20px;
-    color: #FFFFFF;
-    min-width: 0px;
-    padding: 0px;
-    left: 30px;
-    top: 30px;
-    font-size: 9px;
+    display: inline-block;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-    margin: 0px;
 }
-
 .dotOnHold:before {
-    content: "\f095";
+    content: "\f098";
     font-family: FontAwesome;
-    position: absolute;
-    left: 2.5px;
-    top: 0px;
-    color: #CCCCCC;
+    color: #99fd99;
 }
 
 .dotFailed {
-    background-color: red;
-    border: 1px solid darkred;
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 20px;
-    color: #FFFFFF;
-    min-width: 0px;
-    padding: 0px;
-    left: 30px;
-    top: 30px;
-    font-size: 9px;
+    display: inline-block;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-    margin: 0px;
+}
+.dotFailed:before {
+    content: "\f1eb";
+    font-family: FontAwesome;
+    color: #c70000;
 }
 
 .missedNotifyer {
@@ -1751,24 +1688,7 @@ div.dhx_popup_material div.dhx_popup_area {
     margin: 0px;
     text-align: center;
 }
-.quickDial{
-    border-radius: 100px;
-    cursor: pointer;
-    width: 18px;
-    height: 18px;
-    line-height: 18px;
-    text-align: center;
-    border: 1px solid #404040;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    background-color: #2a2a2a;
-    padding: 0px;
-    font-size: 10px;
-    color: #dcdcdc;
-    min-width: 0px;
-    
-    position: absolute;
-    top: 5px;
-}
+
 
 .startDragDrop {
     outline: 2px dashed #184369;
@@ -1913,6 +1833,10 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 .DeliveredMessage {
     color: #0099c7;
+    font-size: 13px;
+}
+.CompletedMessage {
+    color: #0a9c11;
     font-size: 13px;
 }
 

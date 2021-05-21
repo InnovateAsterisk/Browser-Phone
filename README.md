@@ -8,9 +8,10 @@ This web application is designed to work with Asterisk PBX (v13 & v16). Once loa
 
 ![Image of Main Interface](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall.jpg)
 
-## Features
+## Features v0.1.x
 - SIP Audio Calling
 - SIP Video Calling
+- XMPP Messgaing
 - Call Transfer (Both Blind & Attended)
 - 3rd Party Conference Call
 - Call Detail Records
@@ -24,8 +25,21 @@ This web application is designed to work with Asterisk PBX (v13 & v16). Once loa
 - Useful debug messages sent to console.
 - Works on: Chrome (all features work), Edge (same as Chrome), Opera (same as Chrome), Firefox (Most features work), Safari (Most feature work)
 
-## Requires
+## XMPP Features v0.1.x
+- User Login & Auth (Use SIP credentials)
+- Buddy List (Roster) Saved on Server
+- Buddy vCard
+- Buddy Picture Upload
+- Message Typing Indication
+- Message Delivery & Read Notification
+- Offline Message History (If supported by server)
+- Tested to work with Openfire
+
+## Server; Requires
 - Asterisk PBX version 13|16|17 (with Websockets and Text Messaging, chan_sip or chan_pjsip)
+
+## Server; Optional
+- Openfire XMPP Server
 
 ## JavaScript Dependencies
 - sip-0.11.6                    : WebRTC and SIP signalling library
@@ -36,6 +50,7 @@ This web application is designed to work with Asterisk PBX (v13 & v16). Once loa
 - fabric-2.4.6                  : Canvas Editing Library
 - moment-2.24.0                 : Date & Time Library
 - croppie-2.6.4                 : Profile Picture Crop Library
+- strophe-1.4.1                 : XMPP Library
 
 > Note: These files will load automatically from CDN.
 
