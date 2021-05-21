@@ -11,7 +11,7 @@ This web application is designed to work with Asterisk PBX (v13 & v16). Once loa
 ## Features v0.1.x
 - SIP Audio Calling
 - SIP Video Calling
-- XMPP Messgaing
+- XMPP Messaging 
 - Call Transfer (Both Blind & Attended)
 - 3rd Party Conference Call
 - Call Detail Records
