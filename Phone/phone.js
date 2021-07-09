@@ -79,7 +79,7 @@ let hostingPrefex = getDbItem("HostingPrefex", "");                             
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
 let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
 let IpInContact = (getDbItem("IpInContact", "1") == "1");                           // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
-let IceStunServerJson = getDbItem("IceStunServerJson", "{ \"urls\" : \"stun:stun.l.google.com:19302\" }"); // Sets the JSON string for ice Server.
+let IceStunServerJson = getDbItem("IceStunServerJson", "");                         // Sets the JSON string for ice Server. Must be https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration/iceServers
 let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));          // Set amount of time in milliseconds to wait for the ICE/STUN server
 
 let AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
@@ -118,7 +118,7 @@ let EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");       
 let DisableFreeDial = (getDbItem("DisableFreeDial", "0") == "1");                       // Removes the Dial icon in the profile area, users will need to add buddies in order to dial.
 let DisableBuddies = (getDbItem("DisableBuddies", "0") == "1");                         // Removes the Add Someone menu item and icon from the profile area. Buddies will still be created automatically. 
 let EnableTransfer = (getDbItem("EnableTransfer", "1") == "1");                         // Controls Transfering during a call
-let EnableConference = (getDbItem("EnableConference", "0") == "1");                     // Controls Conference during a call
+let EnableConference = (getDbItem("EnableConference", "1") == "1");                     // Controls Conference during a call
 let AutoAnswerPolicy = getDbItem("AutoAnswerPolicy", "allow");                          // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
 let DoNotDisturbPolicy = getDbItem("DoNotDisturbPolicy", "allow");                      // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
 let CallWaitingPolicy = getDbItem("CallWaitingPolicy", "allow");                        // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
@@ -2048,7 +2048,7 @@ function PreloadAudioFiles(){
 function CreateUserAgent() {
     try {
         console.log("Creating User Agent...");
-        userAgent = new SIP.UA({
+        var options = {
             displayName: profileName,
             uri: SipUsername + "@" + wssServer,
             transportOptions: {
@@ -2066,13 +2066,7 @@ function CreateUserAgent() {
                 peerConnectionOptions :{
                     alwaysAcquireMediaFirst: true, // Better for firefox, but seems to have no effect on others
                     iceCheckingTimeout: IceStunCheckTimeout,
-                    rtcConfiguration: { 
-                        iceServers : [
-                            JSON.parse(IceStunServerJson)
-                        ]
-                        // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
-                        // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
-                    }
+                    rtcConfiguration: {}
                 }
             },
             authorizationUser: SipUsername,
@@ -2084,7 +2078,15 @@ function CreateUserAgent() {
             autostart: false,
             register: false,
             rel100: SIP.C.supported.UNSUPPORTED // UNSUPPORTED | SUPPORTED | REQUIRED NOTE: rel100 is not supported
-        });
+        }
+        if(IceStunServerJson != ""){
+            options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration.iceServers = JSON.parse(IceStunServerJson);
+        }
+        // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
+        // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
+        // options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration
+
+        userAgent = new SIP.UA(options);
         console.log("Creating User Agent... Done");
     }
     catch (e) {
@@ -2139,6 +2141,9 @@ function CreateUserAgent() {
         $("#reglink").show();
         $("#dereglink").hide();
 
+        // We set this flag here so that the re-register attepts are fully completed.
+        isReRegister = false;
+
         // Custom Web hook
         if(typeof web_hook_on_unregistered !== 'undefined') web_hook_on_unregistered();
     });
@@ -2155,11 +2160,16 @@ function CreateUserAgent() {
             $("#WebRtcFailed").hide();
 
             // Auto start register
-            Register();
+            window.setTimeout(function (){
+                Register()
+            }, 500);
         });
         transport.on('disconnected', function () {
             console.log("Disconnected from Web Socket!");
             $("#regStatus").html(lang.disconnected_from_web_socket);
+
+            // We set this flag here so that the re-register attepts are fully completed.
+            isReRegister = false;
         });
         transport.on('transportError', function () {
             console.log("Web Socket error!");
@@ -7294,7 +7304,7 @@ function ShowDial(obj){
 
     HidePopup();
     dhtmlxPopup = new dhtmlXPopup();
-    var html = "<div><input id=dialText class=dialTextInput oninput=\"handleDialInput(this, event)\" style=\"width:160px; margin-top:15px\"></div>";
+    var html = "<div><input id=dialText class=dialTextInput oninput=\"handleDialInput(this, event)\" onkeydown=\"dialOnkeydown(event, this)\" style=\"width:160px; margin-top:15px\"></div>";
     html += "<table cellspacing=10 cellpadding=0 style=\"margin-left:auto; margin-right: auto\">";
     html += "<tr><td><button class=dtmfButtons onclick=\"KeyPress('1')\"><div>1</div><span>&nbsp;</span></button></td>"
     html += "<td><button class=dtmfButtons onclick=\"KeyPress('2')\"><div>2</div><span>ABC</span></button></td>"
@@ -7318,6 +7328,8 @@ function ShowDial(obj){
 
     dhtmlxPopup.attachHTML(html);
     dhtmlxPopup.show(x, y, w, h);
+
+    $("#dialText").focus();
 }
 function handleDialInput(obj, event){
     if(EnableAlphanumericDial){
@@ -7327,6 +7339,17 @@ function handleDialInput(obj, event){
         $("#dialText").val($("#dialText").val().replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength));
     }
     $("#dialVideo").prop('disabled', ($("#dialText").val().length >= DidLength));
+}
+function dialOnkeydown(event, obj, buddy) {
+    var keycode = (event.keyCode ? event.keyCode : event.which);
+    if (keycode == '13'){
+        // if(event.shiftKey || event.ctrlKey)
+        event.preventDefault();
+
+        // Defaults to audio dial
+        DialByLine('audio');
+        return false;
+    }
 }
 function KeyPress(num){
     $("#dialText").val(($("#dialText").val()+num).substring(0,MaxDidLength));

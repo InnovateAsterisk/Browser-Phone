@@ -2,7 +2,7 @@
 A fully featured browser based WebRTC SIP phone for Asterisk
 
 ### Description
-This web application is designed to work with Asterisk PBX (v13 & v16). Once loaded application will connect to Asterisk PBX on its web socket, and register an extension. Calls are made between contacts, and a full call detail is saved. Audio Calls can be recorded. Video Calls can be recorded, and can be saved with 5 different recording layouts and 3 different quality settings. This application does not use any cloud systems or services, and is designed to be stand-alone. Additional libraries will be downloaded at run time (but can also be saved to the web server for a complete off-line solution).
+This web application is designed to work with Asterisk PBX. Once loaded application will connect to Asterisk PBX on its web socket, and register an extension. Calls are made between contacts, and a full call detail is saved. Audio Calls can be recorded. Video Calls can be recorded, and can be saved with 5 different recording layouts and 3 different quality settings. This application does not use any cloud systems or services, and is designed to be stand-alone. Additional libraries will be downloaded at run time (but can also be saved to the web server for a complete off-line solution).
 
 **Hosted version** *(contains a welcome screen)*: https://www.innovateasterisk.com/phone/ 
 
@@ -36,7 +36,7 @@ This web application is designed to work with Asterisk PBX (v13 & v16). Once loa
 - Tested to work with Openfire
 
 ## Server; Requires
-- Asterisk PBX version 13|16|17 (with Websockets and Text Messaging, chan_sip or chan_pjsip)
+- Asterisk PBX version 13|16|17|18 (with Websockets and Text Messaging, chan_sip or chan_pjsip)
 
 ## Server; Optional
 - Openfire XMPP Server
@@ -221,7 +221,7 @@ Exit root:
 ```
 Wget the Asterisk source:
 
-> Note: chan_sip works fine on Asterisk 13, but chan_pjsip is rather broken. If you are using chan_pjsip, rather use Asterisk 16, the guide is exactly the same. If you are on an x86 server, you can enable opus in make menuselect, or download it from the github project, otherwise take the opus codec out of the allow= section of the endpoint. 
+> Note: chan_sip works fine on Asterisk 13, but chan_pjsip is rather broken. If you are using chan_pjsip, rather use Asterisk 16+, the guide is exactly the same. If you are on an x86 server, you can enable opus in make menuselect, or download it from the github project, otherwise take the opus codec out of the allow= section of the endpoint. 
 ```
 $ wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz
 or
