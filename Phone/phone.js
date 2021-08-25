@@ -8,7 +8,7 @@ A fully featured browser based WebRTC SIP phone for Asterisk
  Copyright (c) 2020  - Conrad de Wet - All Rights Reserved.
 =============================================================
 File: phone.js
-License: GNU Lesser General Public License v3.0
+License: GNU Affero General Public License v3.0
 Version: 0.1.0
 Owner: Conrad de Wet
 Date: April 2020
