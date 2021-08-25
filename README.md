@@ -46,7 +46,7 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 - jquery-3.3.1                  : JavaScript toolkit
 - jquery.md5                    : Md5 Hash plug-in (unused)
 - Chart-2.7.2                   : Graph and Chart UI
-- dhtmlx-4                      : Windowing & UI Library
+- jquery-ui                     : Windowing & UI Library
 - fabric-2.4.6                  : Canvas Editing Library
 - moment-2.24.0                 : Date & Time Library
 - croppie-2.6.4                 : Profile Picture Crop Library
@@ -58,7 +58,7 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 - normalize-v8.0.1              : CSS Normalising Stylesheet
 - roboto                        : Roboto Font
 - font-awesome-4.7              : Icon Font library
-- dhtmlx-4                      : For DHTMLX
+- jquery-ui                     : For jQuery UI
 - croppie-2.6.4                 : For Croppie
 
 > Note: These files will load automatically from CDN.
