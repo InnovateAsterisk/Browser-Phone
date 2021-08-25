@@ -1,6 +1,6 @@
 /* Style Sheet for Raspberry Phone */
 
-/* CSS_dhtmlxUi */
+/* CSS_Ui */
 
 .NoSelect {
     -webkit-user-select: none;  /* Chrome all / Safari all */
@@ -14,6 +14,30 @@
     color:#333333;
     font-size: 14px;
     margin-top: 10px;
+}
+
+.UiTextHeading{
+    font-family: Roboto, Arial, Helvetica;
+    color:#333333;
+    font-size: 17px;
+    margin-top: 7px;
+    border-bottom: 1px solid #383838;
+    margin-bottom: 7px;
+    cursor: pointer;
+    padding-bottom: 3px;
+}
+.UiTextHeading::before{
+    content: "\f078";
+    font-family: FontAwesome;
+    color: #8e8e8e;
+    font-size: 14px;
+    margin-right: 3px;
+    float: right;
+}
+.UiTextHeadingIcon{
+    padding: 3px;
+    font-size: 14px;
+    border-radius: 3px;
 }
 
 .UiButtonBar {
@@ -142,9 +166,53 @@
     font-size: 14px;
     line-height: 1.5;
 
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    /* height: 100%; */
+    /* overflow-y: auto; */
+    /* overflow-x: hidden; */
+}
+.UiSideField{
+    padding-top:0px;
+    padding-bottom:0px;
+    padding-left:5%;
+    padding-right:5%;
+
+    font-family: Roboto, Arial, Helvetica;
+    color:#CCCCCC;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.UiSideField .UiInputText{
+    color: #CCCCCC !important;
+    border-bottom: 1px solid #a3bad9 !important;
+}
+.UiSideField .UiText{
+    color: #CCCCCC !important;
+}
+.UiSideField input[type=checkbox] + label{
+    color: #CCCCCC !important;
+}
+.UiSideField .UiTextHeading{
+    color: #F3F3F3 !important;
+}
+.UiSideField input[type=text]:focus {
+    border-bottom: 1px solid #416493 !important;
+}
+.UiSideField .Settings_VolumeOutput_Container{
+    border: 1px solid rgb(204,204,204,20%) !important;
+    background-color: rgb(255,255,255,20%) !important;
+}
+.UiSideField select{
+    color: #cccccc !important;
+    border-bottom-width: 1px !important;
+}
+.UiSideField select:focus{
+    border-bottom-width: 1px !important;
+}
+.UiSideField .pill-nav input[type=radio] + label{
+    color: #CCCCCC !important;
+}
+.UiSideField .croppie-container .cr-viewport, .croppie-container .cr-resizer{
+    border: none !important;
 }
 
 .PastePreviewContainer {
@@ -182,11 +250,11 @@
 
 .dtmfButtons{
     font-size: 20px;
-    color: #222222;
-    width: 40px;
-    height: 40px;
-
-    border: 1px solid #efefef;
+    color: #efefef;
+    width: 45px;
+    height: 45px;
+    border: 1px solid #484848;
+    border-radius: 100%;
 }
 .dtmfButtons:hover{
     color: #FFFFFF;
@@ -371,108 +439,146 @@ body {
     color: #F3F3F3;
 }
 
-/* CSS_dhtmlxUiImportant */
+/* CSS_UiImportant */
 /* ====================================================================================== */
-
-/* Windows */
-.dhxwin_fr_cover_dnd {
-    display:block !important;
+.ui-widget {
+    font-family: Roboto, Arial, Helvetica !important;
 }
-.dhxwins_vp_material div.dhxwins_mcover {
+.ui-widget-overlay {
     background-color: #000000 !important;
     opacity: .6 !important;
 }
-.dhxwins_vp_material div.dhxwin_active {
-    background-color: #FFFFFF !important;
-    border-radius: 5px 5px 0px 0px !important;
+/* Popup Menu */
+.ui-menu{
+    top: 0px;
+    left: 0px;
+    
+    position: fixed !important;
+    z-index: 9999;
+    min-width: 200px !important;
+    box-sizing: border-box;
+    padding: 5px 0px 5px 0px !important;
+    border-radius: 5px !important;
+    background-color: #fafafa !important;
+    border: 1px solid #dfdfdf !important;
+    box-shadow: 0 0 10px rgb(127 127 127 / 20%) !important;
+    color: #404040 !important;
 }
-.dhxwins_vp_material div.dhxwin_hdr {
-    background-color: #FFFFFF !important;
+.ui-menu .ui-state-active{
+    color: #404040 !important;
+    background-color: #e8e8e8 !important;
+    border-color: transparent !important;
+}
+
+.ui-menu .ui-menu-item {
+    list-style-image: none !important;
+}
+.ui-menu .ui-menu-item-wrapper {
+    padding-left: 0.6em !important;
+}
+.ui-menu-icons .ui-menu-item-wrapper {
+    padding-left: 2em !important;
+}
+.ui-menu .ui-icon {
+    left: 0.6em !important;
+    font-size: 16px !important;
+    line-height: 14px !important;
+    height: 16px !important;
+    width: 16px !important;
+    text-align: center !important;
+}
+
+/* Windows */
+.ui-dialog{
+    position: fixed !important;
+    /* box-sizing: border-box; */
+}
+
+.ui-dialog .ui-dialog-content {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    padding: 0 !important;
+}
+
+.no-close .ui-dialog-titlebar-close {
+    display: none
+}
+
+.ui-button{
+    min-width: unset !important;
+    min-height: unset !important;
+}
+
+.ui-dialog .ui-button:active, .ui-button.ui-state-active:hover {
+    border: 1px solid #0b213a !important;
+    background: #395f88 !important;
+    font-weight: normal !important;
+    color: #fff !important;
+}
+
+.ui-widget-header {
+    border: 1px solid transparent !important;
     color: #222222 !important;
+    font-family: Roboto, Arial, Helvetica !important;
+    font-size: 17px !important;
+    font-weight: normal !important;
 }
-.dhxwins_vp_material div.dhxwin_brd {
-    border-color: #FFFFFF !important;
-}
-.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button, .dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button_dis {
-    margin-top: 0px !important;
-    background-image: none !important;
-}
-.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_help:before {
-    content: "\f128"; /* Help */
-    font-family: FontAwesome;
-    position: absolute;
-    line-height: 24px;
-    height: 24px;
-    width: 24px;
-    text-align: center;
-    font-size: 13px;
-}
-.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_park:before {
-    content: "\f2d1"; /* Minimise */
-    font-family: FontAwesome;
-    position: absolute;
-    line-height: 24px;
-    height: 24px;
-    width: 24px;
-    text-align: center;
-    font-size: 13px;
-}
-.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_minmax:before {
-    content: "\f2d0"; /* Maximise */
-    font-family: FontAwesome;
-    position: absolute;
-    line-height: 24px;
-    height: 24px;
-    width: 24px;
-    text-align: center;
-    font-size: 13px;
-}
-.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_minmaxed:before {
-    content: "\f2d2"; /* Restore */
-    font-family: FontAwesome;
-    position: absolute;
-    line-height: 24px;
-    height: 24px;
-    width: 24px;
-    text-align: center;
-    font-size: 13px;
-}
-.dhxwins_vp_material div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button.dhxwin_button_close:before {
+.ui-icon-closethick:before {
     content: "\f00d"; /* Close */
     font-family: FontAwesome;
-    position: absolute;
-    line-height: 24px;
-    height: 24px;
-    width: 24px;
-    text-align: center;
-    font-size: 13px;
+    display: block;
+    font-size: 15px;
 }
-.dhxwins_vp_material div.dhxwin_active div.dhxwin_hdr div.dhxwin_btns div.dhxwin_button:hover {
-    background-color: #b01607 !important;
-    box-shadow: inset 0px 0px 0 1px #b01607 !important;
-    border-radius: 5px !important;
-    color: #FFFFFF;
+.ui-icon {
+    text-indent:0px !important;
 }
-.dhxwins_vp_material div.dhxwin_active div.dhx_cell_wins div.dhx_cell_statusbar_def div.dhx_cell_statusbar_text, .dhxwins_vp_material div.dhxwin_inactive div.dhx_cell_wins div.dhx_cell_statusbar_def div.dhx_cell_statusbar_text{
-    height: 49px !important;
+.ui-dialog .ui-widget-header .ui-state-default, .ui-dialog .ui-widget-header .ui-button {
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    font-weight: normal !important;
+    color: #222222;
+} 
+.ui-dialog .ui-widget-header .ui-state-default, .ui-dialog  .ui-widget-header .ui-button:hover {
+    border: 1px solid #b01607 !important;
+    background: #b01607 !important;
+    color: #fff !important;
+    font-weight: normal !important;
 }
-/* Sidebar */
-.dhxsidebar_base_material div.dhxsidebar_cont div.dhx_cell_sidebar div.dhx_cell_sidebar_hdr div.dhx_cell_sidebar_hdr_icon{
+.ui-dialog .ui-widget-header .ui-state-active, .ui-dialog .ui-widget-header .ui-button:active {
+    border: 1px solid #b01607 !important;
+    background: #b01607 !important;
+    font-weight: normal !important;
+    color: #fff !important;
+}
+
+.ui-menu .ui-widget-header{
+    font-size: 16px !important;
+    cursor: unset !important;
+}
+
+.ui-icon, .ui-widget-content .ui-icon {
     background-image: none !important;
-    cursor: pointer !important;
 }
-.dhxsidebar_base_material div.dhxsidebar_cont div.dhx_cell_sidebar div.dhx_cell_sidebar_hdr div.dhx_cell_sidebar_hdr_icon:before{
-    content: "\f0c9"; /* Bars */
-    font-family: FontAwesome;
-    position: absolute;
-    font-size: 18px;
+.ui-widget-header .ui-icon {
+    background-image: none !important;
 }
-.dhxsidebar_base_material div.dhxsidebar_cont div.dhxsidebar_side.dhxsidebar_tpl_details div.dhxsidebar_side_items div.dhxsidebar_item img.dhxsidebar_item_icon{
-    display: none !important;
+.ui-state-hover .ui-icon, .ui-state-focus .ui-icon, .ui-button:hover .ui-icon, .ui-button:focus .ui-icon {
+    background-image: none !important;
 }
-.dhxsidebar_base_material div.dhxsidebar_cont div.dhxsidebar_side.dhxsidebar_tpl_details div.dhxsidebar_side_items div.dhxsidebar_item div.dhxsidebar_item_text{
-    padding-left: 16px!important;
+.ui-state-active .ui-icon,.ui-button:active .ui-icon {
+    background-image: none !important;
 }
+.ui-state-highlight .ui-icon, .ui-button .ui-state-highlight.ui-icon {
+    background-image: none !important;
+}
+.ui-state-error .ui-icon,.ui-state-error-text .ui-icon {
+    background-image: none !important;
+}
+.ui-button .ui-icon {
+    background-image: none !important;
+}
+
 
 /* CSS_HtmlElements */
 /* ====================================================================================== */
@@ -572,6 +678,7 @@ input[type=password] {
     line-height: 22px;
     border: none;
     border-bottom: 2px solid #a3bad9;
+    background-color: transparent;
 }
 
 input[type=password]:focus {
@@ -615,7 +722,6 @@ input[type=checkbox] {
 }
 
 input[type=checkbox] + label {
-    color: #416493;
     padding: 0px;
     line-height: 22px;
     vertical-align: middle;
@@ -632,6 +738,7 @@ input[type=checkbox] + label:before {
     content: "\f096";
     /* fa fa-square-o */
     /* content: "\f204"; */
+    color: #416493;
     width: 20px;
     display: inline-block;
     font-size: 18px;
@@ -644,6 +751,7 @@ input[type=checkbox]:checked + label:before {
     content: "\f046";
     /* fa fa-check-square-o */
     /* content: "\f205"; */
+    color: #416493;
     width: 20px;
     display: inline-block;
     font-size: 18px;
@@ -680,6 +788,7 @@ input[type=radio] + label:before {
 input[type=radio]:checked + label:before {
     font-family: FontAwesome;
     content: "\f192";
+    color: #416493;
     margin-right: 3px;
     font-size: 16px;
     vertical-align: middle;
@@ -750,85 +859,14 @@ input[type=range]{
     border-radius: 2px;
 }
 
-
-/* CSS_dhtmlxTemplateImportant */
-/* ====================================================================================== */
-div.gridbox_material.gridbox {
-    border-radius: 5px !important;
-    border: 1px solid #9cb5d7 !important;
-}
-
-div.gridbox_material.gridbox .xhdr {
-    border-bottom: 1px solid #97b2d7 !important;
-}
-
-div.gridbox_material.gridbox table.hdr tr {
-    background-color: none !important;
-    border: none !important;
-}
-
-div.gridbox_material.gridbox table.hdr td {
-    background-color: #9cb5d7 !important;
-    border: 1px solid transparent !important;
-    color: #ffffff !important;
-    font-size: 14px !important;
-    border-right: 1px solid transparent !important;
-}
-
-div.gridbox_material.gridbox table.hdr td:hover {
-    border-right: 1px solid #839fc5 !important;
-}
-
-div.gridbox_material.gridbox table.obj.row20px tr td {
-    border-right: 1px solid transparent !important;
-}
-
-div.gridbox_material.gridbox table.hdr td.dhxgrid_sort_desc_col {
-    background-image: none !important;
-}
-
-div.gridbox_material.gridbox table.hdr td.dhxgrid_sort_desc_col::before {
-    content: "\f0dd";
-    font-family: FontAwesome;
-    width: 13px;
-    height: 13px;
-    position: absolute;
-}
-
-div.gridbox_material.gridbox table.hdr td.dhxgrid_sort_asc_col {
-    background-image: none !important;
-}
-
-div.gridbox_material.gridbox table.hdr td.dhxgrid_sort_asc_col::before {
-    content: "\f0de";
-    font-family: FontAwesome;
-    width: 13px;
-    height: 13px;
-    position: absolute;
-}
-
-div.gridbox_material.gridbox table.obj.row20px tr.rowselected td {
-    background-color: #ffebc1 !important;
-}
-
-div.gridbox_material.gridbox table.obj tr.rowselected td:first-child {
-    border-left: 2px solid #db9f20 !important;
-}
-
-.dhtmlxcalendar_material div.dhtmlxcalendar_dates_cont ul.dhtmlxcalendar_line li.dhtmlxcalendar_cell_month_date {
-    background-color: #416493;
-}
-
-.dhtmlxcalendar_material div.dhtmlxcalendar_dates_cont ul.dhtmlxcalendar_line li.dhtmlxcalendar_cell_month_date_hover {
-    background-color: #416493;
-}
-
-div.dhx_popup_material div.dhx_popup_area {
-    border-radius: 5px;
-}
-
 /* CSS_Phone */
 /* ====================================================================================== */
+
+.settingsMenu{
+    display: block;
+    float: right;
+}
+
 .noneSelected {
     text-align: center;
     padding: 25px
@@ -1947,21 +1985,31 @@ div.dhx_popup_material div.dhx_popup_area {
 }
 
 .dialTextInput{
-    font-size: 16px;
+    font-size: 20px;
+    color: #CCCCCC;
     text-align: center;
-    border-radius: 10px;
+    border-radius: 0px;
     border: none;
+    border-bottom: 2px solid #404040;
     background-color: transparent;
-    outline-color: #cbe4ff;
+    outline-style: none;
 }
 .dialButtons{
-    font-size: 24px; 
+    font-size: 18px; 
     border: none;
-    color: #333333;
+    color: #CCCCCC;
+    background-color: #404040;
+    border-radius: 100px;
+    width:50px;
+    height:50px;
 }
 .dialButtons:hover{
     color: #f3f3f3;
     background-color: #333333;
+}
+.dialButtons:active{
+    color: #cccccc;
+    background-color: #222222;
 }
 .dialButtons:disabled{
     color: #666666;
@@ -1971,6 +2019,22 @@ div.dhx_popup_material div.dhx_popup_area {
     background-color: transparent;
     border: none;
 }
+.dialButtons div{
+    font-size: 24px;
+    line-height: 9px;
+    margin: 0px;
+    margin-top: 7px;
+    padding: 0px;
+}
+.dialButtons span{
+    color: #999999;
+    font-size: 9px;
+    line-height: 9px;
+    margin: 0px;
+    padding: 0px;
+}
+
+
 
 .timelineMessage{
     margin-left: 20%;
