@@ -880,7 +880,7 @@ function InitUi(){
     phone.attr("class", "pageContainer");
 
     // Left Section
-    var leftSection = $("<div>");
+    var leftSection = $("<div/>");
     leftSection.attr("id", "leftContent");
     leftSection.attr("style", "float:left; height: 100%; width:320px");
 
@@ -934,7 +934,7 @@ function InitUi(){
     leftSection.html(leftHTML);
     
     // Right Section
-    var rightSection = $("<div>");
+    var rightSection = $("<div/>");
     rightSection.attr("id", "rightContent");
     rightSection.attr("style", "margin-left: 320px; height: 100%");
 
@@ -8773,7 +8773,7 @@ function ShowEmojiBar(buddy){
     var messageContainer = $("#contact-"+ buddy +"-emoji-menu");
     var textarea = $("#contact-"+ buddy +"-ChatMessage");
 
-    var menuBar = $("<div>");
+    var menuBar = $("<div/>");
     menuBar.prop("class", "emojiButton")
     var emojis = ["😀","😁","😂","😃","😄","😅","😆","😇","😈","😉","😊","😋","😌","😍","😎","😏","😐","😑","😒","😓","😔","😕","😖","😗","😘","😙","😚","😛","😜","😝","😞","😟","😠","😡","😢","😣","😤","😥","😦","😧","😨","😩","😪","😫","😬","😭","😮","😯","😰","😱","😲","😳","😴","😵","😶","😷","🙁","🙂","🙃","🙄","🤐","🤑","🤒","🤓","🤔","🤕","🤠","🤡","🤢","🤣","🤤","🤥","🤧","🤨","🤩","🤪","🤫","🤬","🤭","🤮","🤯","🧐"];
     $.each(emojis, function(i,e){
@@ -8820,7 +8820,7 @@ function ShowDictate(buddy){
         return;
     }
 
-    var instructions = $("<div>");
+    var instructions = $("<div/>");
     var messageContainer = $("#contact-"+ buddy +"-dictate-message");
     var textarea = $("#contact-"+ buddy +"-ChatMessage");
 
