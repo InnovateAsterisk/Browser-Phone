@@ -6,8 +6,8 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 
 **Hosted versions/samples**
 - https://www.innovateasterisk.com/phone/ *(Default Layout - contains a welcome screen)*
-- https://www.innovateasterisk.com/phone/responsive.html *(Responsive Sample Layout - contains ads - help pay the bills)*
-- https://www.innovateasterisk.com/phone/popup.html *(Popup Sample Layout - contains ads - help pay the bills)*
+- https://www.innovateasterisk.com/phone/responsive.html *(Responsive Sample Layout - contains ads)*
+- https://www.innovateasterisk.com/phone/popup.html *(Popup Sample Layout - contains ads)*
 
 ![Image of Main Interface](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall.jpg)
 
