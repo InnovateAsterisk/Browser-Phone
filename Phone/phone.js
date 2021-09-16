@@ -1392,7 +1392,13 @@ function ReceiveCall(session) {
     if(lineObj.SipSession.request.body){
         // Asterisk 13 PJ_SIP always sends m=video if endpoint has video codec,
         // even if origional invite does not specify video.
-        if(lineObj.SipSession.request.body.indexOf("m=video") > -1) videoInvite = true;
+        if(lineObj.SipSession.request.body.indexOf("m=video") > -1) {
+            videoInvite = true;
+            // The invite may have video, but the buddy may be a contact
+            if(buddyObj.type == "contact"){
+                videoInvite = false;
+            }
+        }
     }
 
     // Possible Early Rejection options
@@ -1802,12 +1808,12 @@ function AnswerVideoCall(lineNumber) {
 
     // Send Answer
     // If this fails, it must still wireup the call so we can manually close it
+    $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_in_progress);
+    // Wire up UI
+    wireupVideoSession(lineObj);
+
     try{
         lineObj.SipSession.accept(spdOptions);
-
-        // Wire up UI
-        $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_in_progress);
-        wireupVideoSession(lineObj);
         if(StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
     }
     catch(e){
@@ -2144,23 +2150,27 @@ function wireupVideoSession(lineObj) {
             }
         });
 
-        var remoteAudio = $("#line-" + lineObj.LineNumber + "-remoteAudio").get(0);
-        remoteAudio.srcObject = remoteAudioStream;
-        remoteAudio.onloadedmetadata = function(e) {
-            if (typeof remoteAudio.sinkId !== 'undefined') {
-                remoteAudio.setSinkId(getAudioOutputID()).then(function(){
-                    console.log("sinkId applied: "+ getAudioOutputID());
-                }).catch(function(e){
-                    console.warn("Error using setSinkId: ", e);
-                });
+        if(remoteAudioStream.getAudioTracks().length >= 1){
+            var remoteAudio = $("#line-" + lineObj.LineNumber + "-remoteAudio").get(0);
+            remoteAudio.srcObject = remoteAudioStream;
+            remoteAudio.onloadedmetadata = function(e) {
+                if (typeof remoteAudio.sinkId !== 'undefined') {
+                    remoteAudio.setSinkId(getAudioOutputID()).then(function(){
+                        console.log("sinkId applied: "+ getAudioOutputID());
+                    }).catch(function(e){
+                        console.warn("Error using setSinkId: ", e);
+                    });
+                }
+                remoteAudio.play();
             }
-            remoteAudio.play();
         }
 
-        var remoteVideo = $("#line-" + lineObj.LineNumber + "-remoteVideo").get(0);
-        remoteVideo.srcObject = remoteVideoStream;
-        remoteVideo.onloadedmetadata = function(e) {
-            remoteVideo.play();
+        if(remoteVideoStream.getVideoTracks().length >= 1){
+            var remoteVideo = $("#line-" + lineObj.LineNumber + "-remoteVideo").get(0);
+            remoteVideo.srcObject = remoteVideoStream;
+            remoteVideo.onloadedmetadata = function(e) {
+                remoteVideo.play();
+            }
         }
 
         // Custom Web hook
