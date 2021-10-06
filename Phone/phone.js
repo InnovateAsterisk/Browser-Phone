@@ -182,6 +182,7 @@ let SpeakerDevices = [];
 let Lines = [];
 let lang = {}
 let audioBlobs = {}
+let newLineNumber = 0;
 
 // Utilities
 // =========
@@ -1150,6 +1151,7 @@ function CreateUserAgent() {
         userAgentString: userAgentStr,
         autostart: false,
         register: false,
+        // rtcpMuxPolicy: "negotiate", // "require" | "negotiate"
         rel100: SIP.C.supported.UNSUPPORTED // UNSUPPORTED | SUPPORTED | REQUIRED NOTE: rel100 is not supported
     }
     if(IceStunServerJson != ""){
@@ -1158,6 +1160,7 @@ function CreateUserAgent() {
     // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
     // options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration
+    options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration.rtcpMuxPolicy = "negotiate"
 
     try {
         userAgent = new SIP.UA(options);
@@ -6567,7 +6570,7 @@ function DialByLine(type, buddy, numToDial, CallerID){
     }
 
     // Create a Line
-    var newLineNumber = Lines.length + 1;
+    newLineNumber = newLineNumber + 1;
     lineObj = new Line(newLineNumber, buddyObj.CallerIDName, numDial, buddyObj);
     Lines.push(lineObj);
     AddLineHtml(lineObj);
@@ -6590,7 +6593,9 @@ function SelectLine(lineNum){
     var lineObj = FindLineByNumber(lineNum);
     if(lineObj == null) return;
     
+    var displayLineNumber = 0;
     for(var l = 0; l < Lines.length; l++) {
+        if(Lines[l].LineNumber == lineObj.LineNumber) displayLineNumber = l+1;
         if(Lines[l].IsSelected == true && Lines[l].LineNumber == lineObj.LineNumber){
             // Nothing to do, you re-selected the same buddy;
             return;
@@ -6604,6 +6609,9 @@ function SelectLine(lineNum){
         $(this).prop('class', 'stream');
     });
     $("#line-ui-" + lineObj.LineNumber).prop('class', 'streamSelected');
+
+    $("#line-ui-" + lineObj.LineNumber + "-DisplayLineNo").html("<i class=\"fa fa-phone\"></i> "+ lang.line +" "+ displayLineNumber);
+    $("#line-ui-" + lineObj.LineNumber + "-LineIcon").html(displayLineNumber);
 
     // Switch the SIP Sessions
     SwitchLines(lineObj.LineNumber);
@@ -6642,8 +6650,8 @@ function AddLineHtml(lineObj){
 
     // Profile UI
     html += "<div class=contact style=\"cursor: unset; float: left;\">";
-    html += "<div class=lineIcon>"+ lineObj.LineNumber +"</div>";
-    html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ lineObj.LineNumber +"</div>";
+    html += "<div id=\"line-ui-"+ lineObj.LineNumber +"-LineIcon\" class=lineIcon>"+ lineObj.LineNumber +"</div>";
+    html += "<div id=\"line-ui-"+ lineObj.LineNumber +"-DisplayLineNo\" class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ lineObj.LineNumber +"</div>";
     html += "<div class=presenceText>"+ lineObj.DisplayName +" <"+ lineObj.DisplayNumber +"></div>";
     html += "</div>";
 
@@ -7259,8 +7267,8 @@ function UpdateBuddyList(){
         if(Lines[l].SipSession != null) classStr = (Lines[l].SipSession.local_hold)? "buddyActiveCallHollding" : "buddyActiveCall";
 
         var html = "<div id=\"line-"+ Lines[l].LineNumber +"\" class="+ classStr +" onclick=\"SelectLine('"+ Lines[l].LineNumber +"')\">";
-        html += "<div class=lineIcon>"+ Lines[l].LineNumber +"</div>";
-        html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ Lines[l].LineNumber +"</div>";
+        html += "<div class=lineIcon>"+ (l + 1) +"</div>";
+        html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ (l + 1) +"</div>";
         html += "<div id=\"Line-"+ Lines[l].ExtNo +"-datetime\" class=contactDate>&nbsp;</div>";
         html += "<div class=presenceText>"+ Lines[l].DisplayName +" <"+ Lines[l].DisplayNumber +">" +"</div>";
         html += "</div>";
