@@ -1151,7 +1151,6 @@ function CreateUserAgent() {
         userAgentString: userAgentStr,
         autostart: false,
         register: false,
-        // rtcpMuxPolicy: "negotiate", // "require" | "negotiate"
         rel100: SIP.C.supported.UNSUPPORTED // UNSUPPORTED | SUPPORTED | REQUIRED NOTE: rel100 is not supported
     }
     if(IceStunServerJson != ""){
@@ -1160,7 +1159,6 @@ function CreateUserAgent() {
     // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
     // options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration
-    options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration.rtcpMuxPolicy = "negotiate"
 
     try {
         userAgent = new SIP.UA(options);
