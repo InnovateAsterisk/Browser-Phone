@@ -8913,25 +8913,25 @@ function ShowMyProfile(){
 
     var AccountHtml =  "<div id=Configure_Extension_Html style=\"display:none\">";
     AccountHtml += "<div class=UiText>"+ lang.asterisk_server_address +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_wssServer class=UiInputText type=text placeholder='"+ lang.eg_asterisk_server_address +"' value='"+ getDbItem("wssServer", "") +"'></div>";
+    AccountHtml += "<div><input id=Configure_Account_wssServer class=UiInputText type=text placeholder='"+ lang.eg_asterisk_server_address +"' value='"+ (wssServer == null ? "" : wssServer) +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.websocket_port +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_WebSocketPort class=UiInputText type=text placeholder='"+ lang.eg_websocket_port +"' value='"+ getDbItem("WebSocketPort", "") +"'></div>";
+    AccountHtml += "<div><input id=Configure_Account_WebSocketPort class=UiInputText type=text placeholder='"+ lang.eg_websocket_port +"' value='"+ (WebSocketPort == null ? "" : WebSocketPort) +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.websocket_path +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_ServerPath class=UiInputText type=text placeholder='"+ lang.eg_websocket_path +"' value='"+ getDbItem("ServerPath", "") +"'></div>";
+    AccountHtml += "<div><input id=Configure_Account_ServerPath class=UiInputText type=text placeholder='"+ lang.eg_websocket_path +"' value='"+ (ServerPath == null ? "" : ServerPath) +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.internal_subscribe_extension +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_profileUser class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ getDbItem("profileUser", "") +"'></div>";
+    AccountHtml += "<div><input id=Configure_Account_profileUser class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ (profileUser == null ? "" : profileUser) +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.full_name +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_profileName class=UiInputText type=text placeholder='"+ lang.eg_full_name +"' value='"+ getDbItem("profileName", "") +"'></div>";
+    AccountHtml += "<div><input id=Configure_Account_profileName class=UiInputText type=text placeholder='"+ lang.eg_full_name +"' value='"+ (profileName == null ? "" : profileName) +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.sip_username +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_SipUsername class=UiInputText type=text placeholder='"+ lang.eg_sip_username +"' value='"+ getDbItem("SipUsername", "") +"'></div>";
+    AccountHtml += "<div><input id=Configure_Account_SipUsername class=UiInputText type=text placeholder='"+ lang.eg_sip_username +"' value='"+ (SipUsername == null ? "" : SipUsername) +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.sip_password +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_SipPassword class=UiInputText type=password placeholder='"+ lang.eg_sip_password +"' value='"+ getDbItem("SipPassword", "") +"'></div>";
+    AccountHtml += "<div><input id=Configure_Account_SipPassword class=UiInputText type=password placeholder='"+ lang.eg_sip_password +"' value='"+ (SipPassword == null ? "" : SipPassword) +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.chat_engine +":</div>";
 
