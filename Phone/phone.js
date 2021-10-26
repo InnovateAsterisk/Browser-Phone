@@ -12,7 +12,7 @@ License: GNU Affero General Public License v3.0
 Version: 0.1.0
 Owner: Conrad de Wet
 Date: April 2020
-Git: https://github.com/InnovateAsterisk/Browser-Phone
+Git: http://github.com/InnovateAsterisk/Browser-Phone
 
 */
 
@@ -79,7 +79,7 @@ let hostingPrefex = getDbItem("HostingPrefex", "");                             
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
 let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
 let IpInContact = (getDbItem("IpInContact", "1") == "1");                           // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
-let IceStunServerJson = getDbItem("IceStunServerJson", "");                         // Sets the JSON string for ice Server. Must be https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration/iceServers
+let IceStunServerJson = getDbItem("IceStunServerJson", "");                         // Sets the JSON string for ice Server. Must be http://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration/iceServers
 let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));          // Set amount of time in milliseconds to wait for the ICE/STUN server
 
 let AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
@@ -109,8 +109,8 @@ let RecordingLayout = getDbItem("RecordingLayout", "them-pnp");             // T
 
 let DidLength = parseInt(getDbItem("DidLength", 6));                 // DID length from which to decide if an incoming caller is a "contact" or an "extension".
 let MaxDidLength = parseInt(getDbItem("MaxDidLength", 16));          // Maximum langth of any DID number including international dialled numbers.
-let DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");       // The display format for all dates. https://momentjs.com/docs/#/displaying/
-let DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");        // The display format for all times. https://momentjs.com/docs/#/displaying/
+let DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");       // The display format for all dates. http://momentjs.com/docs/#/displaying/
+let DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");        // The display format for all times. http://momentjs.com/docs/#/displaying/
 let Language = getDbItem("Language", "auto");                        // Overrides the langauage selector or "automatic". Must be one of availableLang[]. If not defaults to en. Testing: zh-Hans-CN, zh-cmn-Hans-CN, zh-Hant, de, de-DE, en-US, fr, fr-FR, es-ES, sl-IT-nedis, hy-Latn-IT-arevela
 
 // Permission Settings
@@ -180,9 +180,14 @@ let AudioinputDevices = [];
 let VideoinputDevices = [];
 let SpeakerDevices = [];
 let Lines = [];
-let lang = {}
-let audioBlobs = {}
-let newLineNumber = 0;
+let lang = {};
+let audioBlobs = {};
+let ConferenceVideoStreams = [];
+let conferenceIsOn = 0;
+let currentStageContainer = '';
+const parameterNames = ['wssServer', 'WebSocketPort', 'profileUser', 'profileName', 'SipUsername', 'SipPassword', 'ServerPath', 'autoCall', 'autoCallType', 'autoLogin'];
+let urlGetParams = findGetParameter(parameterNames);;
+let autoLogin = urlGetParams.autoLogin || false;
 
 // Utilities
 // =========
@@ -207,6 +212,11 @@ function getAudioOutputID(){
 }
 function getVideoSrcID(){
     var id = localDB.getItem("VideoSrcId");
+    // var localVideoStream = new MediaStream();
+    // var videoDevicesAmount = localVideoStream.getVideoTracks().length;
+    // if(videoDevicesAmount < 1){
+    //     return null
+    // }
     return (id != null)? id : "default";
 }
 function getRingerOutputID(){
@@ -979,6 +989,8 @@ function InitUi(){
     
     // Check if you account is created
     if(profileUserID == null ){
+        console.log('params: ', urlGetParams);
+        // 
         ShowMyProfile();
         return; // Don't load any more, after applying settings, the page must reload.
     }
@@ -993,12 +1005,16 @@ function InitUi(){
     }
 
     // Show Welcome Screen
-    if(welcomeScreen){
+    if(welcomeScreen && !autoLogin){
         if(localDB.getItem("WelcomeScreenAccept") != "yes"){
             OpenWindow(welcomeScreen, lang.welcome, 480, 800, true, false, lang.accept, function(){
                 localDB.setItem("WelcomeScreenAccept", "yes");
                 CloseWindow();
             }, null, null, null, null);
+        }
+    } else if(autoLogin){
+        if(localDB.getItem("WelcomeScreenAccept") != "yes"){
+            localDB.setItem("WelcomeScreenAccept", "yes");
         }
     }
 
@@ -1157,7 +1173,7 @@ function CreateUserAgent() {
         options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration.iceServers = JSON.parse(IceStunServerJson);
     }
     // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
-    // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
+    // http://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
     // options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration
 
     try {
@@ -1198,6 +1214,12 @@ function CreateUserAgent() {
             if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
         }
         isReRegister = true;
+        if(urlGetParams.hasOwnProperty('autoCall')){
+            let numToDial = handleCallNumber(urlGetParams.autoCall);
+            let callType = urlGetParams.autoCallType;
+            let buddy = 0;
+            setTimeout(DialByLine.bind(this, callType, buddy, numToDial), 3000);
+        }
     });
     userAgent.on('registrationFailed', function (response, cause) {
         console.log("Registration Failed: " + cause);
@@ -1285,7 +1307,7 @@ function CreateUserAgent() {
     // WebRTC Error Page
     $("#WebRtcFailed").on('click', function(){
         Confirm(lang.error_connecting_web_socket, lang.web_socket_error, function(){
-            window.open("https://"+ wssServer +":"+ WebSocketPort +"/httpstatus");
+            window.open("http://"+ wssServer +":"+ WebSocketPort +"/httptatus");
         }, null);
     });
 }
@@ -1445,7 +1467,7 @@ function ReceiveCall(session) {
     var answerTimeout = 1000;
     if (!AutoAnswerEnabled  && IntercomPolicy == "enabled"){ // Check headers only if policy is allow
 
-        // https://github.com/InnovateAsterisk/Browser-Phone/issues/126
+        // http://github.com/InnovateAsterisk/Browser-Phone/issues/126
         // Alert-Info: info=alert-autoanswer
         // Alert-Info: answer-after=0
         // Call-info: answer-after=0; x=y
@@ -1496,7 +1518,7 @@ function ReceiveCall(session) {
                 // In order for this to work nicely, the recipient maut be "ready" to accept video calls
                 // In order to ensure video call compatibility (i.e. the recipient must have their web cam in, and working)
                 // The NULL video sould be configured
-                // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
+                // http://github.com/InnovateAsterisk/Browser-Phone/issues/26
                 if(videoInvite) {
                     AnswerVideoCall(lineObj.LineNumber);
                 }
@@ -1524,7 +1546,7 @@ function ReceiveCall(session) {
 
                 var lineNo = lineObj.LineNumber;
                 window.setTimeout(function(){
-                    // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
+                    // http://github.com/InnovateAsterisk/Browser-Phone/issues/26
                     if(videoInvite) {
                         AnswerVideoCall(lineNo)
                     }
@@ -1774,6 +1796,7 @@ function AnswerVideoCall(lineNumber) {
 
     // Configure Video
     var currentVideoDevice = getVideoSrcID();
+    console.log('VIDEO DEVICE: ' + currentVideoDevice);
     if(currentVideoDevice != "default"){
         var confirmedVideoDevice = false;
         for (var i = 0; i < VideoinputDevices.length; ++i) {
@@ -1782,6 +1805,7 @@ function AnswerVideoCall(lineNumber) {
                 break;
             }
         }
+        
         if(confirmedVideoDevice){
             spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = { exact: currentVideoDevice }
         }
@@ -1802,8 +1826,20 @@ function AnswerVideoCall(lineNumber) {
     }
 
     // Save Devices
-    lineObj.SipSession.data.withvideo = true;
-    lineObj.SipSession.data.VideoSourceDevice = getVideoSrcID();
+    var videoDeviceId = getVideoSrcID();
+    var withVideo = true;
+    if(videoDeviceId == null){
+        withVideo = false;
+        // sessionDescriptionHandlerOptions: {
+            // constraints: {
+                // audio: { deviceId : "default" },
+                // video: false
+            // }
+        // }
+        spdOptions.sessionDescriptionHandlerOptions.constraints.video = false;
+    }
+    lineObj.SipSession.data.withvideo = withVideo;
+    lineObj.SipSession.data.VideoSourceDevice = videoDeviceId;
     lineObj.SipSession.data.AudioSourceDevice = getAudioSrcID();
     lineObj.SipSession.data.AudioOutputDevice = getAudioOutputID();
 
@@ -1943,6 +1979,8 @@ function wireupAudioSession(lineObj) {
 
         // Gets Remote Audio Track (Local audio is setup via initial GUM)
         var remoteStream = new MediaStream();
+        // console.log('ALL RECIVERS: ');
+        // console.log(pc.getReceivers())
         pc.getReceivers().forEach(function (receiver) {
             if(receiver.track && receiver.track.kind == "audio"){
                 remoteStream.addTrack(receiver.track);
@@ -2059,6 +2097,7 @@ function wireupAudioSession(lineObj) {
 
     UpdateUI();
 }
+
 function wireupVideoSession(lineObj) {
     if (lineObj == null) return;
 
@@ -2138,19 +2177,30 @@ function wireupVideoSession(lineObj) {
     session.on('trackAdded', function () {
         // Gets remote tracks
         var pc = this.sessionDescriptionHandler.peerConnection;
+        // this.sessionDescriptionHandler.on('addTrack', function(track){
+        //     console.log('sessionDescriptionHandler track: ', track);
+        // })
         var remoteAudioStream = new MediaStream();
         var remoteVideoStream = new MediaStream();
+        
         pc.getReceivers().forEach(function (receiver) {
             if(receiver.track){
                 if(receiver.track.kind == "audio"){
                     remoteAudioStream.addTrack(receiver.track);
                 }
-                if(receiver.track.kind == "video"){
+                if(receiver.track.kind == "video" && receiver.track.readyState !== 'ended'){
+                    console.log('receiver: ', receiver);
                     remoteVideoStream.addTrack(receiver.track);
+                    receiver.track.onended = function (track){
+                        console.log("TRACK ENDED", track);
+                        var trackId = track.target.id.replaceAll('{', '');
+                        trackId = trackId.replaceAll('}', '');
+                        $('.'+trackId).parent().remove();
+                    }
                 }
             }
         });
-
+        // console.log(remoteVideoStream);
         if(remoteAudioStream.getAudioTracks().length >= 1){
             var remoteAudio = $("#line-" + lineObj.LineNumber + "-remoteAudio").get(0);
             remoteAudio.srcObject = remoteAudioStream;
@@ -2166,14 +2216,116 @@ function wireupVideoSession(lineObj) {
             }
         }
 
-        if(remoteVideoStream.getVideoTracks().length >= 1){
-            var remoteVideo = $("#line-" + lineObj.LineNumber + "-remoteVideo").get(0);
-            remoteVideo.srcObject = remoteVideoStream;
-            remoteVideo.onloadedmetadata = function(e) {
-                remoteVideo.play();
-            }
-        }
+        var allVideoStreams = remoteVideoStream.getVideoTracks();
+        console.log('allVideoStreams: ', allVideoStreams);
+        if(allVideoStreams.length == 1){
+            var track = allVideoStreams[0];
+            if(!ConferenceVideoStreams.includes(track.id)){
+                if(conferenceIsOn) { 
+                    conferenceIsOn = 0;
+                }
 
+                // it seems that when we are connecting to confbrige first couple of times there is send to us videostream from user camera
+                ConferenceVideoStreams.push(track.id)
+                
+                var videoContainer = $("#line-"+ lineObj.LineNumber +"-stage-container");
+                var html = "<video id=\"line-"+ lineObj.LineNumber +"-remoteVideo\" muted></video>"; // Default Display
+                html += "<div id=\"line-"+ lineObj.LineNumber +"-scratchpad-container\" style=\"display:none\"></div>";
+                html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted style=\"display:none; object-fit: contain;\"></video>";
+    
+                videoContainer.append(html);
+    
+                var remoteVideo = $("#line-" + lineObj.LineNumber + "-remoteVideo").get(0);
+     
+                remoteVideo.srcObject = remoteVideoStream;
+    
+                remoteVideo.onloadedmetadata = function(e) {
+                    remoteVideo[0].play();
+                }    
+            }
+            
+        } else if(allVideoStreams.length > 1){
+            var remoteVideo = $("#line-" + lineObj.LineNumber + "-stage-container");
+            
+            // remoteVideo.find('.Camera').remove();
+
+            remoteVideo.children().each(function(i) {
+                console.log($(this).attr('id'))
+                $(this).attr('id') != 'localVideo'+ lineObj.LineNumber +'Camera' ? $(this).remove() : '';
+            });
+
+            var videoContainer = $("#line-"+ lineObj.LineNumber +"-stage-container");
+            videoContainer.prop('class', 'StageContainerConfGrid');
+            if(!conferenceIsOn) { 
+                conferenceIsOn = 1;
+            }
+
+            allVideoStreams.forEach((track, streamNum) => {
+
+                remoteVideoStream = new MediaStream();
+                remoteVideoStream.addTrack(track);
+
+                if(ConferenceVideoStreams.includes(track.id)){
+                    return;
+                }
+                
+                var trackId = track.id.replaceAll('{', '');
+                trackId = trackId.replaceAll('}', '');
+
+                var html = "<div class='Camera'><video id=\"line-"+ lineObj.LineNumber +"-stream"+trackId+"-remoteVideo\" class=\"remoteVideoTag "+trackId+"\" muted autoplay></video>"; // Default Display
+                html += "<div id=\"line-"+ lineObj.LineNumber +"-stream"+trackId+"-scratchpad-container\" class=\""+trackId+"\" style=\"display:none\"></div>";
+                html += "<video id=\"line-"+ lineObj.LineNumber +"-stream"+trackId+"-sharevideo\" class=\""+trackId+"\" controls muted style=\"display:none; object-fit: contain;\"></video></div>";
+                
+                videoContainer.append(html);
+                remoteVideo = $("#line-"+ lineObj.LineNumber +"-stream"+trackId+"-remoteVideo").get(0);
+                if(remoteVideo){
+                    remoteVideo.srcObject = remoteVideoStream;
+                    remoteVideo.onloadedmetadata = function(e) {
+                        if(remoteVideo[0].hasOwnProperty('play')){
+                            remoteVideo[0].play();
+                        } else if(remoteVideo.hasOwnProperty('play')){
+                            remoteVideo.play();
+                        }
+                        
+                    }
+                }
+            })
+            currentStageContainer = "line-" + lineObj.LineNumber + "-stage-container";
+            $('.remoteVideoTag').each(function(index){
+                if(window.mobileCheck){
+                    $( this ).get(0).click();
+                }
+                let remoteVideo = $( this ).get(0);
+                if(remoteVideo){
+                    remoteVideo.onloadedmetadata = function(e, remoteVideo) {
+                        if(remoteVideo){
+
+                            if(remoteVideo[0].hasOwnProperty('play')){
+                                remoteVideo[0].play();
+                            } else if(remoteVideo.hasOwnProperty('play')){
+                                remoteVideo.play();
+                            }
+                        }
+                    }    
+                }
+            })
+        } 
+        if(conferenceIsOn){
+            var remoteVideo = $("#line-" + lineObj.LineNumber + "-stage-container");
+            var localVideo = $("#line-"+ lineObj.LineNumber +"-localVideo");
+            var localVideoParent = localVideo.parent();
+            if($('#localVideo'+ lineObj.LineNumber +'Camera').length == 0 && localVideoParent.length && remoteVideo.length && localVideoParent.attr('id') != remoteVideo.attr('id')){
+                var html = "<div id='localVideo"+ lineObj.LineNumber +"Camera' class='Camera'></div>";
+                
+                $(html).appendTo(remoteVideo);
+                $('#localVideo'+ lineObj.LineNumber +'Camera').append(localVideo);
+                localVideo.parent().css({"border-color": "green", 
+                "border-width":"5px", 
+                "border-style":"solid"});
+            }
+            Dish();
+            window.onresize = Dish;
+        }
         // Custom Web hook
         if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", this);
     });
@@ -2200,6 +2352,8 @@ function wireupVideoSession(lineObj) {
         var pc = this.sessionDescriptionHandler.peerConnection;
         pc.getSenders().forEach(function (sender) {
             if(sender.track && sender.track.kind == "video"){
+                console.log('allVideoStreams LOCAL: ', sender.track);
+
                 localVideoStream.addTrack(sender.track);
             }
         });
@@ -4280,6 +4434,7 @@ function VideoCall(lineObj, dialledNumber) {
     }
 
     if(HasVideoDevice == false){
+        // TODO do something to stream static image instead or let the user to chose what to do
         console.warn("No video devices (webcam) found, switching to audio call.");
         AudioCall(lineObj, dialledNumber);
         return;
@@ -6182,7 +6337,7 @@ function SendVideo(lineNum, src){
         }
         else if('mozCaptureStream' in videoObj) {
             // This doesnt really work?
-            // see: https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/captureStream
+            // see: http://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/captureStream
             videoMediaStream = videoObj.mozCaptureStream();
         }
         else {
@@ -6321,7 +6476,6 @@ function ShareScreen(lineNum){
                 }
             });
 
-            // Set Preview
             console.log("Showing as preview...");
             var localVideo = $("#line-" + lineNum + "-localVideo").get(0);
             localVideo.srcObject = localStream;
@@ -6537,6 +6691,16 @@ function ShowContacts(){
     $("#myContacts").show();
 }
 
+function handleCallNumber(numDial){
+    if(EnableAlphanumericDial){
+        numDial = numDial.replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0,MaxDidLength);
+    } 
+    else {
+        numDial = numDial.replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength);
+    }
+    return numDial;
+}
+
 function DialByLine(type, buddy, numToDial, CallerID){
     if(userAgent == null || userAgent.isRegistered()==false){
         ShowMyProfile();
@@ -6544,12 +6708,8 @@ function DialByLine(type, buddy, numToDial, CallerID){
     }
 
     var numDial = (numToDial)? numToDial : $("#dialText").val();
-    if(EnableAlphanumericDial){
-        numDial = numDial.replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0,MaxDidLength);
-    } 
-    else {
-        numDial = numDial.replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength);
-    }
+    numDial = handleCallNumber(numDial);
+
     if(numDial.length == 0) {
         console.warn("Enter number to dial");
         return;
@@ -6568,7 +6728,7 @@ function DialByLine(type, buddy, numToDial, CallerID){
     }
 
     // Create a Line
-    newLineNumber = newLineNumber + 1;
+    var newLineNumber = Lines.length + 1;
     lineObj = new Line(newLineNumber, buddyObj.CallerIDName, numDial, buddyObj);
     Lines.push(lineObj);
     AddLineHtml(lineObj);
@@ -6591,9 +6751,7 @@ function SelectLine(lineNum){
     var lineObj = FindLineByNumber(lineNum);
     if(lineObj == null) return;
     
-    var displayLineNumber = 0;
     for(var l = 0; l < Lines.length; l++) {
-        if(Lines[l].LineNumber == lineObj.LineNumber) displayLineNumber = l+1;
         if(Lines[l].IsSelected == true && Lines[l].LineNumber == lineObj.LineNumber){
             // Nothing to do, you re-selected the same buddy;
             return;
@@ -6607,9 +6765,6 @@ function SelectLine(lineNum){
         $(this).prop('class', 'stream');
     });
     $("#line-ui-" + lineObj.LineNumber).prop('class', 'streamSelected');
-
-    $("#line-ui-" + lineObj.LineNumber + "-DisplayLineNo").html("<i class=\"fa fa-phone\"></i> "+ lang.line +" "+ displayLineNumber);
-    $("#line-ui-" + lineObj.LineNumber + "-LineIcon").html(displayLineNumber);
 
     // Switch the SIP Sessions
     SwitchLines(lineObj.LineNumber);
@@ -6648,8 +6803,8 @@ function AddLineHtml(lineObj){
 
     // Profile UI
     html += "<div class=contact style=\"cursor: unset; float: left;\">";
-    html += "<div id=\"line-ui-"+ lineObj.LineNumber +"-LineIcon\" class=lineIcon>"+ lineObj.LineNumber +"</div>";
-    html += "<div id=\"line-ui-"+ lineObj.LineNumber +"-DisplayLineNo\" class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ lineObj.LineNumber +"</div>";
+    html += "<div class=lineIcon>"+ lineObj.LineNumber +"</div>";
+    html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ lineObj.LineNumber +"</div>";
     html += "<div class=presenceText>"+ lineObj.DisplayName +" <"+ lineObj.DisplayNumber +"></div>";
     html += "</div>";
 
@@ -6716,9 +6871,9 @@ function AddLineHtml(lineObj){
 
         // Stage
         html += "<div id=\"line-"+ lineObj.LineNumber +"-stage-container\" class=StageContainer>";
-        html += "<video id=\"line-"+ lineObj.LineNumber +"-remoteVideo\" muted></video>"; // Default Display
-        html += "<div id=\"line-"+ lineObj.LineNumber +"-scratchpad-container\" style=\"display:none\"></div>";
-        html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted style=\"display:none; object-fit: contain;\"></video>";
+        // html += "<video id=\"line-"+ lineObj.LineNumber +"-remoteVideo\" muted></video>"; // Default Display
+        // html += "<div id=\"line-"+ lineObj.LineNumber +"-scratchpad-container\" style=\"display:none\"></div>";
+        // html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted style=\"display:none; object-fit: contain;\"></video>";
         html += "</div>";
 
         html += "</div>";
@@ -7265,8 +7420,8 @@ function UpdateBuddyList(){
         if(Lines[l].SipSession != null) classStr = (Lines[l].SipSession.local_hold)? "buddyActiveCallHollding" : "buddyActiveCall";
 
         var html = "<div id=\"line-"+ Lines[l].LineNumber +"\" class="+ classStr +" onclick=\"SelectLine('"+ Lines[l].LineNumber +"')\">";
-        html += "<div class=lineIcon>"+ (l + 1) +"</div>";
-        html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ (l + 1) +"</div>";
+        html += "<div class=lineIcon>"+ Lines[l].LineNumber +"</div>";
+        html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ Lines[l].LineNumber +"</div>";
         html += "<div id=\"Line-"+ Lines[l].ExtNo +"-datetime\" class=contactDate>&nbsp;</div>";
         html += "<div class=presenceText>"+ Lines[l].DisplayName +" <"+ Lines[l].DisplayNumber +">" +"</div>";
         html += "</div>";
@@ -8139,9 +8294,16 @@ function ExpandVideoArea(lineNum){
     $("#line-" + lineNum + "-ActiveCall").prop("class","FullScreenVideo");
     $("#line-" + lineNum + "-VideoCall").css("height", "calc(100% - 100px)");
     $("#line-" + lineNum + "-VideoCall").css("margin-top", "0px");
-
     $("#line-" + lineNum + "-preview-container").prop("class","PreviewContainer PreviewContainer_FS");
-    $("#line-" + lineNum + "-stage-container").prop("class","StageContainer StageContainer_FS");
+
+    if(!conferenceIsOn){
+        // check if there is conference which is indicated by divs which id includes 'stream'
+        $("#line-" + lineNum + "-stage-container").prop("class","StageContainer StageContainer_FS");
+    } else {        
+        $("#line-" + lineNum + "-stage-container").prop("class","StageContainerConfGrid");
+        $("#"+currentStageContainer).height("70%");
+        Dish();
+    }
 
     $("#line-" + lineNum + "-restore").show();
     $("#line-" + lineNum + "-expand").hide();
@@ -8154,7 +8316,15 @@ function RestoreVideoArea(lineNum){
     $("#line-" + lineNum + "-VideoCall").css("margin-top", "10px");
 
     $("#line-" + lineNum + "-preview-container").prop("class","PreviewContainer");
-    $("#line-" + lineNum + "-stage-container").prop("class","StageContainer");
+    if(!conferenceIsOn){
+        // check if there is conference which is indicated by divs which id includes 'stream'
+        $("#line-" + lineNum + "-stage-container").prop("class","StageContainer StageContainer_FS");
+    } else {        
+        $("#line-" + lineNum + "-stage-container").prop("class","StageContainerConfGrid");
+        $("#"+currentStageContainer).height();
+        Dish();
+    }
+
 
     $("#line-" + lineNum + "-restore").hide();
     $("#line-" + lineNum + "-expand").show();
@@ -9165,7 +9335,13 @@ function ShowMyProfile(){
                 quality: 1, 
                 circle: false 
             }
-            $("#Appearance_Html").show(); // Bug, only works if visible
+            if(!autoLogin){
+                $("#Appearance_Html").show(); // Bug, only works if visible
+            } else {
+                // I guess there is no need for appearance for now in autologin to sip server
+                window.location.reload();
+            }
+
             $("#ImageCanvas").croppie('result', options).then(function(base64) {
                 localDB.setItem("profilePicture", base64);
                 $("#Appearance_Html").hide();
@@ -9189,7 +9365,11 @@ function ShowMyProfile(){
         }
     });
     $.each(buttons, function(i,obj){
-        var button = $('<button>'+ obj.text +'</button>').click(obj.action);
+        let id='';
+        if(obj.text == lang.save){
+            id = ' id="saveAccountButton"';
+        }
+        var button = $('<button'+id+'>'+ obj.text +'</button>').click(obj.action);
         $("#ButtonBar").append(button);
     });
 
@@ -9649,7 +9829,7 @@ function ShowMyProfile(){
             }
         });
     
-        // Note: Only works over HTTPS or via localhost!!
+        // Note: Only works over HTTP or via localhost!!
         var localVideo = $("#local-video-preview").get(0);
         localVideo.muted = true;
         localVideo.playsinline = true;
@@ -9718,6 +9898,7 @@ function ShowMyProfile(){
                 // Get User Media
                 navigator.mediaDevices.getUserMedia(contraints).then(function(mediaStream){
                     // Handle Video
+                    // hererere
                     var videoTrack = (mediaStream.getVideoTracks().length >= 1)? mediaStream.getVideoTracks()[0] : null;
                     if(VideoFound && videoTrack != null){
                         localVideoStream.addTrack(videoTrack);
@@ -9759,28 +9940,28 @@ function ShowMyProfile(){
                         console.log("Found Device ("+ deviceInfos[i].kind +") Again: ", deviceInfos[i].label, deviceInfos[i].deviceId);
     
                         var deviceInfo = deviceInfos[i];
-                        var devideId = deviceInfo.deviceId;
+                        var deviceId = deviceInfo.deviceId;
                         var DisplayName = deviceInfo.label;
                         if(DisplayName.indexOf("(") > 0) DisplayName = DisplayName.substring(0,DisplayName.indexOf("("));
     
                         var option = $('<option/>');
-                        option.prop("value", devideId);
+                        option.prop("value", deviceId);
     
                         if (deviceInfo.kind === "audioinput") {
                             option.text((DisplayName != "")? DisplayName : "Microphone");
-                            if(getAudioSrcID() == devideId) option.prop("selected", true);
+                            if(getAudioSrcID() == deviceId) option.prop("selected", true);
                             selectMicScr.append(option);
                         }
                         else if (deviceInfo.kind === "audiooutput") {
                             option.text((DisplayName != "")? DisplayName : "Speaker");
-                            if(getAudioOutputID() == devideId) option.prop("selected", true);
+                            if(getAudioOutputID() == deviceId) option.prop("selected", true);
                             selectAudioScr.append(option);
                             var ringOption = option.clone();
-                            if(getRingerOutputID() == devideId) ringOption.prop("selected", true);
+                            if(getRingerOutputID() == deviceId) ringOption.prop("selected", true);
                             selectRingDevice.append(ringOption);
                         }
                         else if (deviceInfo.kind === "videoinput") {
-                            if(getVideoSrcID() == devideId) option.prop("selected", true);
+                            if(getVideoSrcID() == deviceId) option.prop("selected", true);
                             option.text((DisplayName != "")? DisplayName : "Webcam");
                             selectVideoScr.append(option);
                         }
@@ -9793,6 +9974,12 @@ function ShowMyProfile(){
                         option.text("(Default)");
                         selectVideoScr.append(option);
                     }
+                    Object.keys(urlGetParams).forEach(key => {
+                        $(`#Configure_Account_${key}`).val(urlGetParams[key]);
+                    })
+                    if(autoLogin){
+                        $('#saveAccountButton').click();
+                    }            
                 }).catch(function(e){
                     console.error(e);
                     Alert(lang.alert_error_user_media, lang.error);
@@ -9954,12 +10141,12 @@ function ChangeSettings(lineNum, obj){
     items.push({value: "", icon : null, text: lang.microphone, isHeader: true });
     for (var i = 0; i < AudioinputDevices.length; ++i) {
         var deviceInfo = AudioinputDevices[i];
-        var devideId = deviceInfo.deviceId;
+        var deviceId = deviceInfo.deviceId;
         var DisplayName = (deviceInfo.label)? deviceInfo.label : "Microphone";
         if(DisplayName.indexOf("(") > 0) DisplayName = DisplayName.substring(0,DisplayName.indexOf("("));
-        var disabled = (session.data.AudioSourceDevice == devideId);
+        var disabled = (session.data.AudioSourceDevice == deviceId);
 
-        items.push({value: "input-"+ devideId, icon : "fa fa-microphone", text: DisplayName, isDisabled : disabled });
+        items.push({value: "input-"+ deviceId, icon : "fa fa-microphone", text: DisplayName, isDisabled : disabled });
     }
     // Speakers
     if(HasSpeakerDevice){
@@ -9967,12 +10154,12 @@ function ChangeSettings(lineNum, obj){
         items.push({value: "", icon : null, text: lang.speaker, isHeader: true });
         for (var i = 0; i < SpeakerDevices.length; ++i) {
             var deviceInfo = SpeakerDevices[i];
-            var devideId = deviceInfo.deviceId;
+            var deviceId = deviceInfo.deviceId;
             var DisplayName = (deviceInfo.label)? deviceInfo.label : "Speaker";
             if(DisplayName.indexOf("(") > 0) DisplayName = DisplayName.substring(0,DisplayName.indexOf("("));
-            var disabled = (session.data.AudioOutputDevice == devideId);
+            var disabled = (session.data.AudioOutputDevice == deviceId);
 
-            items.push({value: "output-"+ devideId, icon : "fa fa-volume-up", text: DisplayName, isDisabled : disabled });
+            items.push({value: "output-"+ deviceId, icon : "fa fa-volume-up", text: DisplayName, isDisabled : disabled });
         }
     }
     // Cameras
@@ -9981,12 +10168,12 @@ function ChangeSettings(lineNum, obj){
         items.push({value: "", icon : null, text: lang.camera, isHeader: true });
         for (var i = 0; i < VideoinputDevices.length; ++i) {
             var deviceInfo = VideoinputDevices[i];
-            var devideId = deviceInfo.deviceId;
+            var deviceId = deviceInfo.deviceId;
             var DisplayName = (deviceInfo.label)? deviceInfo.label : "Webcam";
             if(DisplayName.indexOf("(") > 0) DisplayName = DisplayName.substring(0,DisplayName.indexOf("("));
-            var disabled = (session.data.VideoSourceDevice == devideId);
+            var disabled = (session.data.VideoSourceDevice == deviceId);
 
-            items.push({value: "video-"+ devideId, icon : "fa fa-video-camera", text: DisplayName, isDisabled : disabled });
+            items.push({value: "video-"+ deviceId, icon : "fa fa-video-camera", text: DisplayName, isDisabled : disabled });
         }
     }
 
@@ -12365,3 +12552,22 @@ var reconnectXmpp = function(){
 
     XMPP.connect(xmpp_username, xmpp_password, onStatusChange);
 }
+
+function findGetParameter(parameterName) {
+    var results = {},
+        tmp = [];
+    location.search
+        .substr(1)
+        .split("&")
+        .forEach(function (item) {
+          tmp = item.split("=");
+          if (parameterName.includes(tmp[0])) results[tmp[0]] = decodeURIComponent(tmp[1]);
+        });
+    return results;
+}
+
+window.mobileCheck = function() {
+    let check = false;
+    (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
+    return check;
+  };
