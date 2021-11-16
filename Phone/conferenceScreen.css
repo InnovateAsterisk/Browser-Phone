@@ -34,31 +34,7 @@
     animation: show 0.4s ease;
 
 }
-/* Details (optional) */
-/* Aspect Ratio Number */
-    /* .StageContainerConfGrid div:after {
-        color: #aaa;
-        font-size: 13px;
-        font-family: Arial, Helvetica, sans-serif;
-        position: absolute;
-        bottom: 20px;
-        right: 23px;
-        font-weight: 100;
-        content: "4:3";
-        display: block;
-    } */
-/* Gray Diagonal */
-    /* .StageContainerConfGrid div:before {
-        position: absolute;
-        height: 1px;
-        background: #ddd;
-        width: 100%;
-        transform: rotate(-37deg);
-        top: 50%;
-        font-weight: 100;
-        content: "4:3";
-        display: block;
-    } */
+
 /* Animation */
 @keyframes show {
     0% {

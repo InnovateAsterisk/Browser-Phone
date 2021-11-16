@@ -12,7 +12,7 @@ License: GNU Affero General Public License v3.0
 Version: 0.1.0
 Owner: Conrad de Wet
 Date: April 2020
-Git: http://github.com/InnovateAsterisk/Browser-Phone
+Git: https://github.com/InnovateAsterisk/Browser-Phone
 
 */
 
@@ -109,8 +109,8 @@ let RecordingLayout = getDbItem("RecordingLayout", "them-pnp");             // T
 
 let DidLength = parseInt(getDbItem("DidLength", 6));                 // DID length from which to decide if an incoming caller is a "contact" or an "extension".
 let MaxDidLength = parseInt(getDbItem("MaxDidLength", 16));          // Maximum langth of any DID number including international dialled numbers.
-let DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");       // The display format for all dates. http://momentjs.com/docs/#/displaying/
-let DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");        // The display format for all times. http://momentjs.com/docs/#/displaying/
+let DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");       // The display format for all dates. https://momentjs.com/docs/#/displaying/
+let DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");        // The display format for all times. https://momentjs.com/docs/#/displaying/
 let Language = getDbItem("Language", "auto");                        // Overrides the langauage selector or "automatic". Must be one of availableLang[]. If not defaults to en. Testing: zh-Hans-CN, zh-cmn-Hans-CN, zh-Hant, de, de-DE, en-US, fr, fr-FR, es-ES, sl-IT-nedis, hy-Latn-IT-arevela
 
 // Permission Settings
@@ -182,12 +182,10 @@ let SpeakerDevices = [];
 let Lines = [];
 let lang = {};
 let audioBlobs = {};
+let newLineNumber = 0;
 let ConferenceVideoStreams = [];
 let conferenceIsOn = 0;
 let currentStageContainer = '';
-const parameterNames = ['wssServer', 'WebSocketPort', 'profileUser', 'profileName', 'SipUsername', 'SipPassword', 'ServerPath', 'autoCall', 'autoCallType', 'autoLogin'];
-let urlGetParams = findGetParameter(parameterNames);;
-let autoLogin = urlGetParams.autoLogin || false;
 
 // Utilities
 // =========
@@ -212,11 +210,6 @@ function getAudioOutputID(){
 }
 function getVideoSrcID(){
     var id = localDB.getItem("VideoSrcId");
-    // var localVideoStream = new MediaStream();
-    // var videoDevicesAmount = localVideoStream.getVideoTracks().length;
-    // if(videoDevicesAmount < 1){
-    //     return null
-    // }
     return (id != null)? id : "default";
 }
 function getRingerOutputID(){
@@ -989,8 +982,6 @@ function InitUi(){
     
     // Check if you account is created
     if(profileUserID == null ){
-        console.log('params: ', urlGetParams);
-        // 
         ShowMyProfile();
         return; // Don't load any more, after applying settings, the page must reload.
     }
@@ -1005,16 +996,12 @@ function InitUi(){
     }
 
     // Show Welcome Screen
-    if(welcomeScreen && !autoLogin){
+    if(welcomeScreen){
         if(localDB.getItem("WelcomeScreenAccept") != "yes"){
             OpenWindow(welcomeScreen, lang.welcome, 480, 800, true, false, lang.accept, function(){
                 localDB.setItem("WelcomeScreenAccept", "yes");
                 CloseWindow();
             }, null, null, null, null);
-        }
-    } else if(autoLogin){
-        if(localDB.getItem("WelcomeScreenAccept") != "yes"){
-            localDB.setItem("WelcomeScreenAccept", "yes");
         }
     }
 
@@ -1173,7 +1160,7 @@ function CreateUserAgent() {
         options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration.iceServers = JSON.parse(IceStunServerJson);
     }
     // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
-    // http://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
+    // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
     // options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration
 
     try {
@@ -1307,7 +1294,7 @@ function CreateUserAgent() {
     // WebRTC Error Page
     $("#WebRtcFailed").on('click', function(){
         Confirm(lang.error_connecting_web_socket, lang.web_socket_error, function(){
-            window.open("http://"+ wssServer +":"+ WebSocketPort +"/httptatus");
+            window.open("https://"+ wssServer +":"+ WebSocketPort +"/httpstatus");
         }, null);
     });
 }
@@ -1467,7 +1454,7 @@ function ReceiveCall(session) {
     var answerTimeout = 1000;
     if (!AutoAnswerEnabled  && IntercomPolicy == "enabled"){ // Check headers only if policy is allow
 
-        // http://github.com/InnovateAsterisk/Browser-Phone/issues/126
+        // https://github.com/InnovateAsterisk/Browser-Phone/issues/126
         // Alert-Info: info=alert-autoanswer
         // Alert-Info: answer-after=0
         // Call-info: answer-after=0; x=y
@@ -1518,7 +1505,7 @@ function ReceiveCall(session) {
                 // In order for this to work nicely, the recipient maut be "ready" to accept video calls
                 // In order to ensure video call compatibility (i.e. the recipient must have their web cam in, and working)
                 // The NULL video sould be configured
-                // http://github.com/InnovateAsterisk/Browser-Phone/issues/26
+                // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
                 if(videoInvite) {
                     AnswerVideoCall(lineObj.LineNumber);
                 }
@@ -1546,7 +1533,7 @@ function ReceiveCall(session) {
 
                 var lineNo = lineObj.LineNumber;
                 window.setTimeout(function(){
-                    // http://github.com/InnovateAsterisk/Browser-Phone/issues/26
+                    // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
                     if(videoInvite) {
                         AnswerVideoCall(lineNo)
                     }
@@ -1796,7 +1783,6 @@ function AnswerVideoCall(lineNumber) {
 
     // Configure Video
     var currentVideoDevice = getVideoSrcID();
-    console.log('VIDEO DEVICE: ' + currentVideoDevice);
     if(currentVideoDevice != "default"){
         var confirmedVideoDevice = false;
         for (var i = 0; i < VideoinputDevices.length; ++i) {
@@ -1805,7 +1791,6 @@ function AnswerVideoCall(lineNumber) {
                 break;
             }
         }
-        
         if(confirmedVideoDevice){
             spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = { exact: currentVideoDevice }
         }
@@ -1830,12 +1815,6 @@ function AnswerVideoCall(lineNumber) {
     var withVideo = true;
     if(videoDeviceId == null){
         withVideo = false;
-        // sessionDescriptionHandlerOptions: {
-            // constraints: {
-                // audio: { deviceId : "default" },
-                // video: false
-            // }
-        // }
         spdOptions.sessionDescriptionHandlerOptions.constraints.video = false;
     }
     lineObj.SipSession.data.withvideo = withVideo;
@@ -2097,7 +2076,6 @@ function wireupAudioSession(lineObj) {
 
     UpdateUI();
 }
-
 function wireupVideoSession(lineObj) {
     if (lineObj == null) return;
 
@@ -2177,12 +2155,8 @@ function wireupVideoSession(lineObj) {
     session.on('trackAdded', function () {
         // Gets remote tracks
         var pc = this.sessionDescriptionHandler.peerConnection;
-        // this.sessionDescriptionHandler.on('addTrack', function(track){
-        //     console.log('sessionDescriptionHandler track: ', track);
-        // })
         var remoteAudioStream = new MediaStream();
         var remoteVideoStream = new MediaStream();
-        
         pc.getReceivers().forEach(function (receiver) {
             if(receiver.track){
                 if(receiver.track.kind == "audio"){
@@ -2200,7 +2174,6 @@ function wireupVideoSession(lineObj) {
                 }
             }
         });
-        // console.log(remoteVideoStream);
         if(remoteAudioStream.getAudioTracks().length >= 1){
             var remoteAudio = $("#line-" + lineObj.LineNumber + "-remoteAudio").get(0);
             remoteAudio.srcObject = remoteAudioStream;
@@ -2352,8 +2325,6 @@ function wireupVideoSession(lineObj) {
         var pc = this.sessionDescriptionHandler.peerConnection;
         pc.getSenders().forEach(function (sender) {
             if(sender.track && sender.track.kind == "video"){
-                console.log('allVideoStreams LOCAL: ', sender.track);
-
                 localVideoStream.addTrack(sender.track);
             }
         });
@@ -6337,7 +6308,7 @@ function SendVideo(lineNum, src){
         }
         else if('mozCaptureStream' in videoObj) {
             // This doesnt really work?
-            // see: http://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/captureStream
+            // see: https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/captureStream
             videoMediaStream = videoObj.mozCaptureStream();
         }
         else {
@@ -6871,11 +6842,7 @@ function AddLineHtml(lineObj){
 
         // Stage
         html += "<div id=\"line-"+ lineObj.LineNumber +"-stage-container\" class=StageContainer>";
-        // html += "<video id=\"line-"+ lineObj.LineNumber +"-remoteVideo\" muted></video>"; // Default Display
-        // html += "<div id=\"line-"+ lineObj.LineNumber +"-scratchpad-container\" style=\"display:none\"></div>";
-        // html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted style=\"display:none; object-fit: contain;\"></video>";
         html += "</div>";
-
         html += "</div>";
     }
 
@@ -9829,7 +9796,7 @@ function ShowMyProfile(){
             }
         });
     
-        // Note: Only works over HTTP or via localhost!!
+        // Note: Only works over HTTPS or via localhost!!
         var localVideo = $("#local-video-preview").get(0);
         localVideo.muted = true;
         localVideo.playsinline = true;
@@ -9898,7 +9865,6 @@ function ShowMyProfile(){
                 // Get User Media
                 navigator.mediaDevices.getUserMedia(contraints).then(function(mediaStream){
                     // Handle Video
-                    // hererere
                     var videoTrack = (mediaStream.getVideoTracks().length >= 1)? mediaStream.getVideoTracks()[0] : null;
                     if(VideoFound && videoTrack != null){
                         localVideoStream.addTrack(videoTrack);
