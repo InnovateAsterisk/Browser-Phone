@@ -236,18 +236,6 @@
     border-radius: 200px;
 }
 
-.FullScreenVideo{
-    position: fixed !important;
-    top: 0px !important;
-    left: 0px !important;
-    width: 100% !important;
-    height: 100% !important;
-    background-color: #000000 !important;
-    margin: 0px !important;
-    padding: 0px !important;
-    z-index: 2147483647 !important;
-}
-
 .dtmfButtons{
     font-size: 20px;
     color: #efefef;
@@ -925,6 +913,7 @@ input[type=range]{
 }
 .cleanScroller::-webkit-scrollbar {
     width: 10px;
+    height: 10px;
 }
 
 .cleanScroller::-webkit-scrollbar-thumb {
@@ -1515,65 +1504,135 @@ input[type=range]{
     text-align: center;
 }
 
-
-.PreviewContainer{
-    text-align: left;
-    /* margin-top: 5px; */
-
-    margin-top: 15px;
-    position: absolute;
-    left: 0px;
-    right: 0px;
-    z-index: 10;
-}
-.PreviewContainer VIDEO{
-    margin-left: 10px;
-    border-radius: 5px;
-    background-color: #000000;
-    height: auto;
-    width: 15%;
-}
-.PreviewContainer_FS{
-    height: calc(10%);
-    position: absolute;
-}
-.PreviewContainer_FS VIDEO{
+.FullScreenVideo{
+    position: fixed !important;
+    top: 0px !important;
+    left: 0px !important;
+    width: 100% !important;
     height: 100% !important;
-    width: auto !important;
+    background-color: #000000 !important;
+    margin: 0px !important;
+    padding: 0px !important;
+    z-index: 99999 !important;
 }
 
 .StageContainer{
     width: 100%;
-    max-height: 360px;
+    min-height: 360px;
     /* max-height: 508px; */
     background-color: #000000;
-    margin-top: 10px;
-    text-align: center;
-    z-index: 9;
-}
-.StageContainer VIDEO{
-    border-radius: 0px;
-    background-color: #000000;
+    z-index: 99;
 
-    height: auto;
-    max-height: 360px;
-    /* max-height: 508px; */
-    width: 100%;
-    /* max-width: 640px; */
-    max-width: 898px;
-    object-fit: contain;
+    position: relative;
 }
 .StageContainer_FS{
-    height: calc(100% - 55px) !important;
-    max-height: initial !important;
-}
-.StageContainer_FS VIDEO{
-    height: 100% !important;
+    position: fixed !important;
+    top: 125px !important;
+    left: 0px !important;
     width: 100% !important;
-    max-height: 100% !important;
-    max-width: 100% !important;
+    /* height: 100% !important; */
+    height: calc(100% - 125px - 75px) !important;
+}
 
-    object-fit: cover;
+.StageContainer .VideosContainer{
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    top: 0px;
+    right: 0px;
+
+    display: flex;
+    align-content: center;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.StageContainer .VideosContainer .VideoWrapper{
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    margin: 2px;
+
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+    align-self: center;
+}
+.StageContainer .VideosContainer .VideoWrapper .callerID{
+    height: 18px;
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    width: 98%;
+    text-align: left;
+    color: #cccccc;
+    text-shadow: 1px 1px 1px rgb(0 0 0 / 50%);
+    font-size: 100%;
+    overflow: hidden;
+    z-index: 999;
+}
+.StageContainer .VideosContainer .VideoWrapper .Actions{
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    text-align: right;
+    color: #cccccc;
+    text-shadow: 1px 1px 1px rgb(0 0 0 / 50%);
+    font-size: 100%;
+    z-index: 999;
+}
+.StageContainer .VideosContainer VIDEO{
+    border: 1px solid transparent;
+    border-radius: 7px;
+    object-fit: contain;
+    background-color: #2a2a2a;
+    z-index: 998;
+
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.PreviewContainer{
+    text-align: center;
+    height: 80px;
+    width: 100%; /* Gets overwritted */
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: #000000;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    z-index: 99;
+}
+.PreviewContainer_FS{
+    position: fixed;
+    top: 35px;
+}
+.PreviewContainer VIDEO{
+    margin-left: 5px;
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    height: 100%;
+}
+
+.CallControl{
+    z-index: 99999;
+    margin-top:10px;
+}
+.CallControl_FS{
+    position:fixed;
+    left: 0px;
+    width: 100%;
+    bottom: 0px;
+    height: 65px;
+    padding-top: 10px;
+    background-image: linear-gradient(transparent, black);
 }
 
 .canvas-container{
