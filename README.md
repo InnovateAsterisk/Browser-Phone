@@ -13,7 +13,7 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 
 ![Image of Main Interface](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall.jpg)
 
-## Features v0.1.x
+## Features v0.2.x
 - SIP Audio Calling
 - SIP Video Calling
 - XMPP Messaging 
@@ -29,8 +29,9 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 - Buddy (Contact) Management
 - Useful debug messages sent to console.
 - Works on: Chrome (all features work), Edge (same as Chrome), Opera (same as Chrome), Firefox (Most features work), Safari (Most feature work)
+- Asterisk SFU - Including talker notification and Caller ID
 
-## XMPP Features v0.1.x
+## XMPP Features v0.2.x
 - User Login & Auth (Use SIP credentials)
 - Buddy List (Roster) Saved on Server
 - Buddy vCard
@@ -47,7 +48,7 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 - Openfire XMPP Server
 
 ## JavaScript Dependencies
-- sip-0.11.6                    : WebRTC and SIP signalling library
+- sip-0.20.0                    : WebRTC and SIP signalling library
 - jquery-3.3.1                  : JavaScript toolkit
 - jquery.md5                    : Md5 Hash plug-in (unused)
 - Chart-2.7.2                   : Graph and Chart UI
