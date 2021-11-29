@@ -9,7 +9,7 @@ A fully featured browser based WebRTC SIP phone for Asterisk
 =============================================================
 File: phone.js
 License: GNU Affero General Public License v3.0
-Version: 0.2.0
+Version: 0.2.1
 Owner: Conrad de Wet
 Date: April 2020
 Git: https://github.com/InnovateAsterisk/Browser-Phone
@@ -75,7 +75,7 @@ let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAtt
 let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 15));    // The time in seconds to wait between WebSocket reconnection attempts.
 
 let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");             // Enable Subscribe to voicemail
-let userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (JsSIP - 0.20.0)");   // Set this to whatever you want.
+let userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (JsSIP - 0.20.1)");   // Set this to whatever you want.
 let hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
 let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
@@ -942,8 +942,13 @@ function InitUi(){
     phone.append(rightSection);
 
     if(DisableFreeDial == true) $("#BtnFreeDial").hide();
-    if(DisableBuddies == true) $("#BtnAddSomeone").hide();
-    if(ChatEngine != "XMPP") $("#BtnCreateGroup").hide();
+    if(DisableBuddies == true) {
+        $("#BtnFindBuddy").hide();
+        $("#BtnAddSomeone").hide();
+        $("#BtnFreeDial").show();
+    }
+    
+    $("#BtnCreateGroup").hide(); // Not ready for this yet
 
     $("#UserDID").html(profileUser);
     $("#UserCallID").html(profileName);
@@ -959,7 +964,7 @@ function InitUi(){
     });
     $("#BtnFreeDial").attr("title", lang.call)
     $("#BtnFreeDial").on('click', function(event){
-        ShowDial(this);
+        ShowDial();
     });
     $("#BtnAddSomeone").attr("title", lang.add_someone)
     $("#BtnAddSomeone").on('click', function(event){
@@ -1460,7 +1465,7 @@ function ReceiveCall(session) {
     // Detect Video
     lineObj.SipSession.data.withvideo = false;
     var videoInvite = false;
-    if(lineObj.SipSession.request.body){
+    if(EnableVideoCalling == true && lineObj.SipSession.request.body){
         // Asterisk 13 PJ_SIP always sends m=video if endpoint has video codec,
         // even if origional invite does not specify video.
         if(lineObj.SipSession.request.body.indexOf("m=video") > -1) {
@@ -6885,7 +6890,7 @@ var Line = function(lineNumber, displayName, displayNumber, buddyObj){
     this.LocalSoundMeter = null;
     this.RemoteSoundMeter = null;
 }
-function ShowDial(obj){
+function ShowDial(){
     ShowContacts();
 
     $("#myContacts").hide();
@@ -7738,6 +7743,7 @@ function UpdateBuddyList(){
 
     $("#myContacts").empty();
 
+    // Show Lines
     var callCount = 0
     for(var l = 0; l < Lines.length; l++) {
 
@@ -7756,9 +7762,21 @@ function UpdateBuddyList(){
             callCount ++;
         }
     }
+
+    // End here if they are not using the buddy system
+    if(DisableBuddies == true){
+        // If there are no calls, this could look fi=unny
+        if(callCount == 0){
+            ShowDial();
+        }
+        return;
+    }
+
+    // Draw a line if there are calls
     if(callCount > 0){
         $("#myContacts").append("<hr style=\"height:1px; background-color:#696969\">");
     }
+
     
     // Sort and shuffle Buddy List
     // ===========================
@@ -8258,7 +8276,7 @@ function RemoveBuddy(buddy){
             if(Buddies[b].identity == buddy) {
                 RemoveBuddyMessageStream(Buddies[b]);
                 UnsubscribeBuddy(Buddies[b]);
-                if(ChatEngine == "XMPP") XmppRemoveBuddyFromRoster(Buddies[b]);
+                if(Buddies[b].type == "xmpp") XmppRemoveBuddyFromRoster(Buddies[b]);
                 Buddies.splice(b, 1);
                 break;
             }
