@@ -1,19 +1,17 @@
-/*
-
-====================
- ☎️ Raspberry Phone ☎️ 
-====================
-A fully featured browser based WebRTC SIP phone for Asterisk
--------------------------------------------------------------
- Copyright (c) 2020  - Conrad de Wet - All Rights Reserved.
-=============================================================
-File: phone.js
-License: GNU Affero General Public License v3.0
-Version: 0.2.1
-Owner: Conrad de Wet
-Date: April 2020
-Git: https://github.com/InnovateAsterisk/Browser-Phone
-
+/**
+* ====================
+*  ☎️ Raspberry Phone ☎️ 
+* ====================
+* A fully featured browser based WebRTC SIP phone for Asterisk
+* -------------------------------------------------------------
+*  Copyright (c) 2020  - Conrad de Wet - All Rights Reserved.
+* =============================================================
+* File: phone.js
+* License: GNU Affero General Public License v3.0
+* Version: 0.2.2
+* Owner: Conrad de Wet
+* Date: April 2020
+* Git: https://github.com/InnovateAsterisk/Browser-Phone
 */
 
 // Global Settings
@@ -57,7 +55,8 @@ welcomeScreen += "</div>";
 // Use the "en.json" as a template.
 // More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
 // "en.json" is always loaded by default
-const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de"];
+const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de"]; // Defines the language packs avaialbe in /lang/ folder
+let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional languge packs other thAan /en.json
 
 // User Settings & Defaults
 // ========================
@@ -75,7 +74,7 @@ let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAtt
 let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 15));    // The time in seconds to wait between WebSocket reconnection attempts.
 
 let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");             // Enable Subscribe to voicemail
-let userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (JsSIP - 0.20.1)");   // Set this to whatever you want.
+let userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (JsSIP - 0.20.0)");   // Set this to whatever you want.
 let hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
 let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
@@ -326,6 +325,114 @@ $(window).on("beforeunload", function() {
 });
 $(window).on("resize", function() {
     UpdateUI();
+});
+$(document).ready(function () {
+    // Load phoneOptions
+    // =================
+    // Note: These options can be defined in the containing HTML page, and simply defined as a global variable
+    // var phoneOptions = {} // would work in index.html
+    // Even if the setting is defined on the database, these variabled get loaded after.
+
+    var options = (phoneOptions)? phoneOptions : {};
+    if(options.welcomeScreen !== undefined) welcomeScreen = options.welcomeScreen;
+    if(options.loadAlternateLang !== undefined) loadAlternateLang = options.loadAlternateLang;
+    if(options.profileUser !== undefined) profileUser = options.profileUser;
+    if(options.profileName !== undefined) profileName = options.profileName;
+    if(options.wssServer !== undefined) wssServer = options.wssServer;
+    if(options.WebSocketPort !== undefined) WebSocketPort = options.WebSocketPort;
+    if(options.ServerPath !== undefined) ServerPath = options.ServerPath;
+    if(options.SipUsername !== undefined) SipUsername = options.SipUsername;
+    if(options.SipPassword !== undefined) SipPassword = options.SipPassword;
+    if(options.TransportConnectionTimeout !== undefined) TransportConnectionTimeout = options.TransportConnectionTimeout;
+    if(options.TransportReconnectionAttempts !== undefined) TransportReconnectionAttempts = options.TransportReconnectionAttempts;
+    if(options.TransportReconnectionTimeout !== undefined) TransportReconnectionTimeout = options.TransportReconnectionTimeout;
+    if(options.VoiceMailSubscribe !== undefined) VoiceMailSubscribe = options.VoiceMailSubscribe;
+    if(options.userAgentStr !== undefined) userAgentStr = options.userAgentStr;
+    if(options.hostingPrefex !== undefined) hostingPrefex = options.hostingPrefex;
+    if(options.RegisterExpires !== undefined) RegisterExpires = options.RegisterExpires;
+    if(options.WssInTransport !== undefined) WssInTransport = options.WssInTransport;
+    if(options.IpInContact !== undefined) IpInContact = options.IpInContact;
+    if(options.IceStunServerJson !== undefined) IceStunServerJson = options.IceStunServerJson;
+    if(options.IceStunCheckTimeout !== undefined) IceStunCheckTimeout = options.IceStunCheckTimeout;
+    if(options.AutoAnswerEnabled !== undefined) AutoAnswerEnabled = options.AutoAnswerEnabled;
+    if(options.DoNotDisturbEnabled !== undefined) DoNotDisturbEnabled = options.DoNotDisturbEnabled;
+    if(options.CallWaitingEnabled !== undefined) CallWaitingEnabled = options.CallWaitingEnabled;
+    if(options.RecordAllCalls !== undefined) RecordAllCalls = options.RecordAllCalls;
+    if(options.StartVideoFullScreen !== undefined) StartVideoFullScreen = options.StartVideoFullScreen;
+    if(options.ShowCallAnswerWindow !== undefined) ShowCallAnswerWindow = options.ShowCallAnswerWindow;
+    if(options.SelectRingingLine !== undefined) SelectRingingLine = options.SelectRingingLine;
+    if(options.AutoGainControl !== undefined) AutoGainControl = options.AutoGainControl;
+    if(options.EchoCancellation !== undefined) EchoCancellation = options.EchoCancellation;
+    if(options.NoiseSuppression !== undefined) NoiseSuppression = options.NoiseSuppression;
+    if(options.MirrorVideo !== undefined) MirrorVideo = options.MirrorVideo;
+    if(options.maxFrameRate !== undefined) maxFrameRate = options.maxFrameRate;
+    if(options.videoHeight !== undefined) videoHeight = options.videoHeight;
+    if(options.MaxVideoBandwidth !== undefined) MaxVideoBandwidth = options.MaxVideoBandwidth;
+    if(options.videoAspectRatio !== undefined) videoAspectRatio = options.videoAspectRatio;
+    if(options.NotificationsActive !== undefined) NotificationsActive = options.NotificationsActive;
+    if(options.StreamBuffer !== undefined) StreamBuffer = options.StreamBuffer;
+    if(options.PosterJpegQuality !== undefined) PosterJpegQuality = options.PosterJpegQuality;
+    if(options.VideoResampleSize !== undefined) VideoResampleSize = options.VideoResampleSize;
+    if(options.RecordingVideoSize !== undefined) RecordingVideoSize = options.RecordingVideoSize;
+    if(options.RecordingVideoFps !== undefined) RecordingVideoFps = options.RecordingVideoFps;
+    if(options.RecordingLayout !== undefined) RecordingLayout = options.RecordingLayout;
+    if(options.DidLength !== undefined) DidLength = options.DidLength;
+    if(options.MaxDidLength !== undefined) MaxDidLength = options.MaxDidLength;
+    if(options.DisplayDateFormat !== undefined) DisplayDateFormat = options.DisplayDateFormat;
+    if(options.DisplayTimeFormat !== undefined) DisplayTimeFormat = options.DisplayTimeFormat;
+    if(options.Language !== undefined) Language = options.Language;
+    if(options.EnableTextMessaging !== undefined) EnableTextMessaging = options.EnableTextMessaging;
+    if(options.DisableFreeDial !== undefined) DisableFreeDial = options.DisableFreeDial;
+    if(options.DisableBuddies !== undefined) DisableBuddies = options.DisableBuddies;
+    if(options.EnableTransfer !== undefined) EnableTransfer = options.EnableTransfer;
+    if(options.EnableConference !== undefined) EnableConference = options.EnableConference;
+    if(options.AutoAnswerPolicy !== undefined) AutoAnswerPolicy = options.AutoAnswerPolicy;
+    if(options.DoNotDisturbPolicy !== undefined) DoNotDisturbPolicy = options.DoNotDisturbPolicy;
+    if(options.CallWaitingPolicy !== undefined) CallWaitingPolicy = options.CallWaitingPolicy;
+    if(options.CallRecordingPolicy !== undefined) CallRecordingPolicy = options.CallRecordingPolicy;
+    if(options.IntercomPolicy !== undefined) IntercomPolicy = options.IntercomPolicy;
+    if(options.EnableAccountSettings !== undefined) EnableAccountSettings = options.EnableAccountSettings;
+    if(options.EnableAudioVideoSettings !== undefined) EnableAudioVideoSettings = options.EnableAudioVideoSettings;
+    if(options.EnableAppearanceSettings !== undefined) EnableAppearanceSettings = options.EnableAppearanceSettings;
+    if(options.EnableNotificationSettings !== undefined) EnableNotificationSettings = options.EnableNotificationSettings;
+    if(options.EnableAlphanumericDial !== undefined) EnableAlphanumericDial = options.EnableAlphanumericDial;
+    if(options.EnableVideoCalling !== undefined) EnableVideoCalling = options.EnableVideoCalling;
+    if(options.ChatEngine !== undefined) ChatEngine = options.ChatEngine;
+    if(options.XmppDomain !== undefined) XmppDomain = options.XmppDomain;
+    if(options.XmppServer !== undefined) XmppServer = options.XmppServer;
+    if(options.XmppWebsocketPort !== undefined) XmppWebsocketPort = options.XmppWebsocketPort;
+    if(options.XmppWebsocketPath !== undefined) XmppWebsocketPath = options.XmppWebsocketPath;
+    if(options.XmppRealm !== undefined) XmppRealm = options.XmppRealm;
+    if(options.XmppRealmSeperator !== undefined) XmppRealmSeperator = options.XmppRealmSeperator;
+    if(options.XmppChatGroupService !== undefined) XmppChatGroupService = options.XmppChatGroupService;
+
+    console.log("Runtime options", options);
+
+    // Load Langauge File
+    // ==================
+    $.getJSON(hostingPrefex + "lang/en.json", function(data){
+        lang = data;
+        console.log("English Lanaguage Pack loaded: ", lang);
+        if(loadAlternateLang == true){
+            var userLang = GetAlternateLanguage();
+            if(userLang != ""){
+                console.log("Loading Alternate Lanaguage Pack: ", userLang);
+                $.getJSON(hostingPrefex +"lang/"+ userLang +".json", function (altdata){
+                    lang = altdata;
+                }).always(function() {
+                    console.log("Alternate Lanaguage Pack loaded: ", lang);
+                    InitUi();
+                });
+            }
+            else {
+                console.log("No Alternate Lanaguage Found.");
+                InitUi();
+            }
+        }
+        else {
+            InitUi();
+        }
+    });
 });
 
 // User Interface
@@ -848,29 +955,6 @@ function SetStatusWindow(){
     });
 }
 
-// Document Ready
-// ==============
-$(document).ready(function () {
-    // Load Langauge File
-    // ==================
-    $.getJSON(hostingPrefex + "lang/en.json", function (data){
-        lang = data;
-        var userLang = GetAlternateLanguage();
-        if(userLang != ""){
-            $.getJSON(hostingPrefex +"lang/"+ userLang +".json", function (altdata){
-                lang = altdata;
-            }).always(function() {
-                console.log("Alternate Lanaguage Pack loaded: ", lang);
-                InitUi();
-            });
-        }
-        else {
-            console.log("Lanaguage Pack already loaded: ", lang);
-            InitUi();
-        }
-    });
-});
-
 // Init UI
 // =======
 function InitUi(){
@@ -1247,7 +1331,7 @@ function onTransportConnected(){
 
     userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
 
-    CloseWindow();
+    CloseWindow(true);
 
     // Auto start register
     window.setTimeout(function (){
@@ -1361,6 +1445,9 @@ function onRegistered(){
         // Output to status
         $("#regStatus").html(lang.registered);
 
+        // Close any window that may be open
+        CloseWindow(true);
+
         // Start XMPP
         if(ChatEngine == "XMPP") reconnectXmpp();
 
@@ -1374,8 +1461,8 @@ function onRegistered(){
 }
 /**
  * Called if UserAgent can connect, but not register.
- * @param response = Incoming request message
- * @param cause = String containing cause message. 
+ * @param {string} response = Incoming request message
+ * @param {string} cause = cause message. Unused
 **/
 function onRegisterFailed(response, cause){
     console.log("Registration Failed: " + response);
@@ -2207,7 +2294,7 @@ function onSessionRecievedMessage(lineObj, response){
         var session = lineObj.SipSession;
         if(!session.data.ConfbridgeChannels) session.data.ConfbridgeChannels = [];
         if(!session.data.ConfbridgeEvents) session.data.ConfbridgeEvents = [];
-    
+
         if(msgJson.type == "ConfbridgeStart"){
             console.log("ConfbridgeStart!");
         }
@@ -2219,8 +2306,10 @@ function onSessionRecievedMessage(lineObj, response){
             console.log("Video Mode:", msgJson.bridge.video_mode);
 
             session.data.ConfbridgeChannels = msgJson.channels; // Write over this
-            msgJson.channels.forEach(function(chan) {
-                console.log(chan.caller.name, "Is in the conference");
+            session.data.ConfbridgeChannels.forEach(function(chan) {
+                // The mute and unmute status doesnt appear to be a realtime state, only what the 
+                // startmuted= setting of the default profile is.
+                console.log(chan.caller.name, "Is in the conference. Muted:", chan.muted, "Admin:", chan.admin);
             });
         }
         else if(msgJson.type == "ConfbridgeJoin"){
@@ -2232,7 +2321,7 @@ function onSessionRecievedMessage(lineObj, response){
                 if(!found){
                     session.data.ConfbridgeChannels.push(chan);
                     session.data.ConfbridgeEvents.push({ event: chan.caller.name + " ("+ chan.caller.number +") joined the conference", eventTime: utcDateNow() });
-                    console.log(chan.caller.name, "Joined the conference");
+                    console.log(chan.caller.name, "Joined the conference. Muted: ", chan.muted);
                 }
             });
         }
@@ -2267,8 +2356,28 @@ function onSessionRecievedMessage(lineObj, response){
                     });
                 });
             }
-
-
+        }
+        else if(msgJson.type == "ConfbridgeMute"){
+            msgJson.channels.forEach(function(chan) {
+                session.data.ConfbridgeChannels.forEach(function(existingChan) {
+                    if(existingChan.id == chan.id){
+                        console.log(existingChan.caller.name, "is now muted");
+                        existingChan.muted = true;
+                    }
+                });
+            });
+            RedrawStage(lineObj.LineNumber, false);
+        }
+        else if(msgJson.type == "ConfbridgeUnmute"){
+            msgJson.channels.forEach(function(chan) {
+                session.data.ConfbridgeChannels.forEach(function(existingChan) {
+                    if(existingChan.id == chan.id){
+                        console.log(existingChan.caller.name, "is now unmuted");
+                        existingChan.muted = false;
+                    }
+                });
+            });
+            RedrawStage(lineObj.LineNumber, false);
         }
         else if(msgJson.type == "ConfbridgeEnd"){
             console.log("The Asterisk Conference has ended, bye!");
@@ -4328,7 +4437,7 @@ function ClearMissedBadge(buddy) {
 
 // Outbound Calling
 // ================
-function VideoCall(lineObj, dialledNumber) {
+function VideoCall(lineObj, dialledNumber, extraHeaders) {
     if(userAgent == null) return;
     if(!userAgent.isRegistered()) return;
     if(lineObj == null) return;
@@ -4411,6 +4520,10 @@ function VideoCall(lineObj, dialledNumber) {
     }
     if(supportedConstraints.aspectRatio && videoAspectRatio != "") {
         spdOptions.sessionDescriptionHandlerOptions.constraints.video.aspectRatio = videoAspectRatio;
+    }
+    // Extra Headers
+    if(extraHeaders) {
+        spdOptions.extraHeaders = extraHeaders;
     }
 
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.starting_video_call);
@@ -4557,7 +4670,7 @@ function AudioCallMenu(buddy, obj){
         PopupMenu(obj, menu);
     }
 }
-function AudioCall(lineObj, dialledNumber) {
+function AudioCall(lineObj, dialledNumber, extraHeaders) {
     if(userAgent == null) return;
     if(userAgent.isRegistered() == false) return;
     if(lineObj == null) return;
@@ -4605,6 +4718,10 @@ function AudioCall(lineObj, dialledNumber) {
     }
     if(supportedConstraints.noiseSuppression) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
+    }
+    // Extra Headers
+    if(extraHeaders) {
+        spdOptions.extraHeaders = extraHeaders;
     }
 
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.starting_audio_call);
@@ -4668,6 +4785,7 @@ function AudioCall(lineObj, dialledNumber) {
             }
         }
     }
+    console.log("INVITE:", inviterOptions)
     lineObj.SipSession.invite(inviterOptions).catch(function(e){
         console.warn("Failed to send INVITE:", e);
     });
@@ -7027,7 +7145,15 @@ function ShowContacts(){
     $("#myContacts").show();
 }
 
-function DialByLine(type, buddy, numToDial, CallerID){
+/**
+ * Primary method for making a call. 
+ * @param {string} type = (required) Either "audio" or "video". Will setup UI according to this type.
+ * @param {Buddy} buddy = (optional) The buddy to dial if provided.
+ * @param {sting} numToDial = (required) The number to dial.
+ * @param {string} CallerID = (optional) If no buddy provided, one is generated automatically using this callerID and the numToDial
+ * @param {Array<string>} extraHeaders = (optinal) Array of headers to include in the INVITE eg: ["foo: bar"] (Note the space after the :)
+ */
+function DialByLine(type, buddy, numToDial, CallerID, extraHeaders){
     if(userAgent == null || userAgent.isRegistered() == false){
         ShowMyProfile();
         return;
@@ -7067,10 +7193,10 @@ function DialByLine(type, buddy, numToDial, CallerID){
 
     // Start Call Invite
     if(type == "audio"){
-        AudioCall(lineObj, numDial);
+        AudioCall(lineObj, numDial, extraHeaders);
     } 
     else {
-        VideoCall(lineObj, numDial);
+        VideoCall(lineObj, numDial, extraHeaders);
     }
 
     try{
@@ -8666,6 +8792,8 @@ function RedrawStage(lineNum, videoChanged){
             thisRemoteVideoStream.channel = "unknown"; // Asterisk Channel
             thisRemoteVideoStream.CallerIdName = "";
             thisRemoteVideoStream.CallerIdNumber = "";
+            thisRemoteVideoStream.isAdminMuted = false;
+            thisRemoteVideoStream.isAdministrator = false;
             if(session && session.data && session.data.videoChannelNames){
                 session.data.videoChannelNames.forEach(function(videoChannelName){
                     if(thisRemoteVideoStream.mid == videoChannelName.mid){
@@ -8678,6 +8806,8 @@ function RedrawStage(lineNum, videoChanged){
                     if(ConfbridgeChannel.id == thisRemoteVideoStream.channel){
                         thisRemoteVideoStream.CallerIdName = ConfbridgeChannel.caller.name;
                         thisRemoteVideoStream.CallerIdNumber = ConfbridgeChannel.caller.number;
+                        thisRemoteVideoStream.isAdminMuted = ConfbridgeChannel.muted;
+                        thisRemoteVideoStream.isAdministrator = ConfbridgeChannel.admin;
                     }
                 });
             }
@@ -8820,10 +8950,18 @@ function RedrawStage(lineNum, videoChanged){
         }
 
         // Polulate Caller ID
+        var adminMuteIndicator = "";
+        var administratorIndicator = "";
+        if(thisRemoteVideoStream.isAdminMuted == true){
+            adminMuteIndicator = "<i class=\"fa fa-microphone-slash\" style=\"color:red\"></i>&nbsp;"
+        }
+        if(thisRemoteVideoStream.isAdministrator == true){
+            administratorIndicator = "<i class=\"fa fa-user\" style=\"color:orange\"></i>&nbsp;"
+        }
         if(thisRemoteVideoStream.CallerIdName == ""){
             thisRemoteVideoStream.CallerIdName = FindBuddyByIdentity(session.data.buddyId).CallerIDName;
         }
-        $(video).parent().find(".callerID").html(thisRemoteVideoStream.CallerIdName);
+        $(video).parent().find(".callerID").html(administratorIndicator + adminMuteIndicator + thisRemoteVideoStream.CallerIdName);
 
 
     });
@@ -11677,12 +11815,26 @@ function OpenWindow(html, title, height, width, hideCloseButton, allowResize, bu
         windowObj.dialog("option", "width", windowWidth);
     });
 }
-function CloseWindow() {
+function CloseWindow(all) {
     console.log("Call to close any open window");
 
     if(windowObj != null){
         windowObj.dialog("close");
         windowObj = null;
+    }
+    if(all == true){
+        if (confirmObj != null) {
+            confirmObj.dialog("close");
+            confirmObj = null;
+        }
+        if (promptObj != null) {
+            promptObj.dialog("close");
+            promptObj = null;
+        }
+        if (alertObj != null) {
+            alertObj.dialog("close");
+            alertObj = null;
+        }
     }
 }
 function WindowProgressOn() {
