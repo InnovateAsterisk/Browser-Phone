@@ -2046,7 +2046,11 @@ function onInviteCancel(lineObj, response){
         lineObj.SipSession.data.terminateby = "them";
         lineObj.SipSession.data.reasonCode = 0;
         lineObj.SipSession.data.reasonText = "Call Cancelled";
-    
+
+        lineObj.SipSession.dispose().catch(function(error){
+            console.log("Failed to dispose the cancel dialog", error);
+        })
+
         teardownSession(lineObj);
 }
 // Both Incoming an doutgoing INVITE
@@ -2622,6 +2626,8 @@ function teardownSession(lineObj) {
     if(session.data.earlyReject != true){
         UpdateUI();
     }
+
+    //session.dispose();
 
     // Custom Web hook
     if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
@@ -4785,7 +4791,6 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
             }
         }
     }
-    console.log("INVITE:", inviterOptions)
     lineObj.SipSession.invite(inviterOptions).catch(function(e){
         console.warn("Failed to send INVITE:", e);
     });
