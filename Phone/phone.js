@@ -333,7 +333,7 @@ $(document).ready(function () {
     // var phoneOptions = {} // would work in index.html
     // Even if the setting is defined on the database, these variabled get loaded after.
 
-    var options = (phoneOptions)? phoneOptions : {};
+    var options = (typeof phoneOptions !== 'undefined')? phoneOptions : {};
     if(options.welcomeScreen !== undefined) welcomeScreen = options.welcomeScreen;
     if(options.loadAlternateLang !== undefined) loadAlternateLang = options.loadAlternateLang;
     if(options.profileUser !== undefined) profileUser = options.profileUser;
@@ -2626,8 +2626,6 @@ function teardownSession(lineObj) {
     if(session.data.earlyReject != true){
         UpdateUI();
     }
-
-    //session.dispose();
 
     // Custom Web hook
     if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
