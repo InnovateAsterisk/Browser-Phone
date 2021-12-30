@@ -79,7 +79,7 @@ let hostingPrefex = getDbItem("HostingPrefex", "");                             
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
 let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
 let IpInContact = (getDbItem("IpInContact", "1") == "1");                           // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
-let IceStunServerJson = getDbItem("IceStunServerJson", "");                         // Sets the JSON string for ice Server. Default: [{ urls: "stun:stun.l.google.com:19302" }] Must be https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration/iceServers
+let IceStunServerJson = getDbItem("IceStunServerJson", "");                         // Sets the JSON string for ice Server. Default: [{ "urls": "stun:stun.l.google.com:19302" }] Must be https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration/iceServers
 let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));          // Set amount of time in milliseconds to wait for the ICE/STUN server
 
 let AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
@@ -1233,17 +1233,22 @@ function CreateUserAgent() {
             // upgrade you internt connection. This is voip we are talking about here.
         },
         sessionDescriptionHandlerFactoryOptions: {
-            peerConnectionOptions :{
-                alwaysAcquireMediaFirst: true, // Better for firefox, but seems to have no effect on others
-                iceCheckingTimeout: IceStunCheckTimeout,
-                rtcConfiguration: {}
-            }
+            peerConnectionConfiguration :{
+                // bundlePolicy: "balanced",
+                // certificates: undefined,
+                // iceCandidatePoolSize: 0,
+                // iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+                // iceTransportPolicy: "all",
+                // peerIdentity: undefined,
+                // rtcpMuxPolicy: "require",
+            },
+            iceGatheringTimeout: IceStunCheckTimeout
         },
         displayName: profileName,
         authorizationUsername: SipUsername,
         authorizationPassword: SipPassword,
         contactParams: { "transport" : "wss" },
-        hackIpInContact: IpInContact,
+        hackIpInContact: IpInContact,           // Asterisk should also be set to rewrite contact
         userAgentString: userAgentStr,
         autoStart: false,
         autoStop: true,
@@ -1260,12 +1265,12 @@ function CreateUserAgent() {
         }
     }
     if(IceStunServerJson != ""){
-        options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration.iceServers = JSON.parse(IceStunServerJson);
+        options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration.iceServers = JSON.parse(IceStunServerJson);
     }
     // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
-    // options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration
-    // options.sessionDescriptionHandlerFactoryOptions.peerConnectionOptions.rtcConfiguration.bundlePolicy = "max-bundle";
+    // options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration
+    // options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration.bundlePolicy = "max-bundle";
     
     userAgent = new SIP.UserAgent(options);
     userAgent.isRegistered = function(){
