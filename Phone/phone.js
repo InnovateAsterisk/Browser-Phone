@@ -2169,6 +2169,8 @@ function onInviteTrying(lineObj, response){
     if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trying", response.message);
 }
 function onInviteProgress(lineObj, response){
+    console.log("Call Progress:", response.message.statusCode);
+    
     // Provisional 1xx
     // response.message.reasonPhrase
     if(response.message.statusCode == 180){
@@ -2182,24 +2184,32 @@ function onInviteProgress(lineObj, response){
 
         // Play Early Media
         console.log("Audio:", soundFile.url);
-        var earlyMedia = new Audio(soundFile.blob);
-        earlyMedia.preload = "auto";
-        earlyMedia.loop = true;
-        earlyMedia.oncanplaythrough = function(e) {
-            if (typeof earlyMedia.sinkId !== 'undefined' && getAudioOutputID() != "default") {
-                earlyMedia.setSinkId(getAudioOutputID()).then(function() {
-                    console.log("Set sinkId to:", getAudioOutputID());
-                }).catch(function(e){
-                    console.warn("Failed not apply setSinkId.", e);
-                });
-            }
-            earlyMedia.play().then(function(){
-                // Audio Is Playing
-            }).catch(function(e){
-                console.warn("Unable to play audio file.", e);
-            }); 
+        if(lineObj.SipSession.data.earlyMedia){
+            // There is already early media playing
+            // onProgress can be called multiple times
+            // Dont add it again
+            console.log("Early Media already playing");
         }
-        lineObj.SipSession.data.earlyMedia = earlyMedia;
+        else {
+            var earlyMedia = new Audio(soundFile.blob);
+            earlyMedia.preload = "auto";
+            earlyMedia.loop = true;
+            earlyMedia.oncanplaythrough = function(e) {
+                if (typeof earlyMedia.sinkId !== 'undefined' && getAudioOutputID() != "default") {
+                    earlyMedia.setSinkId(getAudioOutputID()).then(function() {
+                        console.log("Set sinkId to:", getAudioOutputID());
+                    }).catch(function(e){
+                        console.warn("Failed not apply setSinkId.", e);
+                    });
+                }
+                earlyMedia.play().then(function(){
+                    // Audio Is Playing
+                }).catch(function(e){
+                    console.warn("Unable to play audio file.", e);
+                }); 
+            }
+            lineObj.SipSession.data.earlyMedia = earlyMedia;
+        }
     }
     else if(response.message.statusCode === 183){
         $("#line-" + lineObj.LineNumber + "-msg").html(response.message.reasonPhrase + "...");
