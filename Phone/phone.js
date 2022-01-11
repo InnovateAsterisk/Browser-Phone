@@ -1,6 +1,6 @@
 /**
 * ====================
-*  ☎️ Raspberry Phone ☎️ 
+*  ☎️ Browser Phone ☎️ 
 * ====================
 * A fully featured browser based WebRTC SIP phone for Asterisk
 * -------------------------------------------------------------
@@ -8,7 +8,6 @@
 * =============================================================
 * File: phone.js
 * License: GNU Affero General Public License v3.0
-* Version: 0.2.2
 * Owner: Conrad de Wet
 * Date: April 2020
 * Git: https://github.com/InnovateAsterisk/Browser-Phone
@@ -16,6 +15,8 @@
 
 // Global Settings
 // ===============
+const appversion = "0.2.3";
+const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
 let welcomeScreen = "<div class=\"UiWindowField\"><pre style=\"font-size: 12px\">";
@@ -48,13 +49,14 @@ welcomeScreen += "\n";
 welcomeScreen += "============================================================================\n</pre>";
 welcomeScreen += "</div>";
 
-// Lanaguage Packs (lang/xx.json)
-// ===============
-// Note: The following should correspond to files on your server. 
-// eg: If you list "fr" then you need to add the file "fr.json".
-// Use the "en.json" as a template.
-// More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
-// "en.json" is always loaded by default
+/**
+ * Lanaguage Packs (lang/xx.json)
+ * Note: The following should correspond to files on your server. 
+ * eg: If you list "fr" then you need to add the file "fr.json".
+ * Use the "en.json" as a template.
+ * More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
+ * "en.json" is always loaded by default
+ */
 const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de"]; // Defines the language packs avaialbe in /lang/ folder
 let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional languge packs other thAan /en.json
 
@@ -74,7 +76,7 @@ let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAtt
 let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 15));    // The time in seconds to wait between WebSocket reconnection attempts.
 
 let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");             // Enable Subscribe to voicemail
-let userAgentStr = getDbItem("UserAgentStr", "Raspberry Phone (JsSIP - 0.20.0)");   // Set this to whatever you want.
+let userAgentStr = getDbItem("UserAgentStr", "Browser Phone "+ appversion +" (SIPJS - "+ sipjsversion +")");   // Set this to whatever you want.
 let hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
 let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
@@ -2000,8 +2002,8 @@ function AnswerVideoCall(lineNumber) {
     // Send Answer
     lineObj.SipSession.accept(spdOptions).then(function(){
         onInviteAccepted(lineObj,true);
-    }).catch(function(){
-        console.warn("Failed to answer call", e, lineObj.SipSession);
+    }).catch(function(error){
+        console.warn("Failed to answer call", error, lineObj.SipSession);
         lineObj.SipSession.data.reasonCode = 500;
         lineObj.SipSession.data.reasonText = "Client Error";
         teardownSession(lineObj);
@@ -6393,6 +6395,9 @@ function holdSession(lineNum) {
                 session.data.hold.push({ event: "hold", eventTime: utcDateNow() });
 
                 updateLineScroll(lineNum);
+
+                // Custom Web hook
+                if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("hold", session);
             },
             onReject: function(){
                 session.isOnHold = false;
@@ -6446,6 +6451,9 @@ function unholdSession(lineNum) {
                 session.data.hold.push({ event: "unhold", eventTime: utcDateNow() });
 
                 updateLineScroll(lineNum);
+
+                // Custom Web hook
+                if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("unhold", session);
             },
             onReject: function(){
                 session.isOnHold = true;
