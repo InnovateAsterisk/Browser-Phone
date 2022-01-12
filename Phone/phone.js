@@ -103,6 +103,7 @@ let videoAspectRatio = getDbItem("AspectRatio", "");                    // Sugge
 let NotificationsActive = (getDbItem("Notifications", "0") == "1");
 
 let StreamBuffer = parseInt(getDbItem("StreamBuffer", 50));                 // The amount of rows to buffer in the Buddy Stream
+let MaxDataStoreDays = parseInt(getDbItem("MaxDataStoreDays", 0));          // Defines the maximum amount of days worth of date to store locally. 0=Stores all data always. >0 Trims n days back worth of data at various events where. 
 let PosterJpegQuality = parseFloat(getDbItem("PosterJpegQuality", 0.6));    // The image quality of the Video Poster images
 let VideoResampleSize = getDbItem("VideoResampleSize", "HD");               // The resample size (height) to re-render video that gets presented (sent). (SD = ???x360 | HD = ???x720 | FHD = ???x1080)
 let RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recodings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
@@ -127,7 +128,6 @@ let CallWaitingPolicy = getDbItem("CallWaitingPolicy", "allow");                
 let CallRecordingPolicy = getDbItem("CallRecordingPolicy", "allow");                    // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
 let IntercomPolicy = getDbItem("IntercomPolicy", "enabled");                            // disabled = feature is disabled | enabled = feature is always on
 let EnableAccountSettings = (getDbItem("EnableAccountSettings", "1") == "1");           // Controls the Account tab in Settings
-let EnableAudioVideoSettings = (getDbItem("EnableAudioVideoSettings", "1") == "1");     // Controls the Audio & Video tab in Settings
 let EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
 let EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
 let EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
@@ -394,7 +394,6 @@ $(document).ready(function () {
     if(options.CallRecordingPolicy !== undefined) CallRecordingPolicy = options.CallRecordingPolicy;
     if(options.IntercomPolicy !== undefined) IntercomPolicy = options.IntercomPolicy;
     if(options.EnableAccountSettings !== undefined) EnableAccountSettings = options.EnableAccountSettings;
-    if(options.EnableAudioVideoSettings !== undefined) EnableAudioVideoSettings = options.EnableAudioVideoSettings;
     if(options.EnableAppearanceSettings !== undefined) EnableAppearanceSettings = options.EnableAppearanceSettings;
     if(options.EnableNotificationSettings !== undefined) EnableNotificationSettings = options.EnableNotificationSettings;
     if(options.EnableAlphanumericDial !== undefined) EnableAlphanumericDial = options.EnableAlphanumericDial;
@@ -3484,7 +3483,7 @@ function DisplayQosData(sessionId){
         }
     }
 }
-function DeleteQosData(buddy){
+function DeleteQosData(buddy, stream){
     var indexedDB = window.indexedDB;
     var request = indexedDB.open("CallQosData", 1);
     request.onerror = function(event) {
@@ -3507,27 +3506,33 @@ function DeleteQosData(buddy){
         }
 
         // Loop and Delete
-        console.log("Deleting CallQosData: ", buddy);
-        var transaction = IDB.transaction(["CallQos"], "readwrite");
-        var objectStore = transaction.objectStore("CallQos");
-        var objectStoreGet = objectStore.index('buddy').getAll(buddy);
-
-        objectStoreGet.onerror = function(event) {
-            console.error("IndexDB Get Error:", event);
-        }
-        objectStoreGet.onsuccess = function(event) {
-            if(event.target.result && event.target.result.length > 0){
-                // There sre some rows to delete
-                $.each(event.target.result, function(i, item){
-                    // console.log("Delete: ", item.uID);
-                    try{
-                        objectStore.delete(item.uID);
-                    } catch(e){
-                        console.log("Call CallQosData Delete failed: ", e);
+        // Note:  This database can only delete based on Primary Key
+        // The The Primary Key is arbitary, so you must get all the rows based
+        // on a lookup, and delete from there.
+        $.each(stream.DataCollection, function (i, item) {
+            if (item.ItemType == "CDR" && item.SessionId && item.SessionId != "") {
+                console.log("Deleting CallQosData: ", item.SessionId);
+                var objectStore = IDB.transaction(["CallQos"], "readwrite").objectStore("CallQos");
+                var objectStoreGet = objectStore.index('sessionid').getAll(item.SessionId);
+                objectStoreGet.onerror = function(event) {
+                    console.error("IndexDB Get Error:", event);
+                }
+                objectStoreGet.onsuccess = function(event) {
+                    if(event.target.result && event.target.result.length > 0){
+                        // There sre some rows to delete
+                        $.each(event.target.result, function(i, item){
+                            // console.log("Delete: ", item.uID);
+                            try{
+                                objectStore.delete(item.uID);
+                            } catch(e){
+                                console.log("Call CallQosData Delete failed: ", e);
+                            }
+                        });
                     }
-                });
+                }
             }
-        }
+        });
+
 
     }
 }
@@ -4099,6 +4104,12 @@ function AddMessageToStream(buddyObj, messageId, type, message, DateTime){
     currentStream.DataCollection.push(newMessageJson);
     currentStream.TotalRows = currentStream.DataCollection.length;
     localDB.setItem(buddyObj.identity + "-stream", JSON.stringify(currentStream));
+
+    // Data Cleanup
+    if(MaxDataStoreDays && MaxDataStoreDays > 0){
+        console.log("Cleaning up data: ", MaxDataStoreDays);
+        RemoveBuddyMessageStream(FindBuddyByIdentity(buddy), MaxDataStoreDays);
+    }
 }
 function ActivateStream(buddyObj, message){
     // Handle Stream Not visible
@@ -4230,6 +4241,13 @@ function AddCallMessage(buddy, session) {
     localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
 
     UpdateBuddyActivity(buddy);
+
+    // Data Cleanup
+    if(MaxDataStoreDays && MaxDataStoreDays > 0){
+        console.log("Cleaning up data: ", MaxDataStoreDays);
+        RemoveBuddyMessageStream(FindBuddyByIdentity(buddy), MaxDataStoreDays);
+    }
+
 }
 // TODO
 function SendImageDataMessage(buddy, ImgDataUrl) {
@@ -8127,27 +8145,7 @@ function AddBuddyMessageStream(buddyObj) {
 
     // Separator --------------------------------------------------------------------------
     html += "<div style=\"clear:both; height:0px\"></div>"
-/*
-    // Calling UI --------------------------------------------------------------------------
-    html += "<div id=\"contact-"+ buddyObj.identity +"-calling\">";
 
-    // Gneral Messages
-    html += "<div id=\"contact-"+ buddyObj.identity +"-timer\" style=\"float: right; margin-top: 5px; margin-right: 10px; display:none;\"></div>";
-    html += "<div id=\"contact-"+ buddyObj.identity +"-msg\" class=callStatus style=\"display:none\">...</div>";
-
-    // Call Answer UI
-    html += "<div id=\"contact-"+ buddyObj.identity +"-AnswerCall\" class=answerCall style=\"display:none\">";
-    html += "<div>";
-    html += "<button onclick=\"AnswerAudioCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button> ";
-    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
-        html += "<button id=\"contact-"+ buddyObj.identity +"-answer-video\" onclick=\"AnswerVideoCall('"+ buddyObj.identity +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button> ";
-    }
-    html += "<button onclick=\"RejectCall('"+ buddyObj.identity +"')\" class=hangupButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.reject_call +"</button> ";
-    html += "</div>";
-    html += "</div>";
-
-    html += "</div>";
-*/
     // Search & Related Elements
     html += "<div id=\"contact-"+ buddyObj.identity +"-search\" style=\"margin-top:6px; display:none\">";
     html += "<span class=searchClean style=\"width:100%\"><input type=text style=\"width:90%\" autocomplete=none oninput=SearchStream(this,'"+ buddyObj.identity +"') placeholder=\""+ lang.find_something_in_the_message_stream +"\"></span>";
@@ -8207,33 +8205,91 @@ function AddBuddyMessageStream(buddyObj) {
 
     $("#rightContent").append(html);
 }
-function RemoveBuddyMessageStream(buddyObj){
-    CloseBuddy(buddyObj.identity);
+function RemoveBuddyMessageStream(buddyObj, days){
+    // use days to specify how many days back must the records be cleared
+    // eg: 30, will only remove records older than 30 day from now
+    // and leave the buddy in place.
+    // Must be greater then 0 or the entire buddy will be removed.
+    if(buddyObj == null) return;
 
-    UpdateBuddyList();
-
-    // Remove Stream
-    $("#stream-"+ buddyObj.identity).remove();
+    // Grab a copy of the stream
     var stream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
-    localDB.removeItem(buddyObj.identity + "-stream");
+    if(days && days > 0){
+        if(stream && stream.DataCollection && stream.DataCollection.length >= 1){
 
-    // Remove Buddy
-    var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
-    var x = 0;
-    $.each(json.DataCollection, function (i, item) {
-        if(item.uID == buddyObj.identity || item.cID == buddyObj.identity || item.gID == buddyObj.identity){
-            x = i;
-            return false;
+            // Create Trim Stream 
+            var trimmedStream = {
+                TotalRows : 0,
+                DataCollection : []
+            }
+            trimmedStream.DataCollection = stream.DataCollection.filter(function(item){
+                // Apply Date Filter
+                var itemDate = moment.utc(item.ItemDate.replace(" UTC", ""));
+                var expiredDate = moment().utc().subtract(days, 'days');
+                // Condition
+                if(itemDate.isSameOrAfter(expiredDate, "second")){
+                    return true // return true to include;
+                }
+                else {
+                    return false; // return false to exclude;
+                }
+            });
+            trimmedStream.TotalRows = trimmedStream.DataCollection.length;
+            localDB.setItem(buddyObj.identity + "-stream", JSON.stringify(trimmedStream));
+
+            // Create Delete Stream
+            var deleteStream = {
+                TotalRows : 0,
+                DataCollection : []
+            }
+            deleteStream.DataCollection = stream.DataCollection.filter(function(item){
+                // Apply Date Filter
+                var itemDate = moment.utc(item.ItemDate.replace(" UTC", ""));
+                var expiredDate = moment().utc().subtract(days, 'days');
+                // Condition
+                if(itemDate.isSameOrAfter(expiredDate, "second")){
+                    return false; // return false to exclude;
+                }
+                else {
+                    return true // return true to include;
+                }
+            });
+            deleteStream.TotalRows = deleteStream.DataCollection.length;
+
+            // Re-assign stream so that the normal delete action can apply
+            stream = deleteStream;
+
+            RefreshStream(buddyObj);
         }
-    });
-    json.DataCollection.splice(x,1);
-    json.TotalRows = json.DataCollection.length;
-    localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
+    }
+    else {
+        CloseBuddy(buddyObj.identity);
 
-    // Remove Images
-    localDB.removeItem("img-"+ buddyObj.identity +"-extension");
-    localDB.removeItem("img-"+ buddyObj.identity +"-contact");
-    localDB.removeItem("img-"+ buddyObj.identity +"-group");
+        // Remove From UI
+        $("#stream-"+ buddyObj.identity).remove();
+
+        // Remove Stream (CDRs & Messages etc)
+        localDB.removeItem(buddyObj.identity + "-stream");
+
+        // Remove Buddy
+        var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
+        var x = 0;
+        $.each(json.DataCollection, function (i, item) {
+            if(item.uID == buddyObj.identity || item.cID == buddyObj.identity || item.gID == buddyObj.identity){
+                x = i;
+                return false;
+            }
+        });
+        json.DataCollection.splice(x,1);
+        json.TotalRows = json.DataCollection.length;
+        localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
+
+        // Remove Images
+        localDB.removeItem("img-"+ buddyObj.identity +"-extension");
+        localDB.removeItem("img-"+ buddyObj.identity +"-contact");
+        localDB.removeItem("img-"+ buddyObj.identity +"-group");
+    }
+    UpdateBuddyList();
 
     // Remove Call Recordings
     if(stream && stream.DataCollection && stream.DataCollection.length >= 1){
@@ -8241,7 +8297,9 @@ function RemoveBuddyMessageStream(buddyObj){
     }
     
     // Remove QOS Data
-    DeleteQosData(buddyObj.identity);
+    if(stream && stream.DataCollection && stream.DataCollection.length >= 1){
+        DeleteQosData(buddyObj.identity, stream);
+    }
 }
 function DeleteCallRecordings(buddy, stream){
     var indexedDB = window.indexedDB;
@@ -8266,8 +8324,10 @@ function DeleteCallRecordings(buddy, stream){
         }
 
         // Loop and Delete
+        // Note: This database can only delete based on Primary Key
+        // The Primary Key is arbitary, but is saved in item.Recordings.uID
         $.each(stream.DataCollection, function (i, item) {
-            if (item.Recordings && item.Recordings.length) {
+            if (item.ItemType == "CDR" && item.Recordings && item.Recordings.length) {
                 $.each(item.Recordings, function (i, recording) {
                     console.log("Deleting Call Recording: ", recording.uID);
                     var objectStore = IDB.transaction(["Recordings"], "readwrite").objectStore("Recordings");
@@ -9469,6 +9529,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                 }
 
                 // Delete CDR
+                // TODO: This doesnt look for the cdr or the QOS, dont use this
                 if(id == 20){
                     var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
                     if(currentStream != null || currentStream.DataCollection != null){
@@ -9738,8 +9799,9 @@ function ShowMyProfile(){
     html += "<div border=0 class=UiSideField>";
 
     // SIP Account
-    html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Configure_Extension_Html')\"><i class=\"fa fa-user-circle-o UiTextHeadingIcon\" style=\"background-color:#a93a3a\"></i> "+ lang.account +"</div>"
-
+    if(EnableAccountSettings == true){
+        html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Configure_Extension_Html')\"><i class=\"fa fa-user-circle-o UiTextHeadingIcon\" style=\"background-color:#a93a3a\"></i> "+ lang.account +"</div>"
+    }
     var AccountHtml =  "<div id=Configure_Extension_Html style=\"display:none\">";
     AccountHtml += "<div class=UiText>"+ lang.asterisk_server_address +":</div>";
     AccountHtml += "<div><input id=Configure_Account_wssServer class=UiInputText type=text placeholder='"+ lang.eg_asterisk_server_address +"' value='"+ getDbItem("wssServer", "") +"'></div>";
@@ -9854,10 +9916,12 @@ function ShowMyProfile(){
 
     AudioVideoHtml += "</div>";
 
-    if(EnableAudioVideoSettings == true) html += AudioVideoHtml;
+    html += AudioVideoHtml;
 
     // 3 Appearance
-    html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Appearance_Html')\"><i class=\"fa fa-pencil UiTextHeadingIcon\" style=\"background-color:#416493\"></i> "+ lang.appearance +"</div>"
+    if(EnableAppearanceSettings == true) {
+        html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Appearance_Html')\"><i class=\"fa fa-pencil UiTextHeadingIcon\" style=\"background-color:#416493\"></i> "+ lang.appearance +"</div>"
+    }
 
     var AppearanceHtml = "<div id=Appearance_Html style=\"display:none\">"; 
     AppearanceHtml += "<div id=ImageCanvas style=\"width:150px; height:150px\"></div>";
@@ -9884,12 +9948,15 @@ function ShowMyProfile(){
     if(EnableAppearanceSettings == true) html += AppearanceHtml;
 
     // 4 Notifications
-    html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Notifications_Html')\"><i class=\"fa fa-bell UiTextHeadingIcon\" style=\"background-color:#ab8e04\"></i> "+ lang.notifications +"</div>"
+    if(EnableNotificationSettings == true) {
+        html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Notifications_Html')\"><i class=\"fa fa-bell UiTextHeadingIcon\" style=\"background-color:#ab8e04\"></i> "+ lang.notifications +"</div>"
+    }
 
     var NotificationsHtml = "<div id=Notifications_Html style=\"display:none\">";
     NotificationsHtml += "<div class=UiText>"+ lang.notifications +":</div>";
     NotificationsHtml += "<div><input type=checkbox id=Settings_Notifications><label for=Settings_Notifications> "+ lang.enable_onscreen_notifications +"<label></div>";
     NotificationsHtml += "</div>";
+    // TODO: Add ring tone selection etc
 
     if(EnableNotificationSettings == true) html += NotificationsHtml;
 
@@ -9907,62 +9974,67 @@ function ShowMyProfile(){
 
             var chatEng = ($("#chat_type_sip").is(':checked'))? "SIMPLE" : "XMPP";
 
-            if($("#Configure_Account_wssServer").val() == "") {
-                console.warn("Validation Failed");
-                return;
-            } 
-            if($("#Configure_Account_WebSocketPort").val() == "") {
-                console.warn("Validation Failed");
-                return;
-            } 
-            if($("#Configure_Account_profileUser").val() == "") {
-                console.warn("Validation Failed");
-                return;
-            } 
-            if($("#Configure_Account_profileName").val() == "") {
-                console.warn("Validation Failed");
-                return;
-            } 
-            if($("#Configure_Account_SipUsername").val() == "") {
-                console.warn("Validation Failed");
-                return;
-            } 
-            if($("#Configure_Account_SipPassword").val() == "") {
-                console.warn("Validation Failed");
-                return;
-            } 
-    
-            if(chatEng == "XMPP"){
-                if($("#Configure_Account_xmpp_domain").val() == "") {
+            if(EnableAccountSettings){
+                if($("#Configure_Account_wssServer").val() == "") {
                     console.warn("Validation Failed");
                     return;
                 } 
-                if($("#Configure_Account_xmpp_address").val() == "") {
+                if($("#Configure_Account_WebSocketPort").val() == "") {
                     console.warn("Validation Failed");
                     return;
                 } 
-                if($("#Configure_Account_xmpp_port").val() == "") {
+                if($("#Configure_Account_profileUser").val() == "") {
                     console.warn("Validation Failed");
                     return;
                 } 
+                if($("#Configure_Account_profileName").val() == "") {
+                    console.warn("Validation Failed");
+                    return;
+                } 
+                if($("#Configure_Account_SipUsername").val() == "") {
+                    console.warn("Validation Failed");
+                    return;
+                } 
+                if($("#Configure_Account_SipPassword").val() == "") {
+                    console.warn("Validation Failed");
+                    return;
+                }
+                if(chatEng == "XMPP"){
+                    if($("#Configure_Account_xmpp_domain").val() == "") {
+                        console.warn("Validation Failed");
+                        return;
+                    } 
+                    if($("#Configure_Account_xmpp_address").val() == "") {
+                        console.warn("Validation Failed");
+                        return;
+                    } 
+                    if($("#Configure_Account_xmpp_port").val() == "") {
+                        console.warn("Validation Failed");
+                        return;
+                    } 
+                }
             }
+
+            // The profileUserID identifies users
+            if(localDB.getItem("profileUserID") == null) localDB.setItem("profileUserID", uID()); // For first time only
     
             // 1 Account
-            if(localDB.getItem("profileUserID") == null) localDB.setItem("profileUserID", uID()); // For first time only
-            localDB.setItem("wssServer", $("#Configure_Account_wssServer").val());
-            localDB.setItem("WebSocketPort", $("#Configure_Account_WebSocketPort").val());
-            localDB.setItem("ServerPath", $("#Configure_Account_ServerPath").val());
-            localDB.setItem("profileUser", $("#Configure_Account_profileUser").val());
-            localDB.setItem("profileName", $("#Configure_Account_profileName").val());
-            localDB.setItem("SipUsername", $("#Configure_Account_SipUsername").val());
-            localDB.setItem("SipPassword", $("#Configure_Account_SipPassword").val());
-    
-            localDB.setItem("ChatEngine", chatEng);
-    
-            localDB.setItem("XmppDomain", $("#Configure_Account_xmpp_domain").val());
-            localDB.setItem("XmppServer", $("#Configure_Account_xmpp_address").val());
-            localDB.setItem("XmppWebsocketPort", $("#Configure_Account_xmpp_port").val());
-            localDB.setItem("XmppWebsocketPath", $("#Configure_Account_xmpp_path").val());
+            if(EnableAccountSettings){
+                localDB.setItem("wssServer", $("#Configure_Account_wssServer").val());
+                localDB.setItem("WebSocketPort", $("#Configure_Account_WebSocketPort").val());
+                localDB.setItem("ServerPath", $("#Configure_Account_ServerPath").val());
+                localDB.setItem("profileUser", $("#Configure_Account_profileUser").val());
+                localDB.setItem("profileName", $("#Configure_Account_profileName").val());
+                localDB.setItem("SipUsername", $("#Configure_Account_SipUsername").val());
+                localDB.setItem("SipPassword", $("#Configure_Account_SipPassword").val());
+        
+                localDB.setItem("ChatEngine", chatEng);
+        
+                localDB.setItem("XmppDomain", $("#Configure_Account_xmpp_domain").val());
+                localDB.setItem("XmppServer", $("#Configure_Account_xmpp_address").val());
+                localDB.setItem("XmppWebsocketPort", $("#Configure_Account_xmpp_port").val());
+                localDB.setItem("XmppWebsocketPath", $("#Configure_Account_xmpp_path").val());
+            }
     
             // 2 Audio & Video
             localDB.setItem("AudioOutputId", $("#playbackSrc").val());
@@ -9978,36 +10050,46 @@ function ShowMyProfile(){
             localDB.setItem("RingOutputId", $("#ringDevice").val());
     
             // 3 Appearance
-            var vCard = { 
-                "TitleDesc": $("#Configure_Profile_TitleDesc").val(),
-                "Mobile": $("#Configure_Profile_Mobile").val(),
-                "Email": $("#Configure_Profile_Email").val(),
-                "Number1": $("#Configure_Profile_Number1").val(),
-                "Number2": $("#Configure_Profile_Number2").val(),
-            }
-            localDB.setItem("profileVcard", JSON.stringify(vCard));
-    
-            var options =  { 
-                type: 'base64', 
-                size: 'viewport', 
-                format: 'png', 
-                quality: 1, 
-                circle: false 
-            }
-            $("#Appearance_Html").show(); // Bug, only works if visible
-            $("#ImageCanvas").croppie('result', options).then(function(base64) {
-                localDB.setItem("profilePicture", base64);
-                $("#Appearance_Html").hide();
+            if(EnableAppearanceSettings){
+                var vCard = { 
+                    "TitleDesc": $("#Configure_Profile_TitleDesc").val(),
+                    "Mobile": $("#Configure_Profile_Mobile").val(),
+                    "Email": $("#Configure_Profile_Email").val(),
+                    "Number1": $("#Configure_Profile_Number1").val(),
+                    "Number2": $("#Configure_Profile_Number2").val(),
+                }
+                localDB.setItem("profileVcard", JSON.stringify(vCard));
 
+                var options =  { 
+                    type: 'base64', 
+                    size: 'viewport', 
+                    format: 'png', 
+                    quality: 1, 
+                    circle: false 
+                }
+                $("#Appearance_Html").show(); // Bug, only works if visible
+                $("#ImageCanvas").croppie('result', options).then(function(base64) {
+                    localDB.setItem("profilePicture", base64);
+                    $("#Appearance_Html").hide();
+
+                    // Notify Changes
+                    Alert(lang.alert_settings, lang.reload_required, function(){
+                        window.location.reload();
+                    });
+        
+                });
+            }
+            else {
                 // Notify Changes
                 Alert(lang.alert_settings, lang.reload_required, function(){
                     window.location.reload();
                 });
-    
-            });
-    
+            }
+
             // 4 Notifications
-            localDB.setItem("Notifications", ($("#Settings_Notifications").is(":checked"))? "1" : "0");
+            if(EnableNotificationSettings){
+                localDB.setItem("Notifications", ($("#Settings_Notifications").is(":checked"))? "1" : "0");
+            }
 
         }
     });
@@ -10028,16 +10110,18 @@ function ShowMyProfile(){
     // DoOnload
     window.setTimeout(function(){
         // Account
-        $("#chat_type_sip").change(function(){
-            if($("#chat_type_sip").is(':checked')){
-                $("#RowChatEngine_xmpp").hide();
-            }
-        });
-        $("#chat_type_xmpp").change(function(){
-            if($("#chat_type_xmpp").is(':checked')){
-                $("#RowChatEngine_xmpp").show();
-            }
-        });
+        if(EnableAccountSettings){
+            $("#chat_type_sip").change(function(){
+                if($("#chat_type_sip").is(':checked')){
+                    $("#RowChatEngine_xmpp").hide();
+                }
+            });
+            $("#chat_type_xmpp").change(function(){
+                if($("#chat_type_xmpp").is(':checked')){
+                    $("#RowChatEngine_xmpp").show();
+                }
+            });
+        }
 
         // Audio Video
         var selectAudioScr = $("#playbackSrc");
@@ -10635,71 +10719,76 @@ function ShowMyProfile(){
         }
 
         // Appearance
-        cropper = $("#ImageCanvas").croppie({
-            viewport: { width: 150, height: 150, type: 'circle' }
-        });
+        if(EnableAppearanceSettings){
+            cropper = $("#ImageCanvas").croppie({
+                viewport: { width: 150, height: 150, type: 'circle' }
+            });
 
-        // Preview Existing Image
-        $("#ImageCanvas").croppie('bind', { 
-            url: getPicture("profilePicture") 
-        });
+            // Preview Existing Image
+            $("#ImageCanvas").croppie('bind', { 
+                url: getPicture("profilePicture") 
+            });
 
-        // Wireup File Change
-        $("#fileUploader").change(function () {
-            var filesArray = $(this).prop('files');
+            // Wireup File Change
+            $("#fileUploader").change(function () {
+                var filesArray = $(this).prop('files');
 
-            if (filesArray.length == 1) {
-                var uploadId = Math.floor(Math.random() * 1000000000);
-                var fileObj = filesArray[0];
-                var fileName = fileObj.name;
-                var fileSize = fileObj.size;
-        
-                if (fileSize <= 52428800) {
-                    console.log("Adding (" + uploadId + "): " + fileName + " of size: " + fileSize + "bytes");
-        
-                    var reader = new FileReader();
-                    reader.Name = fileName;
-                    reader.UploadId = uploadId;
-                    reader.Size = fileSize;
-                    reader.onload = function (event) {
-                        $("#ImageCanvas").croppie('bind', {
-                            url: event.target.result
-                        });
-                    }
-        
-                    // Use onload for this
-                    reader.readAsDataURL(fileObj);
-                }
-                else {
-                    Alert(lang.alert_file_size, lang.error);
-                }
-            }
-            else {
-                Alert(lang.alert_single_file, lang.error);
-            }
-        });
-
-        // Notifications
-        var NotificationsCheck = $("#Settings_Notifications");
-        NotificationsCheck.prop("checked", NotificationsActive);
-        NotificationsCheck.change(function(){
-            if(this.checked){
-                if(Notification.permission != "granted"){
-                    if(checkNotificationPromise()){
-                        Notification.requestPermission().then(function(p){
-                            console.log(p);
-                            HandleNotifyPermission(p);
-                        });
+                if (filesArray.length == 1) {
+                    var uploadId = Math.floor(Math.random() * 1000000000);
+                    var fileObj = filesArray[0];
+                    var fileName = fileObj.name;
+                    var fileSize = fileObj.size;
+            
+                    if (fileSize <= 52428800) {
+                        console.log("Adding (" + uploadId + "): " + fileName + " of size: " + fileSize + "bytes");
+            
+                        var reader = new FileReader();
+                        reader.Name = fileName;
+                        reader.UploadId = uploadId;
+                        reader.Size = fileSize;
+                        reader.onload = function (event) {
+                            $("#ImageCanvas").croppie('bind', {
+                                url: event.target.result
+                            });
+                        }
+            
+                        // Use onload for this
+                        reader.readAsDataURL(fileObj);
                     }
                     else {
-                        Notification.requestPermission(function(p){
-                            console.log(p);
-                            HandleNotifyPermission(p)
-                        });
+                        Alert(lang.alert_file_size, lang.error);
                     }
                 }
-            }
-        });
+                else {
+                    Alert(lang.alert_single_file, lang.error);
+                }
+            });
+        }
+
+        // Notifications
+        if(EnableNotificationSettings){
+            var NotificationsCheck = $("#Settings_Notifications");
+            NotificationsCheck.prop("checked", NotificationsActive);
+            NotificationsCheck.change(function(){
+                if(this.checked){
+                    if(Notification.permission != "granted"){
+                        if(checkNotificationPromise()){
+                            Notification.requestPermission().then(function(p){
+                                console.log(p);
+                                HandleNotifyPermission(p);
+                            });
+                        }
+                        else {
+                            Notification.requestPermission(function(p){
+                                console.log(p);
+                                HandleNotifyPermission(p)
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
 
     }, 0);
 }
