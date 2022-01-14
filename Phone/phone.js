@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.2.3";
+const appversion = "0.2.4";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -103,7 +103,7 @@ let videoAspectRatio = getDbItem("AspectRatio", "");                    // Sugge
 let NotificationsActive = (getDbItem("Notifications", "0") == "1");
 
 let StreamBuffer = parseInt(getDbItem("StreamBuffer", 50));                 // The amount of rows to buffer in the Buddy Stream
-let MaxDataStoreDays = parseInt(getDbItem("MaxDataStoreDays", 0));          // Defines the maximum amount of days worth of date to store locally. 0=Stores all data always. >0 Trims n days back worth of data at various events where. 
+let MaxDataStoreDays = parseInt(getDbItem("MaxDataStoreDays", 0));          // Defines the maximum amount of days worth of data (calls, recordsing, messages, etc) to store locally. 0=Stores all data always. >0 Trims n days back worth of data at various events where. 
 let PosterJpegQuality = parseFloat(getDbItem("PosterJpegQuality", 0.6));    // The image quality of the Video Poster images
 let VideoResampleSize = getDbItem("VideoResampleSize", "HD");               // The resample size (height) to re-render video that gets presented (sent). (SD = ???x360 | HD = ???x720 | FHD = ???x1080)
 let RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recodings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
@@ -2629,7 +2629,7 @@ function teardownSession(lineObj) {
     AddCallMessage(lineObj.BuddyObj.identity, session);
 
     // Check if this call was missed
-    if(session.data.calldirection == "inbound" && session.data.terminateby == "them" && lineObj.SipSession.startTime == null){
+    if(session.data.calldirection == "inbound" && session.data.terminateby == "them" && lineObj.SipSession.data.startTime == null){
         IncreaseMissedBadge(session.data.buddyId);
     }
     
@@ -5743,28 +5743,30 @@ function AttendedTransfer(lineNum){
         onSessionDescriptionHandler: function(sdh, provisional){
             if (sdh) {
                 if(sdh.peerConnection){
-                    var pc = sdh.peerConnection;
+                    sdh.peerConnection.ontrack = function(event){
+                        var pc = sdh.peerConnection;
 
-                    // Gets Remote Audio Track (Local audio is setup via initial GUM)
-                    var remoteStream = new MediaStream();
-                    pc.getReceivers().forEach(function (receiver) {
-                        if(receiver.track && receiver.track.kind == "audio"){
-                            remoteStream.addTrack(receiver.track);
+                        // Gets Remote Audio Track (Local audio is setup via initial GUM)
+                        var remoteStream = new MediaStream();
+                        pc.getReceivers().forEach(function (receiver) {
+                            if(receiver.track && receiver.track.kind == "audio"){
+                                remoteStream.addTrack(receiver.track);
+                            }
+                        });
+                        var remoteAudio = $("#line-" + lineNum + "-transfer-remoteAudio").get(0);
+                        remoteAudio.srcObject = remoteStream;
+                        remoteAudio.onloadedmetadata = function(e) {
+                            if (typeof remoteAudio.sinkId !== 'undefined') {
+                                remoteAudio.setSinkId(session.data.AudioOutputDevice).then(function(){
+                                    console.log("sinkId applied: "+ session.data.AudioOutputDevice);
+                                }).catch(function(e){
+                                    console.warn("Error using setSinkId: ", e);
+                                });
+                            }
+                            remoteAudio.play();
                         }
-                    });
-                    var remoteAudio = $("#line-" + lineNum + "-transfer-remoteAudio").get(0);
-                    remoteAudio.srcObject = remoteStream;
-                    remoteAudio.onloadedmetadata = function(e) {
-                        if (typeof remoteAudio.sinkId !== 'undefined') {
-                            remoteAudio.setSinkId(session.data.AudioOutputDevice).then(function(){
-                                console.log("sinkId applied: "+ session.data.AudioOutputDevice);
-                            }).catch(function(e){
-                                console.warn("Error using setSinkId: ", e);
-                            });
-                        }
-                        remoteAudio.play();
+
                     }
-
                 }
                 else{
                     console.warn("onSessionDescriptionHandler fired without a peerConnection");
@@ -6106,28 +6108,31 @@ function ConferenceDail(lineNum){
         onSessionDescriptionHandler: function(sdh, provisional){
             if (sdh) {
                 if(sdh.peerConnection){
-                    var pc = sdh.peerConnection;
+                    sdh.peerConnection.ontrack = function(event){
+                        var pc = sdh.peerConnection;
 
-                    // Gets Remote Audio Track (Local audio is setup via initial GUM)
-                    var remoteStream = new MediaStream();
-                    pc.getReceivers().forEach(function (receiver) {
-                        if(receiver.track && receiver.track.kind == "audio"){
-                            remoteStream.addTrack(receiver.track);
+                        // Gets Remote Audio Track (Local audio is setup via initial GUM)
+                        var remoteStream = new MediaStream();
+                        pc.getReceivers().forEach(function (receiver) {
+                            if(receiver.track && receiver.track.kind == "audio"){
+                                remoteStream.addTrack(receiver.track);
+                            }
+                        });
+                        var remoteAudio = $("#line-" + lineNum + "-conference-remoteAudio").get(0);
+                        remoteAudio.srcObject = remoteStream;
+                        remoteAudio.onloadedmetadata = function(e) {
+                            if (typeof remoteAudio.sinkId !== 'undefined') {
+                                remoteAudio.setSinkId(session.data.AudioOutputDevice).then(function(){
+                                    console.log("sinkId applied: "+ session.data.AudioOutputDevice);
+                                }).catch(function(e){
+                                    console.warn("Error using setSinkId: ", e);
+                                });
+                            }
+                            remoteAudio.play();
                         }
-                    });
-                    var remoteAudio = $("#line-" + lineNum + "-conference-remoteAudio").get(0);
-                    remoteAudio.srcObject = remoteStream;
-                    remoteAudio.onloadedmetadata = function(e) {
-                        if (typeof remoteAudio.sinkId !== 'undefined') {
-                            remoteAudio.setSinkId(session.data.AudioOutputDevice).then(function(){
-                                console.log("sinkId applied: "+ session.data.AudioOutputDevice);
-                            }).catch(function(e){
-                                console.warn("Error using setSinkId: ", e);
-                            });
-                        }
-                        remoteAudio.play();
+                        // How will this get disposed??
+
                     }
-                    // How will this get disposed??
                 }
                 else{
                     console.warn("onSessionDescriptionHandler fired without a peerConnection");
@@ -6153,6 +6158,9 @@ function ConferenceDail(lineNum){
                         RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
                             if(session.data.ismute){
                                 RTCRtpSender.track.enabled = false;
+                            }
+                            else {
+                                RTCRtpSender.track.enabled = true;
                             }
                         }).catch(function(){
                             console.error(e);
@@ -6234,7 +6242,7 @@ function ConferenceDail(lineNum){
                             outputStreamForSession.addTrack(RTCRtpReceiver.track);
                         }
                     });
-        
+
                     // Get session input channel
                     pc.getReceivers().forEach(function (RTCRtpReceiver) {
                         if(RTCRtpReceiver.track && RTCRtpReceiver.track.kind == "audio") {
@@ -6242,7 +6250,7 @@ function ConferenceDail(lineNum){
                             outputStreamForConfSession.addTrack(RTCRtpReceiver.track);
                         }
                     });
-        
+
                     // Replace tracks of Parent Call
                     pc.getSenders().forEach(function (RTCRtpSender) {
                         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
@@ -6657,6 +6665,9 @@ function switchVideoSource(lineNum, srcId){
                     if(session.data.ismute){
                         RTCRtpSender.track.enabled = false;
                     }
+                    else {
+                        RTCRtpSender.track.enabled = true;
+                    }
                 }).catch(function(){
                     console.error(e);
                 });
@@ -6730,6 +6741,9 @@ function SendCanvas(lineNum){
                 RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
                     if(session.data.ismute){
                         RTCRtpSender.track.enabled = false;
+                    }
+                    else {
+                        RTCRtpSender.track.enabled = true;
                     }
                 }).catch(function(){
                     console.error(e);
@@ -6985,6 +6999,9 @@ function ShareScreen(lineNum){
                     if(session.data.ismute){
                         RTCRtpSender.track.enabled = false;
                     }
+                    else {
+                        RTCRtpSender.track.enabled = true;
+                    }
                 }).catch(function(){
                     console.error(e);
                 });
@@ -7013,6 +7030,9 @@ function DisableVideoStream(lineNum){
                 RTCRtpSender.replaceTrack(session.data.AudioSourceTrack).then(function(){
                     if(session.data.ismute){
                         RTCRtpSender.track.enabled = false;
+                    }
+                    else {
+                        RTCRtpSender.track.enabled = true;
                     }
                 }).catch(function(){
                     console.error(e);
