@@ -6404,9 +6404,25 @@ function holdSession(lineNum) {
                     pc.getReceivers().forEach((RTCRtpReceiver) => {
                         if (RTCRtpReceiver.track) RTCRtpReceiver.track.enabled = false;
                     });
-                    // Stop all the outbound video streams
+                    // Stop all the outbound streams (especially usefull for Conference Calls!!)
                     pc.getSenders().forEach((RTCRtpSender) => {
-                        if (RTCRtpSender.track) RTCRtpSender.track.enabled = false;
+                        // Mute Audio
+                        if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                            if(RTCRtpSender.track.IsMixedTrack == true){
+                                if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+                                    console.log("Muting Audio Track : "+ session.data.AudioSourceTrack.label);
+                                    session.data.AudioSourceTrack.enabled = false;
+                                }
+                            }
+                            else {
+                                console.log("Muting Audio Track : "+ RTCRtpSender.track.label);
+                                RTCRtpSender.track.enabled = false;
+                            }
+                        }
+                        // Stop Video
+                        else if(RTCRtpSender.track && RTCRtpSender.track.kind == "video"){
+                            RTCRtpSender.track.enabled = false;
+                        }
                     });
                 }
                 session.isOnHold = true;
@@ -6456,13 +6472,28 @@ function unholdSession(lineNum) {
             onAccept: function(){
                 if(session && session.sessionDescriptionHandler && session.sessionDescriptionHandler.peerConnection){
                     var pc = session.sessionDescriptionHandler.peerConnection;
-                    // Start all the inbound streams
+                    // Restore all the inbound streams
                     pc.getReceivers().forEach((RTCRtpReceiver) => {
                         if (RTCRtpReceiver.track) RTCRtpReceiver.track.enabled = true;
                     });
-                    // Start all the outbound video streams
+                    // Restorte all the outbound streams
                     pc.getSenders().forEach((RTCRtpSender) => {
-                        if (RTCRtpSender.track) RTCRtpSender.track.enabled = true;
+                        // Unmute Audio
+                        if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+                            if(RTCRtpSender.track.IsMixedTrack == true){
+                                if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
+                                    console.log("Unmuting Audio Track : "+ session.data.AudioSourceTrack.label);
+                                    session.data.AudioSourceTrack.enabled = true;
+                                }
+                            }
+                            else {
+                                console.log("Unmuting Audio Track : "+ RTCRtpSender.track.label);
+                                RTCRtpSender.track.enabled = true;
+                            }
+                        }
+                        else if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
+                            RTCRtpSender.track.enabled = true;
+                        }
                     });
                 }
                 session.isOnHold = false;
