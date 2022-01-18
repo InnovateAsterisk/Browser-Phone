@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="18122" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="18093"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController id="BYZ-38-t0r" customClass="ViewController" customModule="Browser_Phone" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="xeC-dG-08v">
+                                <rect key="frame" x="0.0" y="44" width="414" height="818"/>
+                                <subviews>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ZzN-2W-ICv">
+                                        <rect key="frame" x="0.0" y="0.0" width="414" height="409"/>
+                                        <subviews>
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="jB6-0T-x4a">
+                                                <rect key="frame" x="107" y="319" width="200" height="80"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="height" constant="80" id="Drh-Ii-AeZ"/>
+                                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="200" id="SKp-65-On2"/>
+                                                </constraints>
+                                                <fontDescription key="fontDescription" type="system" pointSize="23"/>
+                                                <state key="normal" title="Launch Phone"/>
+                                                <connections>
+                                                    <action selector="LaunchPhone:" destination="BYZ-38-t0r" eventType="touchUpInside" id="liR-1a-EVH"/>
+                                                </connections>
+                                            </button>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="jB6-0T-x4a" firstAttribute="centerX" secondItem="ZzN-2W-ICv" secondAttribute="centerX" id="emI-6O-A2R"/>
+                                            <constraint firstAttribute="bottom" secondItem="jB6-0T-x4a" secondAttribute="bottom" constant="10" id="w23-g2-3UI"/>
+                                        </constraints>
+                                    </view>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="aDh-bP-8vK">
+                                        <rect key="frame" x="0.0" y="409" width="414" height="409"/>
+                                        <subviews>
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="F9B-9y-6Mf">
+                                                <rect key="frame" x="32" y="20" width="350.5" height="143.5"/>
+                                                <string key="text">This application makes use of the SFSafariViewController. It's almost exactly the same as running the page in the Safari Browser. There are known limitations to this. This is only experimental!</string>
+                                                <fontDescription key="fontDescription" type="system" pointSize="20"/>
+                                                <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                <nil key="highlightedColor"/>
+                                            </label>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="F9B-9y-6Mf" secondAttribute="trailing" constant="30" id="7d6-4c-Msv"/>
+                                            <constraint firstItem="F9B-9y-6Mf" firstAttribute="top" secondItem="aDh-bP-8vK" secondAttribute="top" constant="20" id="L10-uu-XsA"/>
+                                            <constraint firstItem="F9B-9y-6Mf" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="aDh-bP-8vK" secondAttribute="leading" constant="30" id="OSm-jf-7mO"/>
+                                            <constraint firstItem="F9B-9y-6Mf" firstAttribute="centerX" secondItem="aDh-bP-8vK" secondAttribute="centerX" id="Uf2-bv-3QW"/>
+                                        </constraints>
+                                    </view>
+                                </subviews>
+                            </stackView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
+                        <color key="backgroundColor" red="0.1333333333" green="0.1333333333" blue="0.1333333333" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="xeC-dG-08v" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" id="CzK-3s-Onb"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="xeC-dG-08v" secondAttribute="trailing" id="Hwf-x0-i5e"/>
+                            <constraint firstItem="xeC-dG-08v" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="PdV-M5-a7R"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="xeC-dG-08v" secondAttribute="bottom" id="mMJ-YQ-fdv"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="launchButton" destination="jB6-0T-x4a" id="zfl-bu-YV0"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="131.8840579710145" y="102.45535714285714"/>
+        </scene>
+    </scenes>
+</document>
