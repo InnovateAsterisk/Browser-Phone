@@ -5712,7 +5712,7 @@ function AttendedTransfer(lineNum){
     }
 
     // Create new call session
-    console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
+    console.log("TRANSFER INVITE: ", "sip:" + dstNo + "@" + wssServer);
     var targetURI = SIP.UserAgent.makeURI("sip:"+ dstNo + "@" + wssServer);
     var newSession = new SIP.Inviter(userAgent, targetURI, spdOptions);
     newSession.data = {}
@@ -5906,7 +5906,7 @@ function AttendedTransfer(lineNum){
                     }, 1000);
                 });
                 TerminateAttendedTransferBtn.show();
-        
+
                 updateLineScroll(lineNum);
             },
             onReject:function(sip){
@@ -6077,7 +6077,7 @@ function ConferenceDail(lineNum){
     }
 
     // Create new call session
-    console.log("INVITE: ", "sip:" + dstNo + "@" + wssServer);
+    console.log("CONFERENCE INVITE: ", "sip:" + dstNo + "@" + wssServer);
 
     var targetURI = SIP.UserAgent.makeURI("sip:"+ dstNo + "@" + wssServer);
     var newSession = new SIP.Inviter(userAgent, targetURI, spdOptions);
@@ -6130,8 +6130,6 @@ function ConferenceDail(lineNum){
                             }
                             remoteAudio.play();
                         }
-                        // How will this get disposed??
-
                     }
                 }
                 else{
@@ -6260,7 +6258,7 @@ function ConferenceDail(lineNum){
                             outputStreamForSession.addTrack(RTCRtpSender.track);
                             var mixedAudioTrack = MixAudioStreams(outputStreamForSession).getAudioTracks()[0];
                             mixedAudioTrack.IsMixedTrack = true;
-        
+
                             RTCRtpSender.replaceTrack(mixedAudioTrack);
                         }
                     });
@@ -6273,7 +6271,7 @@ function ConferenceDail(lineNum){
                             outputStreamForConfSession.addTrack(RTCRtpSender.track);
                             var mixedAudioTrackForConf = MixAudioStreams(outputStreamForConfSession).getAudioTracks()[0];
                             mixedAudioTrackForConf.IsMixedTrack = true;
-        
+
                             RTCRtpSender.replaceTrack(mixedAudioTrackForConf);
                         }
                     });
@@ -6289,12 +6287,14 @@ function ConferenceDail(lineNum){
         
                     $("#line-" + lineNum + "-msg").html(lang.conference_call_in_progress);
         
-                    // Take the parent call off hold
-                    unholdSession(lineNum);
-        
                     JoinCallBtn.hide();
-        
                     updateLineScroll(lineNum);
+
+                    // Take the parent call off hold after a second
+                    window.setTimeout(function(){
+                        unholdSession(lineNum);
+                        updateLineScroll(lineNum);
+                    }, 1000);
                 });
                 JoinCallBtn.show();
 
@@ -6401,23 +6401,21 @@ function holdSession(lineNum) {
                 if(session && session.sessionDescriptionHandler && session.sessionDescriptionHandler.peerConnection){
                     var pc = session.sessionDescriptionHandler.peerConnection;
                     // Stop all the inbound streams
-                    pc.getReceivers().forEach((RTCRtpReceiver) => {
+                    pc.getReceivers().forEach(function(RTCRtpReceiver){
                         if (RTCRtpReceiver.track) RTCRtpReceiver.track.enabled = false;
                     });
                     // Stop all the outbound streams (especially usefull for Conference Calls!!)
-                    pc.getSenders().forEach((RTCRtpSender) => {
+                    pc.getSenders().forEach(function(RTCRtpSender){
                         // Mute Audio
                         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
                             if(RTCRtpSender.track.IsMixedTrack == true){
                                 if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
-                                    console.log("Muting Audio Track : "+ session.data.AudioSourceTrack.label);
+                                    console.log("Muting Mixed Audio Track : "+ session.data.AudioSourceTrack.label);
                                     session.data.AudioSourceTrack.enabled = false;
                                 }
                             }
-                            else {
-                                console.log("Muting Audio Track : "+ RTCRtpSender.track.label);
-                                RTCRtpSender.track.enabled = false;
-                            }
+                            console.log("Muting Audio Track : "+ RTCRtpSender.track.label);
+                            RTCRtpSender.track.enabled = false;
                         }
                         // Stop Video
                         else if(RTCRtpSender.track && RTCRtpSender.track.kind == "video"){
@@ -6473,23 +6471,21 @@ function unholdSession(lineNum) {
                 if(session && session.sessionDescriptionHandler && session.sessionDescriptionHandler.peerConnection){
                     var pc = session.sessionDescriptionHandler.peerConnection;
                     // Restore all the inbound streams
-                    pc.getReceivers().forEach((RTCRtpReceiver) => {
+                    pc.getReceivers().forEach(function(RTCRtpReceiver){
                         if (RTCRtpReceiver.track) RTCRtpReceiver.track.enabled = true;
                     });
                     // Restorte all the outbound streams
-                    pc.getSenders().forEach((RTCRtpSender) => {
+                    pc.getSenders().forEach(function(RTCRtpSender){
                         // Unmute Audio
                         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
                             if(RTCRtpSender.track.IsMixedTrack == true){
                                 if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
-                                    console.log("Unmuting Audio Track : "+ session.data.AudioSourceTrack.label);
+                                    console.log("Unmuting Mixed Audio Track : "+ session.data.AudioSourceTrack.label);
                                     session.data.AudioSourceTrack.enabled = true;
                                 }
                             }
-                            else {
-                                console.log("Unmuting Audio Track : "+ RTCRtpSender.track.label);
-                                RTCRtpSender.track.enabled = true;
-                            }
+                            console.log("Unmuting Audio Track : "+ RTCRtpSender.track.label);
+                            RTCRtpSender.track.enabled = true;
                         }
                         else if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
                             RTCRtpSender.track.enabled = true;
@@ -6536,14 +6532,12 @@ function MuteSession(lineNum){
         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
             if(RTCRtpSender.track.IsMixedTrack == true){
                 if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
-                    console.log("Muting Audio Track : "+ session.data.AudioSourceTrack.label);
+                    console.log("Muting Mixed Audio Track : "+ session.data.AudioSourceTrack.label);
                     session.data.AudioSourceTrack.enabled = false;
                 }
             }
-            else {
-                console.log("Muting Audio Track : "+ RTCRtpSender.track.label);
-                RTCRtpSender.track.enabled = false;
-            }
+            console.log("Muting Audio Track : "+ RTCRtpSender.track.label);
+            RTCRtpSender.track.enabled = false;
         }
     });
 
@@ -6571,14 +6565,12 @@ function UnmuteSession(lineNum){
         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
             if(RTCRtpSender.track.IsMixedTrack == true){
                 if(session.data.AudioSourceTrack && session.data.AudioSourceTrack.kind == "audio"){
-                    console.log("Unmuting Audio Track : "+ session.data.AudioSourceTrack.label);
+                    console.log("Unmuting Mixed Audio Track : "+ session.data.AudioSourceTrack.label);
                     session.data.AudioSourceTrack.enabled = true;
                 }
             }
-            else {
-                console.log("Unmuting Audio Track : "+ RTCRtpSender.track.label);
-                RTCRtpSender.track.enabled = true;
-            }
+            console.log("Unmuting Audio Track : "+ RTCRtpSender.track.label);
+            RTCRtpSender.track.enabled = true;
         }
     });
 
