@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.1";
+const appversion = "0.3.2";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -1697,7 +1697,7 @@ function ReceiveCall(session) {
             onSessionReinvited(lineObj, sip);
         },
         onSessionDescriptionHandler: function(sdh, provisional){
-            onSessionDescriptionHandlerCreated(lineObj, sdh, provisional, videoInvite);
+            onSessionDescriptionHandlerCreated(lineObj, sdh, provisional, lineObj.SipSession.data.withvideo);
         }
     }
     // incomingInviteRequestDelegate
