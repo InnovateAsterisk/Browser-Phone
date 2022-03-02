@@ -582,7 +582,7 @@ $ sudo asterisk -r
 
 ![Mobile UI](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/UI_Mobile_List_Dark.jpg)
 
-![Call Stats](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/InCall_Stats.png)
+![Call Stats](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/InCall_Stats.jpg)
 
 ![Call Recording Format](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/Recording_Format.jpg)
 
