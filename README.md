@@ -13,7 +13,7 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 
 ![Image of Main Interface](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall.jpg)
 
-## Features v0.2.x
+## Features v0.3.x
 - SIP Audio Calling
 - SIP Video Calling
 - XMPP Messaging 
@@ -30,6 +30,7 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 - Useful debug messages sent to console.
 - Works on: Chrome (all features work), Edge (same as Chrome), Opera (same as Chrome), Firefox (Most features work), Safari (Most feature work)
 - Asterisk SFU - Including talker notification and Caller ID
+- Dark Mode & Light Mode - System Setting Detects
 
 ## XMPP Features v0.2.x
 - User Login & Auth (Use SIP credentials)
@@ -579,7 +580,7 @@ $ sudo asterisk -r
 
 ![Buddy Stream](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/Buddy_Stream.jpg)
 
-![Message Dictate](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/DictateMessage.jpg)
+![Mobile UI](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/UI_Mobile_List_Dark.jpg)
 
 ![Call Stats](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/InCall_Stats.png)
 

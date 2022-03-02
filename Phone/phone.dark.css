@@ -1,0 +1,456 @@
+/* Dark Mode UI */
+
+body {
+    color: #CCCCCC;
+    background-color: #222222;;
+}
+
+.pageContainer{
+    box-shadow: 0px 0px 20px rgb(0 0 0 / 25%);
+}
+
+.streamSection{
+    background-color: #222222;
+    border: none;
+}
+
+.buddy {
+    border-left: 3px solid transparent;
+    color: #CCCCCC;
+}
+.buddy:hover {
+    background-color: #333333;
+}
+
+.buddySelected {
+    color:#CCCCCC;
+    background-color: #404040;
+    border-left: 3px solid #3478f3;
+}
+.buddySelected:hover {
+    cursor: default;
+}
+
+.buddyIcon {
+    background-color: #CCCCCC;
+    border: 1px solid #3e3e3e;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+}
+
+.buddyActiveCall {
+    color: #CCCCCC;
+    background-color: #333333;
+    border-left: 3px solid #40bd3f;
+}
+.buddyActiveCallHollding {
+    color: #999999;
+    background-color: #292929;
+    border-left: 3px solid #999999;
+}
+.buddyActiveCall .lineIcon {
+    background-color: #cc9009;
+    border: 1px solid #ffffff;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+    color: #F3F3F3;
+}
+.buddyActiveCallHollding .lineIcon {
+    background-color: #999999;
+    border: 1px solid #ffffff;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+    color: #F3F3F3;
+}
+.lineIcon {
+    background-color: #cc9009;
+    border: 1px solid #ffffff;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+    color: #F3F3F3;
+}
+
+.hrline{
+    background-color:#696969
+}
+
+.profileContainer{
+    background-color: #292929;
+    border-bottom: 1px solid #3e3e3e;
+}
+
+.searchClean{
+    border: 1px solid #404040;
+    background-color: #222222;
+}
+.searchClean:before {
+    color: #393f47;
+}
+
+.roundButtons {
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: #3478f3;
+}
+
+.roundButtons:hover {
+    border: 1px solid transparent;
+    color: #dcdcdc;
+    background-color: #333333;
+}
+
+.roundButtons:active {
+    border: 1px solid #404040;
+    background-color: #222222;
+    color: #FFFFFF;
+}
+
+.leftContentTable{
+    border-right-color: #3e3e3e;
+    border-left-color: #3e3e3e;
+}
+.rightContent{
+    border-right-color: #3e3e3e;
+}
+.highlightSection{
+    background-color: #292929;
+}
+.sectionBorderBottom{
+    border-bottom: 1px solid #3e3e3e;
+}
+.sectionBorderTop{
+    border-top: 1px solid #3e3e3e;
+}
+
+.presenceText {
+    color: #999999;
+}
+
+.streamSectionBackground {
+    background-color: #292929;
+}
+
+.chatMessage {
+    border: 1px solid #343434;
+    color: #cccccc;
+    background-color: #222222;
+}
+.theirChatMessageText {
+    background-color: #2c423a;
+    color: #e1e1e1;
+}
+.ourChatMessageText {
+    background-color: #2b3842;
+    color: #e3e3e3;
+}
+.callRecording {
+    background-color: #292929;
+    color: #a4a4a4;
+}
+.messageDate {
+    color: #999999;
+}
+.cdrComment{
+    color: #CCCCCC;
+}
+.chatMessageDropdown{
+    color: #000000;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.dialTextInput{
+    color: #CCCCCC;
+    border-bottom: 2px solid #404040;
+    background-color: transparent;
+}
+.dialButtons{
+    color: #CCCCCC;
+    background-color: #404040;
+}
+.dialButtons:hover{
+    color: #f3f3f3;
+    background-color: #333333;
+}
+.dialButtons:active{
+    color: #cccccc;
+    background-color: #222222;
+}
+.dialButtons span{
+    color: #999999;
+}
+.dialButtonsDial{
+    color: #FFFFFF;
+    background-color: #067d0f;
+}
+.dialButtonsDial:hover{
+    color: #FFFFFF;
+    background-color: #44ad4d;
+}
+.dialButtonsDial:active{
+    color: #FFFFFF;
+    background-color: #0a5210;
+}
+.dialButtonsDial:disabled{
+    color: #666666;
+    background-color: #067d0f;
+}
+.dialButtonsDial:disabled:hover{
+    color: #666666;
+    background-color: #067d0f;
+}
+
+.hangupButton {
+    color: #FFFFFF !important;
+    background-color: #dc0000 !important;
+    border: 1px solid transparent !important;
+}
+.hangupButton:hover {
+    color: #FFFFFF !important;
+    background-color: #ff1b1b !important;
+    border: 1px solid transparent !important;
+}
+.hangupButton:active {
+    color: #FFFFFF !important;
+    background-color: #d80000 !important;
+}
+
+.answerButton{
+    color: #FFFFFF !important;
+    background-color: #059609;
+}
+.answerButton:hover {
+    color: #FFFFFF !important;
+    background-color: #0aa80f;
+}
+.answerButton:active {
+    color: #FFFFFF !important;
+    background-color: #017a05;
+}
+
+.rejectButton {
+    color: #FFFFFF;
+    background-color: #dc0000;
+}
+.rejectButton:hover {
+    color: #FFFFFF;
+    background-color: #ff1b1b;
+}
+.rejectButton:active {
+    color: #FFFFFF;
+    background-color: #d80000;
+}
+
+.CallControl{
+    background-color: #222222;
+}
+
+/* Standard Field Elements */
+button {
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: #dedede;
+}
+button:hover {
+    background-color: #333333;
+    border: 1px solid #404040;
+    color: #FFFFFF;
+}
+button:active {
+    border: 1px solid #333333;
+    background-color: #222222;
+    color: #FFFFFF;
+}
+button:disabled {
+    color: #CCCCCC;
+}
+button:disabled:hover {
+    color: #CCCCCC;
+}
+input[type=text],input[type=password],input[type=email],input[type=tel] {
+    color: #333333;
+    border-bottom: 1px solid #a3bad9;
+    background-color: transparent;
+}
+input[type=text]:focus,input[type=password]:focus,input[type=email]:focus,input[type=tel]:focus {
+    border-bottom: 1px solid #416493;
+}
+
+select {
+    color: #416493;
+    border-bottom: 1px solid #a3bad9;
+    background-color: transparent;
+}
+select:focus {
+    border-bottom: 1px solid #416493;
+}
+input[type=checkbox] + label:before {
+    color: #416493;
+}
+
+input[type=checkbox]:checked + label:before {
+    color: #416493;
+}
+
+/* UiText */
+.UiText {
+    color:#333333;
+}
+
+/* UiTextHeading */
+.UiTextHeading{
+    color:#333333;
+    border-bottom: 1px solid #383838;
+}
+.UiTextHeading::before{
+    color: #8e8e8e;
+}
+.UiTextHeadingIcon{
+    color: #8e8e8e;
+}
+
+/* UiButtonBar */
+.UiButtonBar {
+    border-top:1px solid #e6e6e6; 
+    background-color:#F3F3F3; 
+}
+.UiButtonBar button {
+    border: 1px solid #0b213a;
+    background-color: #395f88;
+    color: #FFFFFF;
+}
+.UiButtonBar button:hover {
+    background-color: #2c5077;
+    background-image: linear-gradient(#597ca2, #2c5077);
+    border: 1px solid #092139;
+
+    color: #FFFFFF;
+}
+.UiButtonBar button:active {
+    border: 1px solid #092139;
+    background-color: #092139;
+
+    color: #FFFFFF;
+}
+.UiButtonBar button:disabled {
+    color: #CCCCCC;
+}
+
+/* UiWindowButtonBar */
+.UiWindowButtonBar button {
+    border: 1px solid #0b213a;
+    background-color: #395f88;
+    color: #FFFFFF;
+}
+.UiWindowButtonBar button:hover {
+    background-color: #2c5077;
+    background-image: linear-gradient(#597ca2, #2c5077);
+    border: 1px solid #092139;
+
+    color: #FFFFFF;
+}
+.UiWindowButtonBar button:active {
+    border: 1px solid #092139;
+    background-color: #092139;
+
+    color: #FFFFFF;
+}
+.UiWindowButtonBar button:disabled {
+    color: #CCCCCC;
+}
+
+
+/* UiSideField */
+.UiSideField{
+    color:#CCCCCC;
+}
+.UiSideField input[type=text],input[type=password],input[type=email],input[type=tel] {
+    color:#CCCCCC !important;
+}
+.UiSideField input[type=text]:focus,input[type=password]:focus,input[type=email]:focus,input[type=tel]:focus {
+    color:#CCCCCC !important;
+    border-bottom: 1px solid #416493 !important;
+}
+
+.UiSideField .UiText{
+    color: #CCCCCC !important;
+}
+.UiSideField input[type=checkbox] + label{
+    color: #CCCCCC !important;
+}
+.UiSideField .UiTextHeading{
+    color: #F3F3F3 !important;
+}
+.UiSideField .Settings_VolumeOutput_Container{
+    border: 1px solid rgb(204,204,204,20%) !important;
+    background-color: rgb(255,255,255,20%) !important;
+}
+.UiSideField select{
+    color: #cccccc !important;
+    border-bottom-width: 1px !important;
+}
+.UiSideField select:focus{
+    border-bottom-width: 1px !important;
+}
+.UiSideField .pill-nav input[type=radio] + label{
+    color: #CCCCCC !important;
+}
+.UiSideField .croppie-container .cr-viewport, .croppie-container .cr-resizer{
+    border: none !important;
+}
+
+.callStatus {
+    background-color: #333333;
+}
+
+.dtmfButtons{
+    color: #efefef;
+    border: 1px solid #484848;
+}
+.dtmfButtons:hover{
+    color: #FFFFFF;
+    background-color: #222222;
+}
+.dtmfButtons:active{
+    color: #cccccc;
+    background-color: #000000;
+}
+
+/* Tags */
+.tags li {
+    color: #CCCCCC;
+    border: 1px solid #888888;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+.tags li:hover::before {
+    color: #FFFFFF;
+}
+.tags li::before {
+    color: #CCCCCC;
+}
+.tags input[type=text]{
+    color: #CCCCCC;
+}
+.tags .tagText:hover::before{
+    color: #FFFFFF;
+}
+.tags .tagText::before{
+    color: #CCCCCC;
+}
+
+.timelineMessage{
+    color: #F3F3F3;
+    border-left: 3px solid #3478f3;
+}
+.timelineMessageDot{
+    color: #3478f3;
+}
+.timelineMessageArea{
+    color: #F3F3F3;
+}
+.timelineMessageDate{
+    color: #d0d0d0;
+}
+.timelineMessageText{
+    color: #bdbdbd;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.audioGraph {
+    background-color: #000000;
+}

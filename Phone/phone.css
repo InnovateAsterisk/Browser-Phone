@@ -1,4 +1,29 @@
-/* Style Sheet for Raspberry Phone */
+/* Style Sheet for Browser Phone */
+
+.loading{
+    background-color: #FFFFFF;
+    position: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 99;
+}
+.loading span{
+    color: #222222;
+    font-size: 42px;
+}
+@media (prefers-color-scheme: dark) {
+    .loading{
+        background-color: #222222;
+    }
+    .loading span{
+        color: #FFFFFF;
+    }
+}
 
 /* CSS_Ui */
 
@@ -7,18 +32,17 @@
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
     user-select: none;          /* Likely future */
+    -webkit-touch-callout: none; /* iOS */
 }
 
 .UiText {
     font-family: Roboto, Arial, Helvetica;
-    color:#333333;
-    font-size: 14px;
+    font-size: 15px;
     margin-top: 10px;
 }
 
 .UiTextHeading{
     font-family: Roboto, Arial, Helvetica;
-    color:#333333;
     font-size: 17px;
     margin-top: 7px;
     border-bottom: 1px solid #383838;
@@ -29,7 +53,6 @@
 .UiTextHeading::before{
     content: "\f078";
     font-family: FontAwesome;
-    color: #8e8e8e;
     font-size: 14px;
     margin-right: 3px;
     float: right;
@@ -42,8 +65,6 @@
 
 .UiButtonBar {
     text-align:center; 
-    border-top:1px solid #e6e6e6; 
-    background-color:#F3F3F3; 
     height:49px;
     vertical-align: middle;
     line-height: 49px;
@@ -55,13 +76,10 @@
     padding: 0px;
     padding-left: 7px;
     padding-right: 7px;
-    border: 1px solid #0b213a;
-    background-color: #395f88;
     border-radius: 4px;
     min-width: 30px;
     min-height: 24px;
     font-family: Roboto, Arial, Helvetica;
-    color: #FFFFFF;
     font-size: 14px;
     margin-left: 1px;
     margin-right: 1px;
@@ -69,26 +87,15 @@
     cursor: pointer;
     box-shadow: inset 1px 1px 1px 0px rgba(250, 250, 250, 0.2), inset -1px -1px 1px rgba(0, 0, 0, 0.2);
 }
-.UiButtonBar button:hover {
-    background-color: #2c5077;
-    background-image: linear-gradient(#597ca2, #2c5077);
-    border: 1px solid #092139;
 
-    color: #FFFFFF;
-}
 .UiButtonBar button:active {
-    border: 1px solid #092139;
-    background-color: #092139;
     background-image: none;
-
-    color: #FFFFFF;
 }
 .UiButtonBar button:focus {
 	outline: none;
 }
 .UiButtonBar button:disabled {
     cursor: default;
-    color: #CCCCCC;
 }
 
 .UiButtonBarHtml {
@@ -110,12 +117,10 @@
     padding: 0px;
     padding-left: 7px;
     padding-right: 7px;
-    border: 1px solid #0b213a;
-    background-color: #395f88;
     border-radius: 4px;
     min-width: 80px;
+    min-height: 30px;
     font-family: Roboto, Arial, Helvetica;
-    color: #FFFFFF;
     font-size: 14px;
     margin-left: 1px;
     margin-right: 1px;
@@ -123,97 +128,36 @@
     cursor: pointer;
     box-shadow: inset 1px 1px 1px 0px rgba(250, 250, 250, 0.2), inset -1px -1px 1px rgba(0, 0, 0, 0.2);
 }
-.UiWindowButtonBar button:hover {
-    background-color: #2c5077;
-    background-image: linear-gradient(#597ca2, #2c5077);
-    border: 1px solid #092139;
-
-    color: #FFFFFF;
-}
 .UiWindowButtonBar button:active {
-    border: 1px solid #092139;
-    background-color: #092139;
     background-image: none;
-
-    color: #FFFFFF;
 }
 .UiWindowButtonBar button:focus {
 	outline: none;
 }
 .UiWindowButtonBar button:disabled {
     cursor: default;
-    color: #CCCCCC;
 }
 
 .UiInputText{
     margin-bottom: 5px !important;
-    font-size: 18px !important;
-    color: #333333 !important;
     width: 100% !important;
-
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
-    padding-left: 3px !important;
+    box-sizing: border-box;
 }
 .UiWindowField{
-    padding-top:0px;
-    padding-bottom:0px;
-    padding-left:15%;
-    padding-right:15%;
+    padding:10px;
 
     font-family: Roboto, Arial, Helvetica;
     color:#333333;
     font-size: 14px;
     line-height: 1.5;
-
-    /* height: 100%; */
-    /* overflow-y: auto; */
-    /* overflow-x: hidden; */
 }
 .UiSideField{
     padding-top:0px;
     padding-bottom:0px;
     padding-left:5%;
     padding-right:5%;
+}
 
-    font-family: Roboto, Arial, Helvetica;
-    color:#CCCCCC;
-    font-size: 14px;
-    line-height: 1.5;
-}
-.UiSideField .UiInputText{
-    color: #CCCCCC !important;
-    border-bottom: 1px solid #a3bad9 !important;
-}
-.UiSideField .UiText{
-    color: #CCCCCC !important;
-}
-.UiSideField input[type=checkbox] + label{
-    color: #CCCCCC !important;
-}
-.UiSideField .UiTextHeading{
-    color: #F3F3F3 !important;
-}
-.UiSideField input[type=text]:focus {
-    border-bottom: 1px solid #416493 !important;
-}
-.UiSideField .Settings_VolumeOutput_Container{
-    border: 1px solid rgb(204,204,204,20%) !important;
-    background-color: rgb(255,255,255,20%) !important;
-}
-.UiSideField select{
-    color: #cccccc !important;
-    border-bottom-width: 1px !important;
-}
-.UiSideField select:focus{
-    border-bottom-width: 1px !important;
-}
-.UiSideField .pill-nav input[type=radio] + label{
-    color: #CCCCCC !important;
-}
-.UiSideField .croppie-container .cr-viewport, .croppie-container .cr-resizer{
-    border: none !important;
-}
 
 .PastePreviewContainer {
     display: block;
@@ -236,37 +180,6 @@
     border-radius: 200px;
 }
 
-.dtmfButtons{
-    font-size: 20px;
-    color: #efefef;
-    width: 45px;
-    height: 45px;
-    border: 1px solid #484848;
-    border-radius: 100%;
-}
-.dtmfButtons:hover{
-    color: #FFFFFF;
-    background-color: #222222;
-}
-.dtmfButtons:active{
-    color: #cccccc;
-    background-color: #000000;
-}
-
-.dtmfButtons div{
-    font-size: 20px;
-    line-height: 9px;
-    margin: 0px;
-    margin-top: 7px;
-    padding: 0px;
-}
-.dtmfButtons span{
-    font-size: 9px;
-    line-height: 9px;
-    margin: 0px;
-    padding: 0px;
-}
-
 /* CSS_TabPageTemplate */
 
 audio{
@@ -287,16 +200,18 @@ body {
     font-family: Roboto, Arial, Helvetica;
     font-size: 14px;
     line-height: 1.5;
-    color: #CCCCCC;
     cursor: default;
-    background-color: #222222;;
     overflow: hidden;
-    user-select: none !important;
+
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none;     /* Firefox all */
+    -ms-user-select: none;      /* IE 10+ */
+    user-select: none;          /* Likely future */
+    -webkit-touch-callout: none; /* iOS */
 }
 
 .pageContainer{
     min-width: 320px;
-    max-width: 1240px;
     margin-left: auto;
     margin-right: auto;
     height: 100%;
@@ -418,14 +333,7 @@ body {
     font-size: 7px;
     vertical-align: text-top;
     margin-right: 3px;
-}
-
-.on_white{
-    color: #333333;
-}
-.on_white:hover{
-    color: #F3F3F3;
-}
+}x
 
 /* CSS_UiImportant */
 /* ====================================================================================== */
@@ -442,20 +350,22 @@ body {
     left: 0px;
     
     position: fixed !important;
-    z-index: 9999;
+    z-index: 99999999;
     min-width: 200px !important;
     box-sizing: border-box;
     padding: 5px 0px 5px 0px !important;
     border-radius: 5px !important;
     background-color: #fafafa !important;
-    border: 1px solid #dfdfdf !important;
-    box-shadow: 0 0 10px rgb(127 127 127 / 20%) !important;
+    border: 1px solid #CCCCCC !important;
+    box-shadow: 0 0 10px rgba(127, 127, 127, 0.25) !important;
     color: #404040 !important;
 }
 .ui-menu .ui-state-active{
     color: #404040 !important;
     background-color: #e8e8e8 !important;
-    border-color: transparent !important;
+    border-color: #CCCCCC !important;
+    border-top-color: transparent !important;
+    border-bottom-color: transparent !important;
 }
 
 .ui-menu .ui-menu-item {
@@ -496,13 +406,6 @@ body {
 .ui-button{
     min-width: unset !important;
     min-height: unset !important;
-}
-
-.ui-dialog .ui-button:active, .ui-button.ui-state-active:hover {
-    border: 1px solid #0b213a !important;
-    background: #395f88 !important;
-    font-weight: normal !important;
-    color: #fff !important;
 }
 
 .ui-widget-header {
@@ -594,85 +497,36 @@ button {
     padding: 0px;
     padding-left: 7px;
     padding-right: 7px;
-    border: 1px solid transparent;
-    background-color: transparent;
     border-radius: 5px;
     min-width: 30px;
-    min-height: 24px;
+    min-height: 30px;
     font-family: Roboto, Arial, Helvetica;
-    color: #dedede;
     font-size: 14px;
     margin-left: 1px;
     margin-right: 1px;
     outline: none;
     cursor: pointer;
 }
-
-button:hover {
-    background-color: #333333;
-    border: 1px solid #404040;
-    color: #FFFFFF;
-}
-
-button:active {
-    border: 1px solid #333333;
-    background-color: #222222;
-    background-image: none;
-    color: #FFFFFF;
-    box-shadow: 0px 0px 0px 2px rgba(65, 100, 147, 0.25);
-    transition: box-shadow 240ms;
-}
-
 button:focus {
     outline: none;
 }
-
 button:disabled {
     cursor: default;
-    color: #CCCCCC;
 }
-
 button:disabled:hover {
     cursor: default;
-    color: #CCCCCC;
-}
-
-button:disabled:active {
-    box-shadow: none;
-    transition: none;
 }
 
 /* Text Field */
-input[type=text] {
-    color: #dcdcdc;
-    font-size: 14px;
-    padding: 0px;
-    line-height: 22px;
+input[type=text],input[type=password],input[type=email],input[type=tel] {
+    font-size: 15px;
+    padding: 5px;
     border: none;
-    border-bottom: 2px solid #a3bad9;
-    background-color: transparent;
+    border-radius: 0px;
 }
 
-input[type=text]:focus {
+input[type=text]:focus,input[type=password]:focus,input[type=email]:focus,input[type=tel]:focus {
     outline: none;
-    border-bottom: 2px solid #416493;
-}
-
-/* Password Field */
-input[type=password] {
-    color: #416493;
-    font-size: 14px;
-    padding: 0px;
-    line-height: 22px;
-    border: none;
-    border-bottom: 2px solid #a3bad9;
-    background-color: transparent;
-}
-
-input[type=password]:focus {
-    outline: none;
-    border-bottom: 2px solid #416493;
-    background-color: transparent;
 }
 
 /* Select Dropdown */
@@ -686,22 +540,18 @@ select {
     background-position: center right;
     background-repeat: no-repeat;
     font-size: 14px;
-    color: #416493;
     padding: 0px;
     line-height: 22px;
     vertical-align: middle;
     padding-right: 16px;
     border: none;
-    border-bottom: 2px solid #a3bad9;
     background-color: transparent;
     cursor: pointer;
     white-space: nowrap !important;
     border-radius: 0px !important;
 }
-
 select:focus {
     outline: none;
-    border-bottom: 2px solid #416493;
 }
 
 /* Check Boxes */
@@ -724,9 +574,6 @@ input[type=checkbox] + label {
 input[type=checkbox] + label:before {
     font-family: FontAwesome;
     content: "\f096";
-    /* fa fa-square-o */
-    /* content: "\f204"; */
-    color: #416493;
     width: 20px;
     display: inline-block;
     font-size: 18px;
@@ -737,9 +584,6 @@ input[type=checkbox] + label:before {
 input[type=checkbox]:checked + label:before {
     font-family: FontAwesome;
     content: "\f046";
-    /* fa fa-check-square-o */
-    /* content: "\f205"; */
-    color: #416493;
     width: 20px;
     display: inline-block;
     font-size: 18px;
@@ -767,7 +611,6 @@ input[type=radio] + label {
 input[type=radio] + label:before {
     content: "\f10c";
     font-family: FontAwesome;
-    color: #416493;
     margin-right: 3px;
     font-size: 16px;
     vertical-align: middle;
@@ -776,7 +619,6 @@ input[type=radio] + label:before {
 input[type=radio]:checked + label:before {
     font-family: FontAwesome;
     content: "\f192";
-    color: #416493;
     margin-right: 3px;
     font-size: 16px;
     vertical-align: middle;
@@ -850,6 +692,13 @@ input[type=range]{
 /* CSS_Phone */
 /* ====================================================================================== */
 
+.leftContentTable{
+    border-right-style: solid;
+    border-left-style: solid;
+}
+.rightContent{
+    border-right-style: solid;
+}
 .settingsMenu{
     display: block;
     float: right;
@@ -944,69 +793,57 @@ input[type=range]{
     padding: 5px;
     height: 38px;
     cursor: pointer;
-    color: #333333;
-    border-left: 3px solid transparent;
     position: relative;
-    border-bottom: 1px solid #333333;
+    border-radius: 5px;
+    margin-bottom: 3px;
 }
-
-.buddy:hover {
-    background-color: #333333;
-}
-
 .buddySelected {
     padding: 5px;
     height: 38px;
     cursor: pointer;
-    color: #333333;
-    background-color: #404040;
     position: relative;
-    border-bottom: 1px solid #333333;
-    border-left: 3px solid #3c5f82;
+    border-radius: 5px;
+    margin-bottom: 3px;
 }
+
 .buddyActiveCall {
     padding: 5px;
     height: 38px;
     cursor: pointer;
-    color: #333333;
-    background-color: #404040;
+    color: #000000;
+    background-color: #eeeeee;
     position: relative;
-    border-bottom: 1px solid #333333;
     border-left: 3px solid #40bd3f;
+    border-radius: 5px;
+    margin-bottom: 5px;
 }
 .buddyActiveCallHollding {
     padding: 5px;
     height: 38px;
     cursor: pointer;
-    color: #333333;
-    background-color: #404040;
     position: relative;
-    border-bottom: 1px solid #333333;
-    border-left: 3px solid #d2a70a;
+    border-radius: 5px;
+    margin-bottom: 5px;
 }
-
 .lineIcon {
     border-radius: 50px;
     width: 36px;
     height: 36px;
-    background-color: #cc9009;
-    border: 1px solid #3e3e3e;
-    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
     float: left;
     text-align: center;
     line-height: 36px;
     padding: 0px;
     font-size: 24px;
-    color: #F3F3F3;
 }
+.hrline{
+    height:1px; 
+}
+
 .buddyIcon {
     border-radius: 50px;
     width: 36px;
     height: 36px;
     background-size: 36px;
-    background-color: #CCCCCC;
-    border: 1px solid #3e3e3e;
-    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
     float: left;
 }
 .callAnswerBuddyIcon{
@@ -1024,25 +861,24 @@ input[type=range]{
     top: 0;
     left: 0;
     width: 100%;
-    z-index: 1;
+    height: 100%;
+    box-sizing: border-box;
+    z-index: 10;
 }
 
 .contact {
     padding: 5px;
     height: 38px;
-    color: #4c4c4c;
-    /* border-left: 3px solid transparent; */
+
     position: relative;
     cursor: pointer;
 }
 
 .contactNameText {
     margin-left: 50px;
-    margin-top: 3px;
-    font-size: 14px;
-    color: #cdcdcd;
+    font-size: 15px;
 
-    margin-right: 55px;
+    margin-right: 25px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1057,8 +893,7 @@ input[type=range]{
 .presenceText {
     margin-left: 50px;
     margin-top: 0px;
-    font-size: 11px;
-    color: #999999;
+    font-size: 12px;
 
     white-space: nowrap;
     overflow: hidden;
@@ -1066,26 +901,20 @@ input[type=range]{
 }
 
 .searchClean {
-    border: 1px solid #404040;
-    border-radius: 5px;
-    padding: 1px;
+    border-radius: 50px;
+    padding: 3px;
     padding-left: 5px;
-    background-color: #222222;
-    box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.25);
-    height: 26px;
     box-sizing: border-box;
-    display: inline-block;
+    display: inline;
 }
 
 .searchClean:before {
     content: "\f002";
     font-family: FontAwesome;
-    color: #393f47;
-    text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.25);
 }
 
 .searchClean INPUT {
-    border: none;
+    border: none !important;
     margin-left: 5px;
     outline: none;
     background-color: transparent;
@@ -1099,6 +928,7 @@ input[type=range]{
     text-align: center;
     padding: 25px;
     margin-top: 10px;
+    line-height: 40px;
 }
 
 .dialCall {
@@ -1127,9 +957,6 @@ input[type=range]{
 }
 .streamSection {
     padding: 5px;
-    background-color: #292929;
-    border-radius: 5px;
-    border: 1px solid #404040;
     vertical-align: top;
     position:relative;
 }
@@ -1138,7 +965,6 @@ input[type=range]{
     background-size: 250px; /* normalise retinal scaling */
     background-position-x: center;
     background-position-y: bottom;
-    box-shadow: inset 0px 3px 5px 0px rgba(0, 0, 0, 0.25);
 }
 
 .chatHistory {
@@ -1163,25 +989,12 @@ input[type=range]{
     width: 32px;
     height: 32px;
     line-height: 32px;
-    border: 1px solid #404040;
-    background-color: transparent;
     padding: 0px;
     font-size: 16px;
     box-shadow: none;
-    color: #dcdcdc;
     min-width: 0px;
 }
 
-.roundButtons:hover {
-    border: 1px solid #404040;
-    background-color: #333333;
-}
-
-.roundButtons:active {
-    border: 1px solid #404040;
-    background-color: #222222;
-    color: #FFFFFF;
-}
 
 .toolBarButtons {
     border-radius: 5px;
@@ -1297,16 +1110,14 @@ input[type=range]{
 }
 .chatMessage {
     box-sizing: border-box;
-    padding: 2px;
+    padding: 8px;
     width: 100%;
     height: 100%;
-    border: none;
+    border-radius: 10px;
     outline: none;
     resize: none;
     font-family: Roboto, Arial, Helvetica;
-    font-size: 14px;
-    color: #cccccc;
-    background-color: transparent;
+    font-size: 15px;
 }
 
 .buddyIconSmall {
@@ -1350,11 +1161,9 @@ input[type=range]{
 }
 .theirChatMessageText {
     display: inline-block;
-    background-color: rgba(231, 231, 231, 0.8);
     padding: 5px;
-    border-radius: 5px;
-    font-size: 14px;
-    color: #272f39;
+    border-radius: 8px;
+    font-size: 15px;
     position: relative;
 }
 
@@ -1388,17 +1197,14 @@ input[type=range]{
 }
 .ourChatMessageText {
     display: inline-block;
-    background-color: rgba(215, 232, 247, 0.8);
     padding: 5px;
-    border-radius: 5px;
-    font-size: 14px;
-    color: #272f39;
+    border-radius: 8px;
+    font-size: 15px;
     position: relative;
 }
 
 .messageDate {
-    font-size: 11px;
-    color: #666666;
+    font-size: 12px;
 }
 .messageText{
     user-select: text;
@@ -1417,27 +1223,9 @@ input[type=range]{
     border-radius: 50px;
 }
 .callRecordings{
-    font-size:11px
+    font-size:12px
 }
-.callRecordings button{
-    width: 30px;
-    text-align: center;
-    height: 30px;
-    line-height: 30px;
 
-    float: left;
-    margin-right: 10px;
-
-    color: #333333;
-    background-color: #CCCCCC;
-    border: 1px solid #222222;
-    border-radius: 50px;
-}
-.callRecordings button:hover{
-    color: #cccccc;
-    background-color: #333333;
-    border: 1px solid #222222;
-}
 .callRecordings img{
     width: 100%;
     max-width: 400px; /* 854x480 (16:9) */
@@ -1446,7 +1234,6 @@ input[type=range]{
     transform: scale(1.1);
 }
 .callRecording{
-    background-color: #CCCCCC;
     border-radius: 10px;
     padding: 5px;
     margin-top: 2px;
@@ -1505,33 +1292,23 @@ input[type=range]{
 }
 
 .FullScreenVideo{
-    position: fixed !important;
-    top: 0px !important;
-    left: 0px !important;
-    width: 100% !important;
-    height: 100% !important;
-    background-color: #000000 !important;
-    margin: 0px !important;
-    padding: 0px !important;
-    z-index: 99999 !important;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 50;
+    padding: 0px;
+    margin: 0px;
+
+    /* You can set the fullscreen color here if you want */
 }
 
 .StageContainer{
     width: 100%;
-    min-height: 360px;
-    /* max-height: 508px; */
-    background-color: #000000;
-    z-index: 99;
-
+    height: calc(100% - 80px); /* 80 is the height of the preview area */
+    z-index: 80; /* Video Levels are 80-90 */
     position: relative;
-}
-.StageContainer_FS{
-    position: fixed !important;
-    top: 125px !important;
-    left: 0px !important;
-    width: 100% !important;
-    /* height: 100% !important; */
-    height: calc(100% - 125px - 75px) !important;
 }
 
 .StageContainer .VideosContainer{
@@ -1542,7 +1319,7 @@ input[type=range]{
     right: 0px;
 
     display: flex;
-    align-content: center;
+    align-content: flex-start; /* center; */
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
@@ -1551,7 +1328,7 @@ input[type=range]{
 
 .StageContainer .VideosContainer .VideoWrapper{
     border-radius: 5px;
-    background-color: #2a2a2a;
+    background-color: #000000;
     margin: 2px;
 
     display: inline-block;
@@ -1586,7 +1363,7 @@ input[type=range]{
     border: 1px solid transparent;
     border-radius: 7px;
     object-fit: contain;
-    background-color: #2a2a2a;
+    background-color: #000000;
     z-index: 998;
 
     box-sizing: border-box;
@@ -1604,94 +1381,83 @@ input[type=range]{
     width: 100%; /* Gets overwritted */
     padding-top: 5px;
     padding-bottom: 5px;
-    background-color: #000000;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
-    z-index: 99;
-}
-.PreviewContainer_FS{
-    position: fixed;
-    top: 35px;
+    box-sizing: border-box;
 }
 .PreviewContainer VIDEO{
     margin-left: 5px;
     border-radius: 5px;
-    background-color: #2a2a2a;
+    background-color: #000000;
     height: 100%;
 }
 
-.CallControl{
-    z-index: 99999;
-    margin-top:10px;
-}
-.CallControl_FS{
-    position:fixed;
+.StageContainer .ScratchpadContainer{
+    position: absolute;
     left: 0px;
-    width: 100%;
     bottom: 0px;
-    height: 65px;
-    padding-top: 10px;
-    background-image: linear-gradient(transparent, black);
+    top: 0px;
+    right: 0px;
+
+}
+
+.CallControlContainer{
+    z-index: 99;    /* Under Windows */
+    text-align: center;
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    left: 0px;
+}
+.CallControl{
+    display: inline-block;
+    padding: 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    width: 320px;
+    box-sizing: border-box;
 }
 
 .canvas-container{
-    display: inline-block;
+    display: block;
 }
 
 .callStatus {
-    background-color: #333333;
     border-radius: 50px;
     padding: 5px;
     padding-left: 15px;
     text-align: left;
+    line-height: initial;
 }
 
 .answerButton{
-    background-color: #059609;
-    border: 1px solid #055d05;
+    padding: 8px;
     padding-left: 15px;
     padding-right: 15px;
 }
-.answerButton:hover {
-    background-color: #0aa80f;
-    border: 1px solid #055d05;
-}
-
-.answerButton:active {
-    background-color: #017a05;
+.rejectButton{
+    padding: 8px;
+    padding-left: 15px;
+    padding-right: 15px;
 }
 
 .hangupButton {
-    background-color: #dc0000;
-    border: 1px solid #870000;
     padding-left: 15px;
     padding-right: 15px;
-}
-.hangupButton:hover {
-    background-color: #ff1b1b;
-    border: 1px solid #870000;
-}
-
-.hangupButton:active {
-    background-color: #d80000;
 }
 
 .dotOnline {
     display: inline-block;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 .dotOnline:before {
     content: "\f098";
     font-family: FontAwesome;
-    color: #3fbd3f;
+    color: #3eb13e;
 }
 
 .dotOffline {
     display: inline-block;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 .dotOffline:before {
     content: "\f098";
@@ -1701,8 +1467,6 @@ input[type=range]{
 
 .dotRinging {
     display: inline-block;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 .dotRinging:before {
     content: "\f098";
@@ -1712,19 +1476,15 @@ input[type=range]{
 
 .dotInUse {
     display: inline-block;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 .dotInUse:before {
     content: "\f098";
     font-family: FontAwesome;
-    color: #ff0000;
+    color: #b40202;
 }
 
 .dotDoNotDisturb {
     display: inline-block;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 .dotDoNotDisturb:before {
     content: "\f098";
@@ -1734,8 +1494,6 @@ input[type=range]{
 
 .dotReady {
     display: inline-block;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 .dotReady:before {
     content: "\f098";
@@ -1745,8 +1503,6 @@ input[type=range]{
 
 .dotOnHold {
     display: inline-block;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 .dotOnHold:before {
     content: "\f098";
@@ -1756,8 +1512,6 @@ input[type=range]{
 
 .dotFailed {
     display: inline-block;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 .dotFailed:before {
     content: "\f1eb";
@@ -1780,8 +1534,6 @@ input[type=range]{
     right: 2px;
     top: 5px;
     font-size: 12px;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
     margin: 0px;
     text-align: center;
 }
@@ -1810,29 +1562,20 @@ input[type=range]{
 }
 
 .audioStats {
-    padding:10px;
-    overflow: auto;
-    position: fixed;
-    top: 0px;
-    left: 0px;
-    width: 100%;
-    box-sizing: border-box;
+    padding-bottom: 150px;
+    padding-right: 10px;
     height: 100%;
-    background-color: #222222;
-    z-index: 99999999;
+    width: calc(100% - 10px); /* Chart bug */
+    overflow-y: auto;
+    box-sizing: border-box;
+    margin: auto;
 }
-.audioStatsSet{
-    max-width: 1240px;
-    margin-left: auto;
-    margin-right: auto;
-}
-.audioGraph {
-    background-color: #FFFFFF;
-    border-radius: 5px;
-    margin-top: 10px;
 
-    margin-left: auto;
-    margin-right: auto;
+.callTimeline{
+    padding-bottom:150px;
+    height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 .buddyProfilePic {
@@ -1953,9 +1696,6 @@ input[type=range]{
     margin-top: 1px;
     margin-left: 0px;
     margin-right: 2px;
-    color: #333333;
-    border: 1px solid #888888;
-    background-color: rgba(255, 255, 255, 0.25);
     border-radius: 6px;
     padding: 0px;
     padding-left: 2px;
@@ -1982,7 +1722,6 @@ input[type=range]{
     padding: 0px;
     margin: 0px;
     line-height: initial;
-    color: #333333;
     border: none;
     width: 60px;
 }
@@ -2016,10 +1755,10 @@ input[type=range]{
 }
 
 .cdrComment{
-    font-size: 12px !important;
-    color: #444444 !important;
+    font-size: 13px !important;
     line-height: initial !important;
     text-align: left;
+    padding: 5px;
 }
 .cdrComment input[type=text]{
     font-size: 12px !important;
@@ -2034,48 +1773,39 @@ input[type=range]{
 }
 
 .inCallButtons{
-    width: 45px !important;
-    height: 45px !important;
-    font-size: 20px !important;
-    margin-left: 2px !important;
-    margin-right: 2px !important;
-    padding-left: 0px !important;
-    padding-right: 0px !important;
+    font-size: 22px !important;
+    padding: 0px !important;
+    margin: 5px;
+}
+.inCallAvitar{
+    margin-left: auto;
+    margin-right: auto;
+    width: 150px;
+    height: 150px;
+    background-size: 150px;
+    border-radius: 1000px;
+    margin-top: 10px;
+    background-color: #CCCCCC;
+    border: 1px solid #FFFFFF;
+    box-shadow: 1px 1px 5px rgb(0 0 0 / 25%);
 }
 
 .dialTextInput{
     font-size: 20px;
-    color: #CCCCCC;
     text-align: center;
     border-radius: 0px;
     border: none;
-    border-bottom: 2px solid #404040;
     background-color: transparent;
     outline-style: none;
 }
 .dialButtons{
     font-size: 18px; 
     border: none;
-    color: #CCCCCC;
-    background-color: #404040;
     border-radius: 100px;
-    width:50px;
-    height:50px;
-}
-.dialButtons:hover{
-    color: #f3f3f3;
-    background-color: #333333;
-}
-.dialButtons:active{
-    color: #cccccc;
-    background-color: #222222;
-}
-.dialButtons:disabled{
-    color: #666666;
+    width:55px;
+    height:55px;
 }
 .dialButtons:disabled:hover{
-    color: #666666;
-    background-color: transparent;
     border: none;
 }
 .dialButtons div{
@@ -2086,39 +1816,40 @@ input[type=range]{
     padding: 0px;
 }
 .dialButtons span{
-    color: #999999;
     font-size: 9px;
     line-height: 9px;
     margin: 0px;
     padding: 0px;
 }
-
-
-
+.dialButtonsDial{
+    font-size: 25px;
+}
+.callingDisplayName{
+    font-size: 18px;
+    text-align: center;
+}
+.callingDisplayNumber{
+    font-size: 13px;
+    text-align: center;
+}
 .timelineMessage{
     margin-left: 20%;
-    color: #F3F3F3;
-    border-left: 3px solid #3c5e82;
 }
 .timelineMessageDot{
     position: relative;
     left: -6.5px;
-    color: #3c5e82;
 }
 .timelineMessageArea{
-    color: #F3F3F3;
     padding-top: 10px;
     padding-bottom: 10px;
     padding-left: 0px;
 }
 .timelineMessageDate{
-    color: #d0d0d0;
     font-size: 12px;
 }
 .timelineMessageText{
-    color: #bdbdbd;
     padding: 5px;
-    background-color: rgba(0, 0, 0, 0.4);
     border-radius: 10px;
     margin-left: 10px;
+    font-size: 15px;
 }

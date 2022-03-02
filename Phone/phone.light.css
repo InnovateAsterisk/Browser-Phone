@@ -1,0 +1,424 @@
+/* Light/Unspecified Mode UI */
+
+body {
+    color: #000000;
+    background-color: #f6f6f6;
+}
+
+.pageContainer{
+    box-shadow: 0px 0px 20px rgb(0 0 0 / 25%);
+}
+
+.streamSection{
+    background-color: #FFFFFF;
+    border: none;
+}
+
+.buddy {
+    border-left: 3px solid transparent;
+    color: #000000;
+}
+.buddy:hover {
+    background-color: #e1e1e1;
+}
+
+.buddySelected {
+    color: #000000;
+    background-color: #e1e1e1;
+    border-left: 3px solid #3478f3;
+}
+.buddySelected:hover {
+    cursor: default;
+}
+
+.buddyIcon {
+    background-color: #CCCCCC;
+    border: 1px solid #FFFFFF;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+}
+
+.buddyActiveCall {
+    color: #000000;
+    background-color: #eeeeee;
+    border-left: 3px solid #40bd3f;
+}
+.buddyActiveCallHollding {
+    color: #666666;
+    background-color: #c8c8c8;
+    border-left: 3px solid #999999;
+}
+.buddyActiveCall .lineIcon {
+    background-color: #cc9009;
+    border: 1px solid #ffffff;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+    color: #F3F3F3;
+}
+.buddyActiveCallHollding .lineIcon {
+    background-color: #999999;
+    border: 1px solid #ffffff;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+    color: #F3F3F3;
+}
+.lineIcon {
+    background-color: #cc9009;
+    border: 1px solid #ffffff;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+    color: #F3F3F3;
+}
+
+.hrline{
+    background-color:#cccccc
+}
+
+.profileContainer{
+    background-color: #F6F6F6;
+    border-bottom: 1px solid #CCCCCC;
+}
+
+.searchClean{
+    border: 1px solid #CCCCCC;
+    background-color: #eaeaea
+}
+.searchClean:before {
+    color: #333333;
+}
+
+.roundButtons {
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: #3478f3;
+}
+
+.roundButtons:hover {
+    border: 1px solid transparent;
+    background-color: #e1e1e1;
+    color: #3478f3
+}
+
+.roundButtons:active {
+    border: 1px solid transparent;
+    background-color: #666666;
+    color: #FFFFFF;
+}
+
+.leftContentTable{
+    border-right-color: #CCCCCC;
+    border-left-color: #CCCCCC;
+}
+.rightContent{
+    border-right-color: #CCCCCC;
+}
+
+.highlightSection{
+    background-color: #F6F6F6;
+}
+.sectionBorderBottom{
+    border-bottom: 1px solid #CCCCCC;
+}
+.sectionBorderTop{
+    border-top: 1px solid #CCCCCC;
+}
+
+.presenceText {
+    color: #808080;
+}
+
+.streamSectionBackground {
+    background-color: #efeadc;
+}
+
+.chatMessage {
+    border: 1px solid #e6e6e6;
+    color: #333333;
+    background-color: #FFFFFF;
+}
+.theirChatMessageText {
+    background-color: #ecf7e6;
+    color: #000000;
+}
+.ourChatMessageText {
+    background-color: #f1f9ff;
+    color: #000000;
+}
+.messageDate {
+    color: #666666;
+}
+.callRecording{
+    background-color: #FFFFFF;
+    color: #333333;
+}
+.cdrComment{
+    color: #444444;
+}
+.chatMessageDropdown{
+    color: #000000;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.dialTextInput{
+    color: #000000;
+    border-bottom: 1px solid #cccccc;
+    background-color: transparent;
+}
+.dialButtons{
+    color: #3478f3;
+    background-color: #eeeeee;
+}
+.dialButtons:hover{
+    border: 1px solid transparent;
+    background-color: #e1e1e1;
+    color: #3478f3
+}
+.dialButtons:active{
+    border: 1px solid transparent;
+    background-color: #666666;
+    color: #FFFFFF;
+}
+.dialButtons span{
+    color: #999999;
+}
+.dialButtonsDial{
+    color: #FFFFFF;
+    background-color: #25962f;
+}
+.dialButtonsDial:hover{
+    color: #FFFFFF;
+    background-color: #44ad4d;
+}
+.dialButtonsDial:active{
+    color: #FFFFFF;
+    background-color: #0a5210;
+}
+.dialButtonsDial:disabled{
+    color: #666666;
+    background-color: #25962f;
+}
+.dialButtonsDial:disabled:hover{
+    color: #666666;
+    background-color: #25962f;
+}
+
+.hangupButton {
+    color: #FFFFFF !important;
+    background-color: #dc0000 !important;
+    border: 1px solid transparent !important;
+}
+.hangupButton:hover {
+    color: #FFFFFF !important;
+    background-color: #ff1b1b !important;
+    border: 1px solid transparent !important;
+}
+.hangupButton:active {
+    color: #FFFFFF !important;
+    background-color: #d80000 !important;
+}
+
+.answerButton{
+    color: #FFFFFF !important;
+    background-color: #059609;
+}
+.answerButton:hover {
+    color: #FFFFFF !important;
+    background-color: #0aa80f;
+}
+.answerButton:active {
+    color: #FFFFFF !important;
+    background-color: #017a05;
+}
+
+.rejectButton {
+    color: #FFFFFF;
+    background-color: #dc0000;
+}
+.rejectButton:hover {
+    color: #FFFFFF;
+    background-color: #ff1b1b;
+}
+.rejectButton:active {
+    color: #FFFFFF;
+    background-color: #d80000;
+}
+
+.CallControl{
+    background-color: #CCCCCC;
+}
+
+/* Standard Field Elements */
+button {
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: #3478f3;
+}
+button:hover {
+    background-color: #3478f3;
+    border: 1px solid transparent;
+    color: #FFFFFF;
+}
+button:active {
+    border: 1px solid #333333;
+    background-color: #222222;
+    color: #FFFFFF;
+}
+button:disabled {
+    color: #333333;
+}
+button:disabled:hover {
+    color: #333333;
+}
+
+input[type=text],input[type=password],input[type=email],input[type=tel] {
+    color: #000000;
+    border-bottom: 1px solid #999999;
+    background-color: transparent;
+}
+input[type=text]:focus,input[type=password]:focus,input[type=email]:focus,input[type=tel]:focus {
+    border-bottom: 1px solid #333333;
+}
+select {
+    color: #000000;
+    border-bottom: 2px solid #999999;
+    background-color: transparent;
+}
+select:focus {
+    border-bottom: 2px solid #333333;
+}
+input[type=checkbox] + label:before {
+    color: #3478f3;
+}
+input[type=checkbox]:checked + label:before {
+    color: #3478f3;
+}
+input[type=radio] + label:before {
+    color: #3478f3;
+}
+input[type=radio]:checked + label:before {
+    color: #3478f3;
+}
+
+/* UiText */
+.UiText {
+    color:#333333;
+}
+
+/* UiTextHeading */
+.UiTextHeading{
+    color:#333333;
+    border-bottom: 1px solid #CCCCCC;
+}
+.UiTextHeading::before{
+    color: #333333;
+}
+.UiTextHeadingIcon{
+    color: #FFFFFF;
+}
+
+/* UiButtonBar */
+.UiButtonBar {
+    border-top: 1px solid #e6e6e6; 
+    background-color:#F3F3F3; 
+}
+.UiButtonBar button {
+    border: 0px solid #0b213a;
+    background-color: #3478f3;
+    color: #FFFFFF;
+}
+.UiButtonBar button:hover {
+    border: 0px solid #092139;
+    background-color: #3478f3;
+    color: #FFFFFF;
+}
+.UiButtonBar button:active {
+    border: 0px solid #092139;
+    background-color: #092139;
+    color: #FFFFFF;
+}
+.UiButtonBar button:disabled {
+    color: #999999;
+}
+
+/* UiWindowButtonBar */
+.UiWindowButtonBar button {
+    border: 0px solid #0b213a;
+    background-color: #3478f3;
+    color: #FFFFFF;
+}
+.UiWindowButtonBar button:hover {
+    border: 0px solid #092139;
+    background-color: #6799f2;
+    color: #FFFFFF;
+}
+.UiWindowButtonBar button:active {
+    border: 0px solid #092139;
+    background-color: #1547a2;
+    color: #FFFFFF;
+}
+.UiWindowButtonBar button:disabled {
+    color: #999999;
+}
+
+/* UiSideField */
+
+
+.callStatus {
+    background-color: #e6e6e6;
+}
+
+.dtmfButtons{
+    color: #3478f3;
+    border: 1px solid transparent;
+}
+.dtmfButtons:hover{
+    color: #3478f3;
+    background-color: #CCCCCC;
+    border: 1px solid transparent;
+}
+.dtmfButtons:active{
+    color: #FFFFFF;
+    background-color: #666666;
+    border: 1px solid transparent;
+}
+
+/* Tags */
+.tags li {
+    color: #333333;
+    border: 1px solid #888888;
+    background-color: rgba(255, 255, 255, 0.25);
+
+}
+.tags li:hover::before {
+    color: #000000;
+}
+.tags li::before {
+    color: #333333;
+}
+.tags input[type=text]{
+    color: #333333;
+}
+.tags .tagText:hover::before{
+    color: #000000;
+}
+.tags .tagText::before{
+    color: #333333;
+}
+
+
+.timelineMessage{
+    border-left: 3px solid #3478f3;
+}
+.timelineMessageDot{
+    color: #3478f3;
+}
+.timelineMessageArea{
+    color: #F3F3F3;
+}
+.timelineMessageDate{
+    color: #333333;
+}
+.timelineMessageText{
+    color: #000000;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.audioGraph {
+    background-color: #FFFFFF;
+}
