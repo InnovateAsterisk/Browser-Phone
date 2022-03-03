@@ -1424,11 +1424,28 @@ input[type=range]{
 }
 
 .callStatus {
-    border-radius: 50px;
+    /* border-radius: 50px;
     padding: 5px;
     padding-left: 15px;
     text-align: left;
-    line-height: initial;
+    line-height: initial; */
+
+    border-radius: 50px;
+    padding-left: 15px;
+    text-align: left;
+    height: 26px;
+    line-height: 26px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: -60px;
+}
+.CallTimer{
+    float: right;
+    margin-right: 10px;
+    margin-left: 10px;
+    height: 26px;
+    line-height: 26px;
 }
 
 .answerButton{
@@ -1826,6 +1843,7 @@ input[type=range]{
 }
 .callingDisplayName{
     font-size: 18px;
+    font-weight: bold;
     text-align: center;
 }
 .callingDisplayNumber{
@@ -1853,3 +1871,35 @@ input[type=range]{
     margin-left: 10px;
     font-size: 15px;
 }
+
+.CallPictureUnderlay{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position-x: center;
+    background-position-y: top;
+    background-repeat: no-repeat;
+    filter: blur(10px) opacity(0.4) grayscale(1);
+    overflow: hidden;
+    background-clip: content-box;
+    border: 20px solid transparent;
+    box-sizing: border-box;
+}
+.CallColorUnderlay{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+}
+.CallUi{
+    position: absolute;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    top: 20px;
+}
+

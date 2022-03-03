@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.2";
+const appversion = "0.3.3";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -1665,8 +1665,10 @@ function ReceiveCall(session) {
     lineObj.SipSession.data.callstart = startTime.format("YYYY-MM-DD HH:mm:ss UTC");
     lineObj.SipSession.data.callTimer = window.setInterval(function(){
         var now = moment.utc();
-        var duration = moment.duration(now.diff(startTime)); 
-        $("#line-" + lineObj.LineNumber + "-timer").html(formatShortDuration(duration.asSeconds()));
+        var duration = moment.duration(now.diff(startTime));
+        var timeStr = formatShortDuration(duration.asSeconds());
+        $("#line-" + lineObj.LineNumber + "-timer").html(timeStr);
+        $("#line-" + lineObj.LineNumber + "-datetime").html(timeStr);
     }, 1000);
     lineObj.SipSession.data.earlyReject = false;
     Lines.push(lineObj);
@@ -1731,7 +1733,7 @@ function ReceiveCall(session) {
 
     // Create the call HTML 
     AddLineHtml(lineObj);
-    $("#line-" + lineObj.LineNumber + "-msg").html(lang.incoming_call_from +" " + callerID +" &lt;"+ did +"&gt;");
+    $("#line-" + lineObj.LineNumber + "-msg").html(lang.incoming_call);
     $("#line-" + lineObj.LineNumber + "-msg").show();
     $("#line-" + lineObj.LineNumber + "-timer").show();
     if(lineObj.SipSession.data.withvideo){
@@ -2175,10 +2177,13 @@ function onInviteAccepted(lineObj, includeVideo, response){
     session.data.startTime = startTime;
     session.data.callTimer = window.setInterval(function(){
         var now = moment.utc();
-        var duration = moment.duration(now.diff(startTime)); 
-        $("#line-" + lineObj.LineNumber + "-timer").html(formatShortDuration(duration.asSeconds()));
+        var duration = moment.duration(now.diff(startTime));
+        var timeStr = formatShortDuration(duration.asSeconds());
+        $("#line-" + lineObj.LineNumber + "-timer").html(timeStr);
+        $("#line-" + lineObj.LineNumber + "-datetime").html(timeStr);
     }, 1000);
     session.isOnHold = false;
+    session.data.started = true;
 
     if(includeVideo){
         // Preview our stream from peer conneciton
@@ -2272,6 +2277,7 @@ function onInviteAccepted(lineObj, includeVideo, response){
         $("#line-" + lineObj.LineNumber + "-ActiveCall").show();
     }
 
+    UpdateBuddyList()
     updateLineScroll(lineObj.LineNumber);
 
     // Start Audio Monitoring
@@ -4713,7 +4719,9 @@ function VideoCall(lineObj, dialledNumber, extraHeaders) {
     lineObj.SipSession.data.callTimer = window.setInterval(function(){
         var now = moment.utc();
         var duration = moment.duration(now.diff(startTime)); 
-        $("#line-" + lineObj.LineNumber + "-timer").html(formatShortDuration(duration.asSeconds()));
+        var timeStr = formatShortDuration(duration.asSeconds());
+        $("#line-" + lineObj.LineNumber + "-timer").html(timeStr);
+        $("#line-" + lineObj.LineNumber + "-datetime").html(timeStr);
     }, 1000);
     lineObj.SipSession.data.VideoSourceDevice = getVideoSrcID();
     lineObj.SipSession.data.AudioSourceDevice = getAudioSrcID();
@@ -4911,7 +4919,9 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
     lineObj.SipSession.data.callTimer = window.setInterval(function(){
         var now = moment.utc();
         var duration = moment.duration(now.diff(startTime)); 
-        $("#line-" + lineObj.LineNumber + "-timer").html(formatShortDuration(duration.asSeconds()));
+        var timeStr = formatShortDuration(duration.asSeconds());
+        $("#line-" + lineObj.LineNumber + "-timer").html(timeStr);
+        $("#line-" + lineObj.LineNumber + "-datetime").html(timeStr);
     }, 1000);
     lineObj.SipSession.data.VideoSourceDevice = null;
     lineObj.SipSession.data.AudioSourceDevice = getAudioSrcID();
@@ -7660,7 +7670,7 @@ function AddLineHtml(lineObj){
     html += "<div style=\"clear:both; height:0px\"></div>"
 
     // Gneral Messages
-    html += "<div id=\"line-"+ lineObj.LineNumber +"-timer\" style=\"float: right; margin-top: 5px; margin-right: 10px; display:none;\"></div>";
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-timer\" class=CallTimer></div>";
     html += "<div id=\"line-"+ lineObj.LineNumber +"-msg\" class=callStatus style=\"display:none\">...</div>";
 
     // Remote Audio Object
@@ -7674,8 +7684,14 @@ function AddLineHtml(lineObj){
     html += "<tr><td id=\"line-"+ lineObj.LineNumber +"-call-fullscreen\" class=\"streamSection highlightSection\">"
 
     // Call Answer UI
-    html += "<div id=\"line-"+ lineObj.LineNumber +"-AnswerCall\" class=answerCall style=\"display:none\">";
-    html += "<div>";
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-AnswerCall\" style=\"display:none\">";
+    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div class=\"CallColorUnderlay\"></div>";
+    html += "<div class=\"CallUi\">";
+    html += "<div class=callingDisplayName>"+ lineObj.DisplayName +"</div>";
+    html += "<div class=callingDisplayNumber>"+ lineObj.DisplayNumber +"</div>";
+    html += "<div class=\"inCallAvitar\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div class=answerCall>";
     html += "<button onclick=\"AnswerAudioCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button> ";
     if(EnableVideoCalling) {
         html += "<button id=\"line-"+ lineObj.LineNumber +"-answer-video\" onclick=\"AnswerVideoCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button> ";
@@ -7686,23 +7702,33 @@ function AddLineHtml(lineObj){
     html += "<div id=\"line-"+ lineObj.LineNumber +"-answer-crm-space\">"
     // Use this DIV for anything really. Call your own CRM, and have the results display here
     html += "</div>";
-    html += "</div>";
+
+    html += "</div>"; //.CallUi
+    html += "</div>"; //-AnswerCall
 
     // Dialing Out Progress
     html += "<div id=\"line-"+ lineObj.LineNumber +"-progress\" style=\"display:none\">";
-    html += "<div class=progressCall>";
-    html += "<button onclick=\"cancelSession('"+ lineObj.LineNumber +"')\" class=rejectButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel +"</button>";
-    html += "</div>";
-    html += "</div>";
+    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div class=\"CallColorUnderlay\"></div>";
+    html += "<div class=\"CallUi\">";
+    html += "<div class=callingDisplayName>"+ lineObj.DisplayName +"</div>";
+    html += "<div class=callingDisplayNumber>"+ lineObj.DisplayNumber +"</div>";
+    html += "<div class=\"inCallAvitar\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div class=progressCall><button onclick=\"cancelSession('"+ lineObj.LineNumber +"')\" class=rejectButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel +"</button></div>";
+    html += "</div>"; //.CallUi
+    html += "</div>"; // -progress
 
     // Active Call UI
-    html += "<div id=\"line-"+ lineObj.LineNumber +"-ActiveCall\" class=cleanScroller style=\"display:none; height:100%; overflow-y:auto\">";
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-ActiveCall\" class=cleanScroller style=\"display:none; position: absolute; top: 0px; left: 0px; height: 100%; width: 100%;\">";
 
     // Audio or Video Call (gets changed with InCallControls)
     html += "<div id=\"line-"+ lineObj.LineNumber +"-AudioOrVideoCall\" style=\"height:100%\">";
 
     // Audio Call UI
     html += "<div id=\"line-"+ lineObj.LineNumber +"-AudioCall\" style=\"height:100%; display:none\">";
+    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div class=\"CallColorUnderlay\"></div>";
+    html += "<div class=\"CallUi\">";
     html += "<div class=callingDisplayName>"+ lineObj.DisplayName +"</div>";
     html += "<div class=callingDisplayNumber>"+ lineObj.DisplayNumber +"</div>";
     html += "<div class=\"inCallAvitar\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
@@ -7719,7 +7745,7 @@ function AddLineHtml(lineObj){
     html += "</div>";
     html += "<div id=\"line-"+ lineObj.LineNumber +"-transfer-status\" class=callStatus style=\"margin-top:10px; display:none\">...</div>";
     html += "<audio id=\"line-"+ lineObj.LineNumber +"-transfer-remoteAudio\" style=\"display:none\"></audio>";
-    html += "</div>"; //Transfer
+    html += "</div>"; //-Transfer
 
     // Call Conference
     html += "<div id=\"line-"+ lineObj.LineNumber +"-Conference\" style=\"text-align: center; line-height:40px; display:none\">";
@@ -7732,8 +7758,8 @@ function AddLineHtml(lineObj){
     html += "</div>";
     html += "<div id=\"line-"+ lineObj.LineNumber +"-conference-status\" class=callStatus style=\"margin-top:10px; display:none\">...</div>";
     html += "<audio id=\"line-"+ lineObj.LineNumber +"-conference-remoteAudio\" style=\"display:none\"></audio>";
-    html += "</div>"; //Conference
-
+    html += "</div>"; //-Conference
+    html += "</div>"; //.CallUi
     html += "</div>"; //AudioCall
 
     // Video Call UI
@@ -7751,8 +7777,8 @@ function AddLineHtml(lineObj){
         html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted playsinline style=\"display:none; object-fit: contain; width: 100%;\"></video>";
         html += "</div>";
     }
-    html += "</div>";
-    html += "</div>";
+    html += "</div>"; //-VideoCall
+    html += "</div>"; //-AudioOrVideoCall
 
     // In Call Control
     // ===============
@@ -7805,8 +7831,8 @@ function AddLineHtml(lineObj){
     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-HideTimeline\" onclick=\"HideCallTimeline('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.activity_timeline +"\" style=\"color: red; display:none\"><i class=\"fa fa-list-ul\"></i></button>";
 
     html += "</div>"; // More Buttons Row
-    html += "</div>"; // CallControl
-    html += "</div>"; // CallControlContainer
+    html += "</div>"; // .CallControl
+    html += "</div>"; // .CallControlContainer
 
     // Screens - Note: They cannot occupy the same space.
     
@@ -8255,9 +8281,12 @@ function UpdateBuddyList(){
         if(Lines[l].SipSession != null) classStr = (Lines[l].SipSession.isOnHold)? "buddyActiveCallHollding" : "buddyActiveCall";
 
         var html = "<div id=\"line-"+ Lines[l].LineNumber +"\" class="+ classStr +" onclick=\"SelectLine('"+ Lines[l].LineNumber +"')\">";
+        if(Lines[l].IsSelected == false && Lines[l].SipSession && Lines[l].SipSession.data.started != true && Lines[l].SipSession.data.calldirection == "inbound"){
+            html += "<span id=\"line-"+ Lines[l].LineNumber +"-ringing\" class=missedNotifyer style=\"padding-left: 5px; padding-right: 5px; width:unset\"><i class=\"fa fa-phone\"></i> "+ lang.state_ringing +"</span>";
+        }
         html += "<div class=lineIcon>"+ (l + 1) +"</div>";
         html += "<div class=contactNameText><i class=\"fa fa-phone\"></i> "+ lang.line +" "+ (l + 1) +"</div>";
-        html += "<div id=\"Line-"+ Lines[l].ExtNo +"-datetime\" class=contactDate>&nbsp;</div>";
+        html += "<div id=\"line-"+ Lines[l].LineNumber +"-datetime\" class=contactDate>&nbsp;</div>";
         html += "<div class=presenceText>"+ Lines[l].DisplayName +" <"+ Lines[l].DisplayNumber +">" +"</div>";
         html += "</div>";
         // SIP.Session.C.STATUS_TERMINATED

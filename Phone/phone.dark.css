@@ -454,3 +454,7 @@ input[type=checkbox]:checked + label:before {
 .audioGraph {
     background-color: #000000;
 }
+
+.CallColorUnderlay{
+    background-image: radial-gradient(circle, transparent, #2a2a2a);
+}
