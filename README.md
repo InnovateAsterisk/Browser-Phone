@@ -11,7 +11,7 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 - https://www.innovateasterisk.com/phone/responsive.html *(Responsive Sample Layout - contains ads)*
 - https://www.innovateasterisk.com/phone/popup.html *(Popup Sample Layout - contains ads)*
 
-![Image of Main Interface](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall.jpg)
+![Buddy Stream](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/Buddy_Stream.jpg)
 
 ## Features v0.3.x
 - SIP Audio Calling
@@ -578,7 +578,7 @@ $ sudo asterisk -r
 
 ![Audio Call with Transfer](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall_Transfer.jpg)
 
-![Buddy Stream](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/Buddy_Stream.jpg)
+![Image of Main Interface](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/AudioCall.jpg)
 
 ![Mobile UI](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/UI_Mobile_List_Dark.jpg)
 
