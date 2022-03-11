@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.4";
+const appversion = "0.3.5";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -7655,6 +7655,8 @@ function FindLineByNumber(lineNum) {
     return null;
 }
 function AddLineHtml(lineObj){
+    var avatar = getPicture(lineObj.BuddyObj.identity);
+
     var html = "<table id=\"line-ui-"+ lineObj.LineNumber +"\" class=stream cellspacing=0 cellpadding=0>";
     html += "<tr><td class=\"streamSection highlightSection\" style=\"height: 85px;\">";
 
@@ -7704,12 +7706,12 @@ function AddLineHtml(lineObj){
 
     // Call Answer UI
     html += "<div id=\"line-"+ lineObj.LineNumber +"-AnswerCall\" style=\"display:none\">";
-    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ avatar +"')\"></div>";
     html += "<div class=\"CallColorUnderlay\"></div>";
     html += "<div class=\"CallUi\">";
     html += "<div class=callingDisplayName>"+ lineObj.DisplayName +"</div>";
     html += "<div class=callingDisplayNumber>"+ lineObj.DisplayNumber +"</div>";
-    html += "<div class=\"inCallAvitar\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-in-avatar\" class=\"inCallAvatar\" style=\"background-image: url('"+ avatar +"')\"></div>";
     html += "<div class=answerCall>";
     html += "<button onclick=\"AnswerAudioCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button> ";
     if(EnableVideoCalling) {
@@ -7727,12 +7729,12 @@ function AddLineHtml(lineObj){
 
     // Dialing Out Progress
     html += "<div id=\"line-"+ lineObj.LineNumber +"-progress\" style=\"display:none\">";
-    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ avatar +"')\"></div>";
     html += "<div class=\"CallColorUnderlay\"></div>";
     html += "<div class=\"CallUi\">";
     html += "<div class=callingDisplayName>"+ lineObj.DisplayName +"</div>";
     html += "<div class=callingDisplayNumber>"+ lineObj.DisplayNumber +"</div>";
-    html += "<div class=\"inCallAvitar\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-out-avatar\" class=\"inCallAvatar\" style=\"background-image: url('"+ avatar +"')\"></div>";
     html += "<div class=progressCall>"
     html += "<button onclick=\"cancelSession('"+ lineObj.LineNumber +"')\" class=rejectButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel +"</button>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-early-dtmf\" onclick=\"ShowDtmfMenu('"+ lineObj.LineNumber +"')\" style=\"display:none\"><i class=\"fa fa-keyboard-o\"></i> "+ lang.send_dtmf +"</button>"
@@ -7748,12 +7750,12 @@ function AddLineHtml(lineObj){
 
     // Audio Call UI
     html += "<div id=\"line-"+ lineObj.LineNumber +"-AudioCall\" style=\"height:100%; display:none\">";
-    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div class=\"CallPictureUnderlay\" style=\"background-image: url('"+ avatar +"')\"></div>";
     html += "<div class=\"CallColorUnderlay\"></div>";
     html += "<div class=\"CallUi\">";
     html += "<div class=callingDisplayName>"+ lineObj.DisplayName +"</div>";
     html += "<div class=callingDisplayNumber>"+ lineObj.DisplayNumber +"</div>";
-    html += "<div class=\"inCallAvitar\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-session-avatar\" class=\"inCallAvatar\" style=\"background-image: url('"+ avatar +"')\"></div>";
 
     // Call Transfer
     html += "<div id=\"line-"+ lineObj.LineNumber +"-Transfer\" style=\"text-align: center; line-height:40px; display:none\">";
@@ -11727,7 +11729,8 @@ function getPicture(buddy, typestr, ignoreCache){
     }
     var dbImg = localDB.getItem("img-"+ buddy +"-"+ typestr);
     if(dbImg == null){
-        return defaultImg
+        buddyObj.imageObjectURL = defaultImg
+        return buddyObj.imageObjectURL
     }
     else {
         buddyObj.imageObjectURL = URL.createObjectURL(base64toBlob(dbImg, 'image/png'));
