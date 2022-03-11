@@ -301,7 +301,7 @@ input[type=checkbox]:checked + label:before {
     color: #8e8e8e;
 }
 .UiTextHeadingIcon{
-    color: #8e8e8e;
+    color: #FFFFFF;
 }
 
 /* UiButtonBar */

@@ -1438,7 +1438,7 @@ input[type=range]{
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-right: -60px;
+    /* margin-right: -60px; */
 }
 .CallTimer{
     float: right;

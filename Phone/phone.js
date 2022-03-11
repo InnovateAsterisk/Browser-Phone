@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.3";
+const appversion = "0.3.4";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -72,8 +72,8 @@ let SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
 let SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
 
 let TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));        // The timeout in seconds for the initial connection to make on the web socket port
-let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 99));  // The number of times to attempt to reconnect to a WebSocket when the connection drops.
-let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 15));    // The time in seconds to wait between WebSocket reconnection attempts.
+let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 999));  // The number of times to attempt to reconnect to a WebSocket when the connection drops.
+let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 3));    // The time in seconds to wait between WebSocket reconnection attempts.
 
 let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");             // Enable Subscribe to voicemail
 let userAgentStr = getDbItem("UserAgentStr", "Browser Phone "+ appversion +" (SIPJS - "+ sipjsversion +")");   // Set this to whatever you want.
@@ -91,22 +91,24 @@ let RecordAllCalls = (getDbItem("RecordAllCalls", "0") == "1");             // S
 let StartVideoFullScreen = (getDbItem("StartVideoFullScreen", "1") == "1"); // Starts a vdeo call in the full screen (browser screen, not dektop)
 let SelectRingingLine = (getDbItem("SelectRingingLine", "1") == "1");       // Selects the ringing line if you are not on another call ()
 
-let UiMaxWidth = parseInt(getDbItem("UiMaxWidth", 1240));               // Sets the max-width for the UI elements (don't set this less than 920. Set to very high number for full screen eg: 999999)
-let UiThemeStyle = getDbItem("UiThemeStyle", "system");                 // Sets the colour theme for the UI dark | light | system (set by your systems dark/light settings)
-let UiMessageLayout = getDbItem("UiMessageLayout", "middle");           // Put the message Stream at the top or middle can be either: top | middle 
-let UiCustomConfigMenu = (getDbItem("UiCustomConfigMenu", "0") == "1"); // If set to true, will only call web_hook_on_config_menu
-let UiCustomDialButton = (getDbItem("UiCustomDialButton", "0") == "1"); // If set to true, will only call web_hook_dial_out
-let UiCustomAddBuddy = (getDbItem("UiCustomAddBuddy", "0") == "1");     // If set to true, will only call web_hook_on_add_buddy
-let UiCustomEditBuddy = (getDbItem("UiCustomEditBuddy", "0") == "1");   // If set to true, will only call web_hook_on_edit_buddy({})
+let UiMaxWidth = parseInt(getDbItem("UiMaxWidth", 1240));                     // Sets the max-width for the UI elements (don't set this less than 920. Set to very high number for full screen eg: 999999)
+let UiThemeStyle = getDbItem("UiThemeStyle", "system");                       // Sets the colour theme for the UI dark | light | system (set by your systems dark/light settings)
+let UiMessageLayout = getDbItem("UiMessageLayout", "middle");                 // Put the message Stream at the top or middle can be either: top | middle 
+let UiCustomConfigMenu = (getDbItem("UiCustomConfigMenu", "0") == "1");       // If set to true, will only call web_hook_on_config_menu
+let UiCustomDialButton = (getDbItem("UiCustomDialButton", "0") == "1");       // If set to true, will only call web_hook_dial_out
+let UiCustomAddBuddy = (getDbItem("UiCustomAddBuddy", "0") == "1");           // If set to true, will only call web_hook_on_add_buddy
+let UiCustomEditBuddy = (getDbItem("UiCustomEditBuddy", "0") == "1");         // If set to true, will only call web_hook_on_edit_buddy({})
+let UiCustomMediaSettings = (getDbItem("UiCustomMediaSettings", "0") == "1"); // If set to true, will only call web_hook_on_edit_media
+let UiCustomMessageAction = (getDbItem("UiCustomMessageAction", "0") == "1"); // If set to true, will only call web_hook_on_message_action
 
-let AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");       // Attempts to adjust the microphone volume to a good audio level. (OS may be better at this)
-let EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");     // Attemots to remove echo over the line.
-let NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");     // Attempts to clear the call qulity of noise.
-let MirrorVideo = getDbItem("VideoOrientation", "rotateY(180deg)");     // Displays the self-preview in normal or mirror view, to better present the preview. 
-let maxFrameRate = getDbItem("FrameRate", "");                          // Suggests a frame rate to your webcam if possible.
-let videoHeight = getDbItem("VideoHeight", "");                         // Suggests a video height (and therefor picture quality) to your webcam.
-let MaxVideoBandwidth = parseInt(getDbItem("MaxVideoBandwidth", "128")); // Specifies the maximum bandwidth (in Kb/s) for your outgoing video stream. e.g: 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | -1 to disable
-let videoAspectRatio = getDbItem("AspectRatio", "");                    // Suggests an aspect ratio (1:1 | 4:3 | 16:9) to your webcam.
+let AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");        // Attempts to adjust the microphone volume to a good audio level. (OS may be better at this)
+let EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");      // Attemots to remove echo over the line.
+let NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");      // Attempts to clear the call qulity of noise.
+let MirrorVideo = getDbItem("VideoOrientation", "rotateY(180deg)");      // Displays the self-preview in normal or mirror view, to better present the preview. 
+let maxFrameRate = getDbItem("FrameRate", "");                           // Suggests a frame rate to your webcam if possible.
+let videoHeight = getDbItem("VideoHeight", "");                          // Suggests a video height (and therefor picture quality) to your webcam.
+let MaxVideoBandwidth = parseInt(getDbItem("MaxVideoBandwidth", "2048")); // Specifies the maximum bandwidth (in Kb/s) for your outgoing video stream. e.g: 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | -1 to disable
+let videoAspectRatio = getDbItem("AspectRatio", "1.33");                  // Suggests an aspect ratio (1:1 = 1 | 4:3 = 0.75 | 16:9 = 0.5625) to your webcam.
 let NotificationsActive = (getDbItem("Notifications", "0") == "1");
 
 let StreamBuffer = parseInt(getDbItem("StreamBuffer", 50));                 // The amount of rows to buffer in the Buddy Stream
@@ -338,6 +340,16 @@ $(window).on("beforeunload", function() {
 $(window).on("resize", function() {
     UpdateUI();
 });
+$(window).on("offline", function(){
+    console.warn('Offline!');
+
+    $("#regStatus").html(lang.disconnected_from_web_socket);
+    $("#WebRtcFailed").show();
+});
+$(window).on("online", function(){
+    console.log('Online!');
+    ReconnectTransport();
+});
 $(document).ready(function () {
     // Load phoneOptions
     // =================
@@ -379,6 +391,8 @@ $(document).ready(function () {
     if(options.UiCustomDialButton !== undefined) UiCustomDialButton = options.UiCustomDialButton
     if(options.UiCustomAddBuddy !== undefined) UiCustomAddBuddy = options.UiCustomAddBuddy
     if(options.UiCustomEditBuddy !== undefined) UiCustomEditBuddy = options.UiCustomEditBuddy
+    if(options.UiCustomMediaSettings !== undefined) UiCustomMediaSettings = options.UiCustomMediaSettings
+    if(options.UiCustomMessageAction !== undefined) UiCustomMessageAction = options.UiCustomMessageAction
     if(options.AutoGainControl !== undefined) AutoGainControl = options.AutoGainControl;
     if(options.EchoCancellation !== undefined) EchoCancellation = options.EchoCancellation;
     if(options.NoiseSuppression !== undefined) NoiseSuppression = options.NoiseSuppression;
@@ -460,7 +474,6 @@ if(window.matchMedia){
         ApplyThemeColor()
     });
 }
-
 
 // User Interface
 // ==============
@@ -1398,7 +1411,9 @@ function CreateUserAgent() {
     // For some reason this is marked as private... not sure why
     userAgent.sessions = userAgent._sessions;
     userAgent.registrationCompleted = false;
+    userAgent.registering = false;
     userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
+    userAgent.transport.attemptingReconnection = false;
 
     console.log("Creating User Agent... Done");
 
@@ -1453,41 +1468,26 @@ function onTransportConnected(){
 
     $("#WebRtcFailed").hide();
 
+    // Reset the ReconnectionAttempts
     userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
 
     // Auto start register
-    window.setTimeout(function (){
-        Register();
-    }, 500);
+    if(userAgent.transport.attemptingReconnection == false && userAgent.registering == false){
+        window.setTimeout(function (){
+            Register();
+        }, 500);
+    }
 }
 function onTransportConnectError(error){
     console.warn("WebSocket Connection Failed:", error);
 
     // We set this flag here so that the re-register attepts are fully completed.
     userAgent.isReRegister = false;
-    if(userAgent && userAgent.registerer && userAgent.registerer.state == SIP.RegistererState.Registered) {
-        userAgent.registerer.unregister().catch(function(){
-            // This will fail because the transport is down
-            // But we need this so that it can register again
-        });
-    }
-    userAgent.isReRegister = false;
 
     $("#regStatus").html(lang.web_socket_error);
     $("#WebRtcFailed").show();
 
-    if(userAgent.transport.ReconnectionAttempts <= 0) return;
-
-    window.setTimeout(function(){
-        if(userAgent && userAgent.transport && userAgent.transport.state == SIP.TransportState.Disconnected){
-            userAgent.reconnect().catch(function(error){
-                console.warn("Failed to reconnect", error);
-                onTransportConnectError(error);
-            });
-        }
-    }, TransportReconnectionTimeout * 1000);
-    console.log("Waiting to Re-connect...", TransportReconnectionTimeout, "Attempt remaining", userAgent.transport.ReconnectionAttempts);
-    userAgent.transport.ReconnectionAttempts = userAgent.transport.ReconnectionAttempts - 1;
+    ReconnectTransport()
 
     // Custom Web hook
     if(typeof web_hook_on_transportError !== 'undefined') web_hook_on_transportError(userAgent.transport, userAgent);
@@ -1496,19 +1496,41 @@ function onTransportDisconnected(){
     console.log("Disconnected from Web Socket!");
     $("#regStatus").html(lang.disconnected_from_web_socket);
 
-    if(userAgent && userAgent.registerer && userAgent.registerer.state == SIP.RegistererState.Registered) {
-        userAgent.registerer.unregister().catch(function(){
-            // This will fail because the transport is down
-            // But we need this so that it can register again
-        });
-    }
     userAgent.isReRegister = false;
+}
+function ReconnectTransport(){
+    if(userAgent == null) return;
+    if(userAgent.transport.attemptingReconnection) return;
+    if(userAgent.transport.ReconnectionAttempts <= 0) return;
+
+    userAgent.transport.attemptingReconnection = true
+    window.setTimeout(function(){
+        console.log("ReConnecting to WebSocket...");
+        $("#regStatus").html(lang.connecting_to_web_socket);
+        userAgent.reconnect().then(function(){
+            console.log("Reconnected to Web Socket!");
+            userAgent.isReRegister = false;
+
+            userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
+            userAgent.transport.attemptingReconnection = false
+
+            onTransportConnected()
+            onRegistered();
+        }).catch(function(error){
+            userAgent.transport.attemptingReconnection = false
+            console.warn("Failed to reconnect", error);
+            onTransportConnectError(error);
+        });
+    }, TransportReconnectionTimeout * 1000);
+    $("#regStatus").html(lang.connecting_to_web_socket);
+    console.log("Waiting to Re-connect...", TransportReconnectionTimeout, "Attempt remaining", userAgent.transport.ReconnectionAttempts);
+    userAgent.transport.ReconnectionAttempts = userAgent.transport.ReconnectionAttempts - 1;
 }
 
 // Registration
 // ============
 function Register() {
-    if (userAgent == null || userAgent.isRegistered()) return;
+    if (userAgent == null || userAgent.registering == true || userAgent.isRegistered()) return;
 
     var RegistererRegisterOptions = {
         requestDelegate: {
@@ -1520,6 +1542,7 @@ function Register() {
 
     console.log("Sending Registration...");
     $("#regStatus").html(lang.sending_registration);
+    userAgent.registering = true
     userAgent.registerer.register(RegistererRegisterOptions);
 }
 function Unregister() {
@@ -1535,6 +1558,8 @@ function Unregister() {
     $("#regStatus").html(lang.disconnecting);
     userAgent.registerer.unregister();
 
+    userAgent.transport.attemptingReconnection = false;
+    userAgent.registering = false;
     userAgent.isReRegister = false;
 }
 
@@ -1570,10 +1595,14 @@ function onRegistered(){
         // Start XMPP
         if(ChatEngine == "XMPP") reconnectXmpp();
 
+        userAgent.registering = false;
+
         // Custom Web hook
         if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
     }
     else {
+        userAgent.registering = false;
+        
         console.log("ReRegistered!");
     }
     userAgent.isReRegister = true;
@@ -1591,6 +1620,8 @@ function onRegisterFailed(response, cause){
     $("#dereglink").hide();
 
     Alert(lang.registration_failed +":"+ response, lang.registration_failed);
+
+    userAgent.registering = false;
 
     // Custom Web hook
     if(typeof web_hook_on_registrationFailed !== 'undefined') web_hook_on_registrationFailed(response);
@@ -2296,7 +2327,7 @@ function onInviteTrying(lineObj, response){
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.trying);
 
     // Custom Web hook
-    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trying", response.message);
+    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trying", lineObj.SipSession);
 }
 function onInviteProgress(lineObj, response){
     console.log("Call Progress:", response.message.statusCode);
@@ -2344,28 +2375,8 @@ function onInviteProgress(lineObj, response){
     else if(response.message.statusCode === 183){
         $("#line-" + lineObj.LineNumber + "-msg").html(response.message.reasonPhrase + "...");
 
-        // Special Early Media Handling
-        /*
-        if(response.message.body != "" && response.session.offer && !this.dialog){
-            // Confirm the dialog, eventhough it's a provisional answer
-            if (!this.createDialog(response, 'UAC')) {
-                console.warn("Could not create Dialog ");
-                return;
-            }
-
-            // this ensures that 200 will not try to set description
-            this.hasAnswer = true;
-
-            // Force the session status
-            this.status = SIP.Session.C.STATUS_EARLY_MEDIA;
-
-            // Set the SDP from the response, so the media can connect
-            // (Assuming that the response is a vlid SDP)
-            this.sessionDescriptionHandler.setDescription(response.body).catch(function(reason){
-                console.warn("Failed to set SDP in 183 response: ", reason);
-            });
-        }
-        */
+        // Add UI to allow DTMF
+        $("#line-" + lineObj.LineNumber + "-early-dtmf").show();
     }
     else {
         // 181 = Call is Being Forwarded
@@ -2376,7 +2387,7 @@ function onInviteProgress(lineObj, response){
     }
 
     // Custom Web hook
-    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", response);
+    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", lineObj.SipSession);
 }
 function onInviteRejected(lineObj, response){
     console.log("INVITE Rejected:", response.message.reasonPhrase);
@@ -3973,6 +3984,8 @@ function SendChatMessage(buddy) {
     if (userAgent == null) return;
     if (!userAgent.isRegistered()) return;
 
+    $("#contact-" + buddy + "-ChatMessage").focus(); // refocus on the textare
+
     var message = $("#contact-" + buddy + "-ChatMessage").val();
     message = $.trim(message);
     if(message == "") {
@@ -4058,13 +4071,13 @@ function SendChatMessage(buddy) {
     $("#contact-" + buddy + "-ChatMessage").val("");
     $("#contact-" + buddy + "-dictate-message").hide();
     $("#contact-" + buddy + "-emoji-menu").hide();
+    $("#contact-" + buddy + "-ChatMessage").focus();
 
     if(buddyObj.recognition != null){
         buddyObj.recognition.abort();
         buddyObj.recognition = null;
     }
 
-    ClearChatPreview(buddy);
     UpdateBuddyActivity(buddy);
     RefreshStream(buddyObj);
 }
@@ -6774,7 +6787,7 @@ function sendDTMF(lineNum, itemStr) {
         }
     } 
     else {
-        if(lineObj.SipSession.state == SIP.SessionState.Established){
+        if(lineObj.SipSession.state == SIP.SessionState.Established || lineObj.SipSession.state == SIP.SessionState.Establishing){
             console.log("Sending DTMF ("+ itemStr +"): "+ lineObj.LineNumber);
 
             var result = lineObj.SipSession.sessionDescriptionHandler.sendDtmf(itemStr, options);
@@ -6793,7 +6806,7 @@ function sendDTMF(lineNum, itemStr) {
             if(typeof web_hook_on_dtmf !== 'undefined') web_hook_on_dtmf(itemStr, lineObj.SipSession);
         } 
         else {
-            console.warn("Cannot Send DTMF ("+ itemStr +"): "+ lineObj.LineNumber + " session is not established");
+            console.warn("Cannot Send DTMF ("+ itemStr +"): "+ lineObj.LineNumber + " session is not establishing or established");
         }
     }
 }
@@ -7368,6 +7381,9 @@ function ExpandVideoArea(lineNum){
     $("#line-" + lineNum + "-btn-expand").hide();
 
     RedrawStage(lineNum, false);
+    if(typeof web_hook_on_expand_video_area !== 'undefined') {
+        web_hook_on_expand_video_area(lineNum);
+    }
 }
 function RestoreVideoArea(lineNum){
     $("#line-" + lineNum + "-call-fullscreen").prop("class","streamSection highlightSection");
@@ -7376,6 +7392,9 @@ function RestoreVideoArea(lineNum){
     $("#line-" + lineNum + "-btn-expand").show();
     
     RedrawStage(lineNum, false);
+    if(typeof web_hook_on_restore_video_area !== 'undefined') {
+        web_hook_on_restore_video_area(lineNum);
+    }
 }
 
 // Phone Lines
@@ -7694,14 +7713,14 @@ function AddLineHtml(lineObj){
     html += "<div class=answerCall>";
     html += "<button onclick=\"AnswerAudioCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button> ";
     if(EnableVideoCalling) {
-        html += "<button id=\"line-"+ lineObj.LineNumber +"-answer-video\" onclick=\"AnswerVideoCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button> ";
+        html += " <button id=\"line-"+ lineObj.LineNumber +"-answer-video\" onclick=\"AnswerVideoCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button> ";
     }
-    html += "<button onclick=\"RejectCall('"+ lineObj.LineNumber +"')\" class=rejectButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.reject_call +"</button> ";
-    html += "</div>";
+    html += " <button onclick=\"RejectCall('"+ lineObj.LineNumber +"')\" class=rejectButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.reject_call +"</button> ";
     // CRM
     html += "<div id=\"line-"+ lineObj.LineNumber +"-answer-crm-space\">"
     // Use this DIV for anything really. Call your own CRM, and have the results display here
-    html += "</div>";
+    html += "</div>"; // crm
+    html += "</div>"; //.answerCall
 
     html += "</div>"; //.CallUi
     html += "</div>"; //-AnswerCall
@@ -7714,7 +7733,10 @@ function AddLineHtml(lineObj){
     html += "<div class=callingDisplayName>"+ lineObj.DisplayName +"</div>";
     html += "<div class=callingDisplayNumber>"+ lineObj.DisplayNumber +"</div>";
     html += "<div class=\"inCallAvitar\" style=\"background-image: url('"+ getPicture(lineObj.BuddyObj.identity) +"')\"></div>";
-    html += "<div class=progressCall><button onclick=\"cancelSession('"+ lineObj.LineNumber +"')\" class=rejectButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel +"</button></div>";
+    html += "<div class=progressCall>"
+    html += "<button onclick=\"cancelSession('"+ lineObj.LineNumber +"')\" class=rejectButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel +"</button>"
+    html += " <button id=\"line-"+ lineObj.LineNumber +"-early-dtmf\" onclick=\"ShowDtmfMenu('"+ lineObj.LineNumber +"')\" style=\"display:none\"><i class=\"fa fa-keyboard-o\"></i> "+ lang.send_dtmf +"</button>"
+    html += "</div>"; //.progressCall
     html += "</div>"; //.CallUi
     html += "</div>"; // -progress
 
@@ -8436,19 +8458,19 @@ function AddBuddyMessageStream(buddyObj) {
     // Profile Etc Row
     // ----------------------------------------------------------
     var profileRow = "";
-    profileRow += "<tr><td id=\"contact-"+ buddyObj.identity +"-ProfileCell\" class=\"streamSection highlightSection\" style=\"height: 48px;\">";
+    profileRow += "<tr><td id=\"contact-"+ buddyObj.identity +"-ProfileCell\" class=\"streamSection highlightSection buddyProfileSection\" style=\"height: 48px;\">";
 
     // Left Content - Profile
-    profileRow += "<div style=\"float: left; height: 48px;\">";
-
-    profileRow += "<table cellpadding=0 cellspacing=0 border=0><tr><td>";
+    profileRow += "<table cellpadding=0 cellspacing=0 border=0 style=\"width:100%; table-layout: fixed;\">"
+    profileRow += "<tr>"
     // Close|Return|Back Button
+    profileRow += "<td style=\"width:48px; text-align: center;\">";
     profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-back\" onclick=\"CloseBuddy('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.back +"\"><i class=\"fa fa-chevron-left\"></i></button> ";
-    profileRow += "</td><td>";
-
+    profileRow += "</td>"
+    
     // Profile UI
+    profileRow += "<td style=\"width:100%\">";
     profileRow += "<div class=contact style=\"cursor: unset\">";
-
     if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         profileRow += "<div id=\"contact-"+ buddyObj.identity +"-picture-main\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
     }
@@ -8490,20 +8512,36 @@ function AddBuddyMessageStream(buddyObj) {
         profileRow += "<div id=\"contact-"+ buddyObj.identity +"-presence-main\" class=presenceText>"+ buddyObj.Desc +"</div>";
     }
     profileRow += "</div>";
-    profileRow += "</td></tr></table>";
-    profileRow += "</div>";
+    profileRow += "</td>";
+
     // Right Content - Action Buttons
-    profileRow += "<div style=\"float:right; height: 48px; line-height: 48px;\">";
-    profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-audioCall\" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\" class=roundButtons title=\""+ lang.audio_call +"\"><i class=\"fa fa-phone\"></i></button> ";
+    var buttonsWidth = 80 // 1 button = 34px ~40px
     if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
-        profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-videoCall\" onclick=\"DialByLine('video', '"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"');\" class=roundButtons title=\""+ lang.video_call +"\"><i class=\"fa fa-video-camera\"></i></button> ";
+        buttonsWidth = 120
     }
-    profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-edit\" onclick=\"EditBuddyWindow('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.edit +"\"><i class=\"fa fa-pencil\"></i></button> ";
-    profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-search\" onclick=\"FindSomething('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.find_something +"\"><i class=\"fa fa-search\"></i></button> ";
-    profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-remove\" onclick=\"RemoveBuddy('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.remove +"\"><i class=\"fa fa-trash\"></i></button> ";
+    var fullButtonsWidth = 200
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
+        fullButtonsWidth = 240
+    }
+    profileRow += "<td id=\"contact-"+ buddyObj.identity +"-action-buttons\" style=\"width: "+ buttonsWidth +"px; text-align: right\">";
+    profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-audioCall\" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\" class=roundButtons title=\""+ lang.audio_call +"\"><i class=\"fa fa-phone\"></i></button>";
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
+        profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-videoCall\" onclick=\"DialByLine('video', '"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"');\" class=roundButtons title=\""+ lang.video_call +"\"><i class=\"fa fa-video-camera\"></i></button>";
+    }
+    profileRow += "<span id=\"contact-"+ buddyObj.identity +"-extra-buttons\" style=\"display:none\">"
+    profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-edit\" onclick=\"EditBuddyWindow('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.edit +"\"><i class=\"fa fa-pencil\"></i></button>";
+    profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-search\" onclick=\"FindSomething('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.find_something +"\"><i class=\"fa fa-search\"></i></button>";
+    profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-remove\" onclick=\"RemoveBuddy('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.remove +"\"><i class=\"fa fa-trash\"></i></button>";
+    profileRow += "</span>"
+    profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-toggle-extra\" onclick=\"ToggleExtraButtons('"+ buddyObj.identity +"', "+ buttonsWidth +", "+ fullButtonsWidth +")\" class=roundButtons><i class=\"fa fa-ellipsis-h\"></i></button>";
+    profileRow += "</td>";
+
+    profileRow += "</tr></table>";
     profileRow += "</div>";
+
     // Separator
     profileRow += "<div style=\"clear:both; height:0px\"></div>"
+
     // Search & Related Elements
     profileRow += "<div id=\"contact-"+ buddyObj.identity +"-search\" style=\"margin-top:6px; display:none\">";
     profileRow += "<span class=searchClean style=\"width:100%\"><input type=text style=\"width:80%\" autocomplete=none oninput=SearchStream(this,'"+ buddyObj.identity +"') placeholder=\""+ lang.find_something_in_the_message_stream +"\"></span>";
@@ -8514,7 +8552,7 @@ function AddBuddyMessageStream(buddyObj) {
     // Messages Row
     // ----------------------------------------------------------
     var messagesRow = ""
-    messagesRow += "<tr><td id=\"contact-"+ buddyObj.identity +"-MessagesCell\" class=\"streamSection streamSectionBackground wallpaperBackground\">";
+    messagesRow += "<tr><td id=\"contact-"+ buddyObj.identity +"-MessagesCell\" class=\"streamSection streamSectionBackground wallpaperBackground buddyMessageSection\">";
     messagesRow += "<div id=\"contact-"+ buddyObj.identity +"-ChatHistory\" class=\"chatHistory cleanScroller\" ondragenter=\"setupDragDrop(event, '"+ buddyObj.identity +"')\" ondragover=\"setupDragDrop(event, '"+ buddyObj.identity +"')\" ondragleave=\"cancelDragDrop(event, '"+ buddyObj.identity +"')\" ondrop=\"onFileDragDrop(event, '"+ buddyObj.identity +"')\">";
     // Previous Chat messages
     messagesRow += "</div>";
@@ -8524,7 +8562,7 @@ function AddBuddyMessageStream(buddyObj) {
     // ----------------------------------------------------------
     var textRow = ""
     if((buddyObj.type == "extension" || buddyObj.type == "xmpp" || buddyObj.type == "group") && EnableTextMessaging) {
-        textRow += "<tr><td id=\"contact-"+ buddyObj.identity +"-InteractionCell\" class=\"streamSection highlightSection \" style=\"height:80px\">";
+        textRow += "<tr><td id=\"contact-"+ buddyObj.identity +"-InteractionCell\" class=\"streamSection highlightSection buddyInteractionSection\" style=\"height:80px\">";
 
         // Send Paste Image
         textRow += "<div id=\"contact-"+ buddyObj.identity +"-imagePastePreview\" class=sendImagePreview style=\"display:none\" tabindex=0></div>";
@@ -8558,7 +8596,7 @@ function AddBuddyMessageStream(buddyObj) {
 
         // Type Area
         textRow += "<table class=sendMessageContainer cellpadding=0 cellspacing=0><tr>";
-        textRow += "<td style=\"width:40px\"><button onclick=\"AddMenu(this, '"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.menu +"\"><i class=\"fa fa-ellipsis-h\"></i></button></td>";
+        textRow += "<td id=\"contact-"+ buddyObj.identity +"-add-menu\" class=MessageActions style=\"width:40px\"><button onclick=\"AddMenu(this, '"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.menu +"\"><i class=\"fa fa-ellipsis-h\"></i></button></td>";
         textRow += "<td><textarea id=\"contact-"+ buddyObj.identity +"-ChatMessage\" class=\"chatMessage cleanScroller\" placeholder=\""+ lang.type_your_message_here +"\" onkeydown=\"chatOnkeydown(event, this,'"+ buddyObj.identity +"')\" oninput=\"chatOnInput(event, this,'"+ buddyObj.identity +"')\" onpaste=\"chatOnbeforepaste(event, this,'"+ buddyObj.identity +"')\"></textarea></td>";
         textRow += "<td id=\"contact-"+ buddyObj.identity +"-sendMessageButtons\" style=\"width:40px; display:none\"><button onclick=\"SendChatMessage('"+ buddyObj.identity +"')\" class=\"roundButtons\" title=\""+ lang.send +"\"><i class=\"fa fa-paper-plane\"></i></button></td>"
         textRow += "</tr></table>";
@@ -8727,6 +8765,18 @@ function DeleteCallRecordings(buddy, stream){
                 });
             }
         });
+    }
+}
+function ToggleExtraButtons(lineNum, normal, expanded){
+    var extraButtons = $("#contact-"+ lineNum +"-extra-buttons");
+    if(extraButtons.is(":visible")){
+        // Restore
+        extraButtons.hide()
+        $("#contact-"+ lineNum +"-action-buttons").css("width", normal+"px");
+    } else {
+        // Expand
+        extraButtons.show()
+        $("#contact-"+ lineNum +"-action-buttons").css("width", expanded+"px");
     }
 }
 
@@ -9331,8 +9381,13 @@ function RedrawStage(lineNum, videoChanged){
     if(!videoContainer.outerWidth() > 0) return;
     if(!videoContainer.outerHeight() > 0) return;
 
+    // videoAspectRatio (1|1.33|1.77) is for the peer video, so can tencianlly be used here
+    // default ia 4:3
     var Margin = 3;
-    var videoRatio = 0.5625; // 0.5625 = 9/16 (16:9) | 0.75   = 3/4 (4:3)
+    var videoRatio = 0.750; // 0.5625 = 9/16 (16:9) | 0.75   = 3/4 (4:3)
+    if(videoAspectRatio == "" || videoAspectRatio == "1.33") videoRatio = 0.750;  
+    if(videoAspectRatio == "1.77") videoRatio = 0.5625;
+    if(videoAspectRatio == "1") videoRatio = 1;
     var stageWidth = videoContainer.outerWidth() - (Margin * 2);
     var stageHeight = videoContainer.outerHeight() - (Margin * 2);
     var previewWidth = previewContainer.outerWidth();
@@ -9993,6 +10048,13 @@ function TagFocus(obj){
     HidePopup(500);
 }
 function AddMenu(obj, buddy){
+    if(UiCustomMessageAction){
+        if(typeof web_hook_on_message_action !== 'undefined') {
+            web_hook_on_message_action(buddy, obj);
+        }
+        return;
+    }
+
     var items = [];
     if(EnableTextExpressions) items.push({ value: 1, icon : "fa fa-smile-o", text: lang.select_expression });
     if(EnableTextDictate) items.push({ value: 2, icon : "fa fa-microphone", text: lang.dictate_message });
@@ -11209,6 +11271,13 @@ function ToggleRecordAllCalls(){
 // Device and Settings
 // ===================
 function ChangeSettings(lineNum, obj){
+    if(UiCustomMediaSettings){
+        if(typeof web_hook_on_edit_media !== 'undefined') {
+            web_hook_on_edit_media(lineNum, obj);
+        }
+        return;
+    }
+
     // Check if you are in a call
     var lineObj = FindLineByNumber(lineNum);
     if(lineObj == null || lineObj.SipSession == null) {
