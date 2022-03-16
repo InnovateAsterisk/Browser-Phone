@@ -142,7 +142,7 @@ let EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") =
 let EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
 let EnableVideoCalling = (getDbItem("EnableVideoCalling", "1") == "1");                 // Enables Video during a call
 let EnableTextExpressions = (getDbItem("EnableTextExpressions", "1") == "1");           // Enables Expressions (Emoji) glyphs when texting
-let EnableTextDictate = (getDbItem("EnableTextDictate", "0") == "1");                   // Enables Dictate (speach-to-text) when texting
+let EnableTextDictate = (getDbItem("EnableTextDictate", "1") == "1");                   // Enables Dictate (speach-to-text) when texting
 let EnableRingtone = (getDbItem("EnableRingtone", "1") == "1");                         // Enables a ring tone when an inbound call comes in.  (media/Ringtone_1.mp3)
 
 let ChatEngine = getDbItem("ChatEngine", "SIMPLE");    // Select the chat engine XMPP | SIMPLE
