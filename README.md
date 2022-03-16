@@ -71,7 +71,7 @@ This web application is designed to work with Asterisk PBX. Once loaded applicat
 > Note: These files will load automatically from CDN.
 
 ## Lib Folder Download (Off-line)
-You can download the lib folder containing all related library files: https://dtd6jl0d42sve.cloudfront.net/lib/lib.zip
+You can download the lib folder containing all related library files: https://github.com/InnovateAsterisk/Browser-Phone/tree/master/lib
 
 > Note: These files are provided "as-is" for your convenience. Each library folder may contain its own licence and terms of use please refer to the original license holder for more details.
 
