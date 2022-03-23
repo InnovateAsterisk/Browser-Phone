@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.5";
+const appversion = "0.3.6";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
