@@ -128,7 +128,7 @@ let Language = getDbItem("Language", "auto");                        // Override
 // Permission Settings
 let EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");               // Enables the Text Messaging
 let DisableFreeDial = (getDbItem("DisableFreeDial", "0") == "1");                       // Removes the Dial icon in the profile area, users will need to add buddies in order to dial.
-let DisableBuddies = (getDbItem("DisableBuddies", "0") == "1");                         // Removes the Add Someone menu item and icon from the profile area. Buddies will still be created automatically. 
+let DisableBuddies = (getDbItem("DisableBuddies", "0") == "1");                         // Removes the Add Someone menu item and icon from the profile area. Buddies will still be created automatically. Please also use MaxBuddies or MaxBuddyAge
 let EnableTransfer = (getDbItem("EnableTransfer", "1") == "1");                         // Controls Transfering during a call
 let EnableConference = (getDbItem("EnableConference", "1") == "1");                     // Controls Conference during a call
 let AutoAnswerPolicy = getDbItem("AutoAnswerPolicy", "allow");                          // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
@@ -144,6 +144,8 @@ let EnableVideoCalling = (getDbItem("EnableVideoCalling", "1") == "1");         
 let EnableTextExpressions = (getDbItem("EnableTextExpressions", "1") == "1");           // Enables Expressions (Emoji) glyphs when texting
 let EnableTextDictate = (getDbItem("EnableTextDictate", "1") == "1");                   // Enables Dictate (speach-to-text) when texting
 let EnableRingtone = (getDbItem("EnableRingtone", "1") == "1");                         // Enables a ring tone when an inbound call comes in.  (media/Ringtone_1.mp3)
+let MaxBuddies = parseInt(getDbItem("MaxBuddies", 999));                                // Sets the Maximum number of buddies the system will accept. Older ones get deleted. (Considered when(after) adding buddies)
+let MaxBuddyAge = parseInt(getDbItem("MaxBuddyAge", 365));                              // Sets the Maximum age in days (by latest activity). Older ones get deleted. (Considered when(after) adding buddies)
 
 let ChatEngine = getDbItem("ChatEngine", "SIMPLE");    // Select the chat engine XMPP | SIMPLE
 
@@ -431,6 +433,8 @@ $(document).ready(function () {
     if(options.EnableTextExpressions !== undefined) EnableTextExpressions = options.EnableTextExpressions;
     if(options.EnableTextDictate !== undefined) EnableTextDictate = options.EnableTextDictate;
     if(options.EnableRingtone !== undefined) EnableRingtone = options.EnableRingtone;
+    if(options.MaxBuddies !== undefined) MaxBuddies = options.MaxBuddies;
+    if(options.MaxBuddyAge !== undefined) MaxBuddyAge = options.MaxBuddyAge;
     if(options.ChatEngine !== undefined) ChatEngine = options.ChatEngine;
     if(options.XmppDomain !== undefined) XmppDomain = options.XmppDomain;
     if(options.XmppServer !== undefined) XmppServer = options.XmppServer;
@@ -654,7 +658,7 @@ function AddSomeoneWindow(numberStr){
                 buddyObj = new Buddy("extension", id, $("#AddSomeone_Name").val(), $("#AddSomeone_Exten").val(), $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val(), jid, $("#AddSomeone_Dnd").is(':checked'), $("#AddSomeone_Subscribe").is(':checked'));
                 
                 // Add memory object
-                AddBuddy(buddyObj, false, false, $("#AddSomeone_Subscribe").is(':checked'));
+                AddBuddy(buddyObj, false, false, $("#AddSomeone_Subscribe").is(':checked'), true);
             }
             if(type == "xmpp"){
                 // Add XMPP extension
@@ -688,7 +692,7 @@ function AddSomeoneWindow(numberStr){
                 XmppAddBuddyToRoster(buddyObj);
 
                 // Add memory object
-                AddBuddy(buddyObj, false, false, $("#AddSomeone_Subscribe").is(':checked'));
+                AddBuddy(buddyObj, false, false, $("#AddSomeone_Subscribe").is(':checked'), true);
             }
             if(type == "contact"){
                 // Add Regular Contact
@@ -717,7 +721,7 @@ function AddSomeoneWindow(numberStr){
                 buddyObj = new Buddy("contact", id, $("#AddSomeone_Name").val(), "", $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val(), jid, $("#AddSomeone_Dnd").is(':checked'), false);
 
                 // Add memory object
-                AddBuddy(buddyObj, false, false, false);
+                AddBuddy(buddyObj, false, false, false, true);
             }
 
             // Save To DB
@@ -1368,7 +1372,7 @@ function CreateUserAgent() {
             peerConnectionConfiguration :{
                 // bundlePolicy: "balanced",
                 // certificates: undefined,
-                // iceCandidatePoolSize: 0,
+                // iceCandidatePoolSize: 10,
                 // iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
                 // iceTransportPolicy: "all",
                 // peerIdentity: undefined,
@@ -3809,7 +3813,7 @@ function UnsubscribeVoicemail(){
 }
 function UnsubscribeBuddy(buddyObj) {
     if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
-        if(userAgent.BlfSubs && userAgent.BlfSubs.length > 0){
+        if(userAgent && userAgent.BlfSubs && userAgent.BlfSubs.length > 0){
             for (var blf = 0; blf < userAgent.BlfSubs.length; blf++) {
                 var blfSubscribe = userAgent.BlfSubs[blf];
                 if(blfSubscribe.data.buddyId == buddyObj.identity){
@@ -4206,7 +4210,7 @@ function ReceiveOutOfDialogMessage(message) {
             buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "", jid, false, false);
             
             // Add memory object
-            AddBuddy(buddyObj, true, (CurrentCalls==0), false);
+            AddBuddy(buddyObj, true, (CurrentCalls==0), false, tue);
 
             // Update Size: 
             json.TotalRows = json.DataCollection.length;
@@ -5654,6 +5658,10 @@ function StartTransferSession(lineNum){
     $("#line-"+ lineNum +"-txt-FindTransferBuddy").val("");
     $("#line-"+ lineNum +"-txt-FindTransferBuddy").parent().show();
 
+    $("#line-"+ lineNum +"-session-avatar").css("width", "50px");
+    $("#line-"+ lineNum +"-session-avatar").css("height", "50px");
+    RestoreCallControls(lineNum)
+
     $("#line-"+ lineNum +"-btn-blind-transfer").show();
     $("#line-"+ lineNum +"-btn-attended-transfer").show();
     $("#line-"+ lineNum +"-btn-complete-transfer").hide();
@@ -5686,6 +5694,8 @@ function CancelTransferSession(lineNum){
         });
     }
 
+    $("#line-"+ lineNum +"-session-avatar").css("width", "");
+    $("#line-"+ lineNum +"-session-avatar").css("height", "");
 
     $("#line-"+ lineNum +"-btn-Transfer").show();
     $("#line-"+ lineNum +"-btn-CancelTransfer").hide();
@@ -6104,6 +6114,10 @@ function StartConferenceCall(lineNum){
     $("#line-"+ lineNum +"-txt-FindConferenceBuddy").val("");
     $("#line-"+ lineNum +"-txt-FindConferenceBuddy").parent().show();
 
+    $("#line-"+ lineNum +"-session-avatar").css("width", "50px");
+    $("#line-"+ lineNum +"-session-avatar").css("height", "50px");
+    RestoreCallControls(lineNum)
+
     $("#line-"+ lineNum +"-btn-conference-dial").show();
     $("#line-"+ lineNum +"-btn-cancel-conference-dial").hide();
     $("#line-"+ lineNum +"-btn-join-conference-call").hide();
@@ -6131,6 +6145,9 @@ function CancelConference(lineNum){
             // Supress message
         });
     }
+
+    $("#line-"+ lineNum +"-session-avatar").css("width", "");
+    $("#line-"+ lineNum +"-session-avatar").css("height", "");
 
     $("#line-"+ lineNum +"-btn-Conference").show();
     $("#line-"+ lineNum +"-btn-CancelConference").hide();
@@ -7259,6 +7276,8 @@ function ShowDtmfMenu(lineNum){
     console.log("Show DTMF");
     HidePopup();
 
+    RestoreCallControls(lineNum)
+
     // DTMF
     var html = ""
     html += "<div>";
@@ -7317,6 +7336,7 @@ function ShowPresentMenu(obj, lineNum){
 function ShowCallTimeline(lineNum){
     console.log("Show Timeline");
     HidePopup();
+    RestoreCallControls(lineNum)
 
     if($("#line-"+ lineNum +"-AudioStats").is(":visible")){
         // The AudioStats is open, they canot take the same space
@@ -7342,6 +7362,7 @@ function HideCallTimeline(lineNum){
 function ShowCallStats(lineNum){
     console.log("Show Call Stats");
     HidePopup();
+    RestoreCallControls(lineNum)
 
     if($("#line-"+ lineNum +"-CallDetails").is(":visible")){
         // The Timeline is open, they canot take the same space
@@ -7364,15 +7385,21 @@ function HideCallStats(lineNum){
     $("#line-"+ lineNum +"-btn-ShowCallStats").show();
     $("#line-"+ lineNum +"-btn-HideCallStats").hide();
 }
-function ToggleMoreButtons(obj, lineNum){
+function ToggleMoreButtons(lineNum){
     if($("#line-"+ lineNum +"-btn-more").is(":visible")){
         // The more buttons are showing, drop them down
-        $("#line-"+ lineNum +"-btn-more").hide(200);
-        $(obj).html('<i class=\"fa fa-chevron-up\"></i>');
+        RestoreCallControls(lineNum)
     } else {
-        $("#line-"+ lineNum +"-btn-more").show(200);
-        $(obj).html('<i class=\"fa fa-chevron-down\"></i>');
+        ExpandCallControls(lineNum)
     }
+}
+function ExpandCallControls(lineNum){
+    $("#line-"+ lineNum +"-btn-more").show(200);
+    $("#line-"+ lineNum +"-btn-ControlToggle").html('<i class=\"fa fa-chevron-down\"></i>');
+}
+function RestoreCallControls(lineNum){
+    $("#line-"+ lineNum +"-btn-more").hide(200);
+    $("#line-"+ lineNum +"-btn-ControlToggle").html('<i class=\"fa fa-chevron-up\"></i>');
 }
 function ExpandVideoArea(lineNum){
     $("#line-" + lineNum + "-call-fullscreen").prop("class","streamSection highlightSection FullScreenVideo");
@@ -7761,6 +7788,7 @@ function AddLineHtml(lineObj){
     html += "<div id=\"line-"+ lineObj.LineNumber +"-Transfer\" style=\"text-align: center; line-height:40px; display:none\">";
     html += "<div style=\"margin-top:10px\">";
     html += "<span class=searchClean><input id=\"line-"+ lineObj.LineNumber +"-txt-FindTransferBuddy\" oninput=\"QuickFindBuddy(this,'"+ lineObj.LineNumber +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\""+ lang.search_or_enter_number +"\"></span>";
+    html += "<br>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-blind-transfer\" onclick=\"BlindTransfer('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i> "+ lang.blind_transfer +"</button>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-attended-transfer\" onclick=\"AttendedTransfer('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> "+ lang.attended_transfer +"</button>";
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-complete-attended-transfer\" style=\"display:none\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> "+ lang.complete_transfer +"</buuton>";
@@ -7775,6 +7803,7 @@ function AddLineHtml(lineObj){
     html += "<div id=\"line-"+ lineObj.LineNumber +"-Conference\" style=\"text-align: center; line-height:40px; display:none\">";
     html += "<div style=\"margin-top:10px\">";
     html += "<span class=searchClean><input id=\"line-"+ lineObj.LineNumber +"-txt-FindConferenceBuddy\" oninput=\"QuickFindBuddy(this,'"+ lineObj.LineNumber +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\""+ lang.search_or_enter_number +"\"></span>";
+    html += "<br>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-conference-dial\" onclick=\"ConferenceDail('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-phone\"></i> "+ lang.call +"</button>";
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-cancel-conference-dial\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel_call +"</buuton>";
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-join-conference-call\" style=\"display:none\"><i class=\"fa fa-users\"></i> "+ lang.join_conference_call +"</buuton>";
@@ -7808,7 +7837,7 @@ function AddLineHtml(lineObj){
     // ===============
     html += "<div class=CallControlContainer>";
     html += "<div class=CallControl>";
-    html += "<div><button onclick=\"ToggleMoreButtons(this, '"+ lineObj.LineNumber +"')\" style=\"font-size:24px; width:80px\"><i class=\"fa fa-chevron-up\"></i></button></div>";
+    html += "<div><button id=\"line-"+ lineObj.LineNumber +"-btn-ControlToggle\" onclick=\"ToggleMoreButtons('"+ lineObj.LineNumber +"')\" style=\"font-size:24px; width:80px\"><i class=\"fa fa-chevron-up\"></i></button></div>";
     // Visible Row
     html += "<div>";
     // Mute
@@ -8154,7 +8183,7 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             Subscribe: subscribe
         });
         buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "", null, AllowDuringDnd, subscribe);
-        AddBuddy(buddyObj, update, focus, subscribe);
+        AddBuddy(buddyObj, update, focus, subscribe, true);
     }
     if(type == "xmpp") {
         json.DataCollection.push({
@@ -8176,7 +8205,7 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             Subscribe: subscribe
         });
         buddyObj = new Buddy("xmpp", id, callerID, did, "", "", "", dateNow, "", "", jid, AllowDuringDnd, subscribe);
-        AddBuddy(buddyObj, update, focus, subscribe);
+        AddBuddy(buddyObj, update, focus, subscribe, true);
     }
     if(type == "contact"){
         json.DataCollection.push({
@@ -8198,7 +8227,7 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             Subscribe: false
         });
         buddyObj = new Buddy("contact", id, callerID, "", "", did, "", dateNow, "", "", null, AllowDuringDnd, false);
-        AddBuddy(buddyObj, update, focus, false);
+        AddBuddy(buddyObj, update, focus, false, true);
     }
     if(type == "group") {
         json.DataCollection.push({
@@ -8220,7 +8249,7 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             Subscribe: false
         });
         buddyObj = new Buddy("group", id, callerID, did, "", "", "", dateNow, "", "", null, false, false);
-        AddBuddy(buddyObj, update, focus, false);
+        AddBuddy(buddyObj, update, focus, false, true);
     }
     // Update Size: 
     json.TotalRows = json.DataCollection.length;
@@ -8250,12 +8279,48 @@ function UpdateBuddyCalerID(buddyObj, callerID){
 
     UpdateBuddyList();
 }
-function AddBuddy(buddyObj, update, focus, subscribe){
+function AddBuddy(buddyObj, update, focus, subscribe, cleanup){
     Buddies.push(buddyObj);
     if(update == true) UpdateBuddyList();
     AddBuddyMessageStream(buddyObj);
     if(subscribe == true) SubscribeBuddy(buddyObj);
     if(focus == true) SelectBuddy(buddyObj.identity);
+    if(cleanup == true) CleanupBuddies()
+}
+function CleanupBuddies(){
+    if(MaxBuddyAge > 1 || MaxBuddies > 1){
+        // Sort According to .lastActivity
+        Buddies.sort(function(a, b){
+            var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
+            var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
+            if (aMo.isSameOrAfter(bMo, "second")) {
+                return -1;
+            } else return 1;
+            return 0;
+        });
+
+        if(MaxBuddyAge > 1){
+            var expiredDate = moment.utc().subtract(MaxBuddyAge, 'days');
+            console.log("Running Buddy Cleanup for activity older than: ", expiredDate.format(DisplayDateFormat+" "+DisplayTimeFormat));
+            for (var b = Buddies.length - 1; b >= 0; b--) {
+                var lastActivity = moment.utc(Buddies[b].lastActivity.replace(" UTC", ""));
+                if(lastActivity.isSameOrAfter(expiredDate, "second")){
+                    // This one is fine
+                } else {
+                    // Too Old
+                    console.warn("This buddy is too old, and will be deleted: ", lastActivity.format(DisplayDateFormat+" "+DisplayTimeFormat));
+                    DoRemoveBuddy(Buddies[b].identity)
+                }
+            }
+        }
+        if(MaxBuddies > 1 && MaxBuddies < Buddies.length){
+            console.log("Running Buddy Cleanup for buddies more than: ", MaxBuddies);
+            for (var b = Buddies.length - 1; b >= MaxBuddies; b--) {
+                console.warn("This buddy is too Many, and will be deleted: ", Buddies[b].identity);
+                DoRemoveBuddy(Buddies[b].identity)
+            }
+        }
+    }
 }
 function PopulateBuddyList() {
     console.log("Clearing Buddies...");
@@ -8287,6 +8352,7 @@ function PopulateBuddyList() {
             AddBuddy(buddy, false, false, false);
         }
     });
+    CleanupBuddies()
 
     // Update List (after add)
     console.log("Updating Buddy List...");
@@ -8921,17 +8987,20 @@ function CloseBuddy(buddy){
 function RemoveBuddy(buddy){
     // Check if you are on the phone etc
     Confirm(lang.confirm_remove_buddy, lang.remove_buddy, function(){
-        for(var b = 0; b < Buddies.length; b++) {
-            if(Buddies[b].identity == buddy) {
-                RemoveBuddyMessageStream(Buddies[b]);
-                UnsubscribeBuddy(Buddies[b]);
-                if(Buddies[b].type == "xmpp") XmppRemoveBuddyFromRoster(Buddies[b]);
-                Buddies.splice(b, 1);
-                break;
-            }
-        }
+        DoRemoveBuddy(buddy)
         UpdateBuddyList();
     });
+}
+function DoRemoveBuddy(buddy){
+    for(var b = 0; b < Buddies.length; b++) {
+        if(Buddies[b].identity == buddy) {
+            RemoveBuddyMessageStream(Buddies[b]);
+            UnsubscribeBuddy(Buddies[b]);
+            if(Buddies[b].type == "xmpp") XmppRemoveBuddyFromRoster(Buddies[b]);
+            Buddies.splice(b, 1);
+            break;
+        }
+    }
 }
 function FindBuddyByDid(did){
     // Used only in Inboud

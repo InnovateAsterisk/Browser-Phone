@@ -1799,12 +1799,13 @@ input[type=range]{
     margin-right: auto;
     width: 150px;
     height: 150px;
-    background-size: 150px;
+    background-size: 100%;
     border-radius: 1000px;
     margin-top: 10px;
     background-color: #CCCCCC;
     border: 1px solid #FFFFFF;
     box-shadow: 1px 1px 5px rgb(0 0 0 / 25%);
+    transition: all 200ms;
 }
 
 .dialTextInput{
