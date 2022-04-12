@@ -1538,23 +1538,32 @@ input[type=range]{
 
 .missedNotifyer {
     background-color: #ff0000;
-    border: 1px solid #640000;
     position: absolute;
-    width: 18px;
-    height: 18px;
     line-height: 18px;
-    font-weight: bold;
     border-radius: 20px;
     color: #FFFFFF;
     min-width: 0px;
-    padding: 0px;
+    padding-left: 4px;
+    padding-right: 4px;
     right: 2px;
     top: 5px;
-    font-size: 12px;
-    margin: 0px;
+    font-size: 11px;
     text-align: center;
 }
-
+.voiceMessageNotifyer {
+    background-color: #ff0000;
+    position: absolute;
+    top: 0px;
+    right: -5px;
+    line-height: 16px;
+    padding-left: 4px;
+    padding-right: 4px;
+    font-size: 11px;
+    border-radius: 20px;
+    color: #FFFFFF;
+    font-size: 11px;
+    text-align: center;
+}
 
 .startDragDrop {
     outline: 2px dashed #184369;

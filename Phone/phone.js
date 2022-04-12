@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.6";
+const appversion = "0.3.7";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -76,6 +76,7 @@ let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAtt
 let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 3));    // The time in seconds to wait between WebSocket reconnection attempts.
 
 let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");             // Enable Subscribe to voicemail
+let VoicemailDid = getDbItem("VoicemailDid", "");                                  // Number to dail for VoicemialMain()
 let userAgentStr = getDbItem("UserAgentStr", "Browser Phone "+ appversion +" (SIPJS - "+ sipjsversion +")");   // Set this to whatever you want.
 let hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
@@ -373,6 +374,7 @@ $(document).ready(function () {
     if(options.TransportReconnectionAttempts !== undefined) TransportReconnectionAttempts = options.TransportReconnectionAttempts;
     if(options.TransportReconnectionTimeout !== undefined) TransportReconnectionTimeout = options.TransportReconnectionTimeout;
     if(options.VoiceMailSubscribe !== undefined) VoiceMailSubscribe = options.VoiceMailSubscribe;
+    if(options.VoicemailDid !== undefined) VoicemailDid = options.VoicemailDid;
     if(options.userAgentStr !== undefined) userAgentStr = options.userAgentStr;
     if(options.hostingPrefex !== undefined) hostingPrefex = options.hostingPrefex;
     if(options.RegisterExpires !== undefined) RegisterExpires = options.RegisterExpires;
@@ -1069,6 +1071,7 @@ function InitUi(){
     leftHTML += "<span id=divFindBuddy class=searchClean style=\"display:none\"><INPUT id=txtFindBuddy type=text autocomplete=none style=\"width:120px;\"></span>";
     leftHTML += "<button class=roundButtons id=BtnFreeDial><i class=\"fa fa-phone\"></i></button>";
     leftHTML += "<button class=roundButtons id=BtnAddSomeone><i class=\"fa fa-user-plus\"></i></button>";
+    leftHTML += "<button class=roundButtons id=BtnVoicemail style=\"position:relative\"><i class=\"fa fa-envelope-square\"></i><span id=TxtVoiceMessages class=voiceMessageNotifyer>0</span></button>";
     if(false){
          // TODO
         leftHTML += "<button id=BtnCreateGroup><i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i></button>";
@@ -1128,6 +1131,7 @@ function InitUi(){
             ShowDial();
         }
     });
+
     $("#BtnAddSomeone").attr("title", lang.add_someone)
     $("#BtnAddSomeone").on('click', function(event){
         if(UiCustomAddBuddy == true){
@@ -1138,6 +1142,15 @@ function InitUi(){
             AddSomeoneWindow();
         }
     });
+
+    $("#BtnVoicemail").hide()
+    $("#BtnVoicemail").attr("title", "lang.voicemessages")
+    $("#BtnVoicemail").on('click', function(event){
+        if(VoicemailDid != ""){
+            DialByLine("audio", null, VoicemailDid, "VoiceMail");
+        }
+    });
+
     $("#BtnCreateGroup").attr("title", lang.create_group)
     $("#BtnCreateGroup").on('click', function(event){
         CreateGroupWindow();
@@ -2773,7 +2786,9 @@ function teardownSession(lineObj) {
     AddCallMessage(lineObj.BuddyObj.identity, session);
 
     // Check if this call was missed
-    if(session.data.calldirection == "inbound" && session.data.terminateby == "them" && lineObj.SipSession.data.startTime == null){
+    if(lineObj.SipSession.data.earlyReject){
+        IncreaseMissedBadge(session.data.buddyId);
+    } else if (session.data.calldirection == "inbound" && session.data.terminateby == "them" && lineObj.SipSession.data.startTime == null){
         IncreaseMissedBadge(session.data.buddyId);
     }
     
@@ -3828,12 +3843,52 @@ function UnsubscribeBuddy(buddyObj) {
 // Subscription Events
 // ===================
 function VocemailNotify(notification){
-    if(notification.request.body.indexOf("Messages-Waiting: yes") > -1){
-        // Handle New Voicemail Message
-        console.log("You have voicemail!");
+    // Messages-Waiting: yes        <-- yes/no
+    // Voice-Message: 1/0           <-- new/old
+    // Voice-Message: 1/0 (0/0)     <-- new/old (ugent new/old)
+    if(notification.request.body.indexOf("Messages-Waiting:") > -1){
         notification.accept();
+
+        var messagesWaiting = (notification.request.body.indexOf("Messages-Waiting: yes") > -1)
+        var newVoiceMessages = 0
+        var oldVoiceMessages = 0
+        var ugentNewVoiceMessage = 0
+        var ugentOldVoiceMessage = 0
+
+        if(messagesWaiting){
+            console.log("Messages Waiting!");
+            var lines = notification.request.body.split("\r\n");
+            for(var l=0; l<lines.length; l++){
+                if(lines[l].indexOf("Voice-Message: ") > -1){
+                    var value = lines[l].replace("Voice-Message: ", ""); // 1/0 (0/0)
+                    if(value.indexOf(" (") > -1){
+                        // With Ugent options
+                        newVoiceMessages = parseInt(value.split(" (")[0].split("\/")[0]);
+                        oldVoiceMessages = parseInt(value.split(" (")[0].split("\/")[1]);
+                        ugentNewVoiceMessage = parseInt(value.split(" (")[1].replace(")","").split("\/")[0]);
+                        ugentOldVoiceMessage = parseInt(value.split(" (")[1].replace(")","").split("\/")[1]);
+                    } else {
+                        // Without
+                        newVoiceMessages = parseInt(value.split("\/")[0]);
+                        oldVoiceMessages = parseInt(value.split("\/")[1]);
+                    }
+                }
+            }
+
+            console.log("Voicemail: ", newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
+
+            // Handle New Voicemail Message
+            $("#TxtVoiceMessages").html(""+ newVoiceMessages)
+            $("#BtnVoicemail").show()
+        } else {
+            $("#TxtVoiceMessages").html("0")
+            $("#BtnVoicemail").hide()
+        }
+
+        if(typeof web_hook_on_messages_waiting !== 'undefined')  web_hook_on_messages_waiting(newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
     }
     else {
+        // Doenst seem to be an message notification https://datatracker.ietf.org/doc/html/rfc3842
         notification.reject();
     }
 }
@@ -4569,6 +4624,9 @@ function IncreaseMissedBadge(buddy) {
     $("#contact-" + buddy + "-missed").text(buddyObj.missed);
     $("#contact-" + buddy + "-missed").show();
 
+    // Custom Web hook
+    if(typeof web_hook_on_missed_notify !== 'undefined') web_hook_on_missed_notify(buddyObj.missed);
+
     console.log("Set Missed badge for "+ buddyObj.CallerIDName +" to: "+ buddyObj.missed);
 }
 function UpdateBuddyActivity(buddy, lastAct){
@@ -4624,6 +4682,8 @@ function ClearMissedBadge(buddy) {
 
     $("#contact-" + buddy + "-missed").text(buddyObj.missed);
     $("#contact-" + buddy + "-missed").hide(400);
+
+    if(typeof web_hook_on_missed_notify !== 'undefined') web_hook_on_missed_notify(buddyObj.missed);
 }
 
 // Outbound Calling
@@ -8478,7 +8538,7 @@ function UpdateBuddyList(){
             html += "</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText><i class=\"fa fa-comments\"></i> "+ friendlyState +"</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-chatstate-menu\" class=presenceText style=\"display:none\"><i class=\"fa fa-keyboard-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-chatstate-menu\" class=presenceText style=\"display:none\"><i class=\"fa fa-commenting-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
             html += "</div>";
             $("#myContacts").append(html);
         } else if(buddyObj.type == "contact") { 
@@ -8574,7 +8634,7 @@ function AddBuddyMessageStream(buddyObj) {
     } 
     else if(buddyObj.type == "xmpp"){
         profileRow += "<div id=\"contact-"+ buddyObj.identity +"-presence-main\" class=presenceText><i class=\"fa fa-comments\"></i> "+ buddyObj.presenceText +"</div>";
-        profileRow += "<div id=\"contact-"+ buddyObj.identity +"-chatstate-main\" class=presenceText style=\"display:none\"><i class=\"fa fa-keyboard-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
+        profileRow += "<div id=\"contact-"+ buddyObj.identity +"-chatstate-main\" class=presenceText style=\"display:none\"><i class=\"fa fa-commenting-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
     }
     else{
         profileRow += "<div id=\"contact-"+ buddyObj.identity +"-presence-main\" class=presenceText>"+ buddyObj.Desc +"</div>";
@@ -8660,7 +8720,7 @@ function AddBuddyMessageStream(buddyObj) {
         textRow += "<div id=\"contact-"+ buddyObj.identity +"-emoji-menu\" style=\"display:none\"></div>";
 
         // ChatState
-        textRow += "<div id=\"contact-"+ buddyObj.identity +"-chatstate\" style=\"display:none\"><i class=\"fa fa-keyboard-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
+        textRow += "<div id=\"contact-"+ buddyObj.identity +"-chatstate\" style=\"display:none\"><i class=\"fa fa-commenting-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
 
         // Type Area
         textRow += "<table class=sendMessageContainer cellpadding=0 cellspacing=0><tr>";
@@ -11310,10 +11370,34 @@ function ToggleDoNoDisturb(){
         console.warn("Policy DoNotDisturb: Disabled");
         return;
     }
-    DoNotDisturbEnabled = (DoNotDisturbEnabled == true)? false : true;
-    if(DoNotDisturbPolicy == "enabled") DoNotDisturbEnabled = true;
-    localDB.setItem("DoNotDisturbEnabled", (DoNotDisturbEnabled == true)? "1" : "0");
-    $("#dereglink").attr("class", (DoNotDisturbEnabled == true)? "dotDoNotDisturb" : "dotOnline" );
+    if(DoNotDisturbPolicy == "enabled") {
+        DoNotDisturbEnabled = true;
+        console.warn("Policy DoNotDisturb: Enabled");
+        return;
+    }
+    if(DoNotDisturbEnabled == true){
+        // Disable DND
+
+        DoNotDisturbEnabled = false
+        localDB.setItem("DoNotDisturbEnabled", "0");
+        $("#dereglink").attr("class", "dotOnline");
+
+        // Web Hook
+        if(typeof web_hook_disable_dnd !== 'undefined') {
+            web_hook_disable_dnd();
+        }
+    } else {
+        // Enable DND
+
+        DoNotDisturbEnabled = true
+        localDB.setItem("DoNotDisturbEnabled", "1");
+        $("#dereglink").attr("class", "dotDoNotDisturb");
+
+        // Web Hook
+        if(typeof web_hook_enable_dnd !== 'undefined') {
+            web_hook_enable_dnd();
+        }
+    }
     console.log("DoNotDisturb", DoNotDisturbEnabled);
 }
 function ToggleCallWaiting(){
