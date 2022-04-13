@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.7";
+const appversion = "0.3.8";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -7503,7 +7503,7 @@ function ShowDial(){
     $("#actionArea").empty();
 
     var html = "<div style=\"text-align:right\"><button class=roundButtons onclick=\"ShowContacts()\"><i class=\"fa fa-close\"></i></button></div>"
-    html += "<div style=\"text-align:center\"><input id=dialText class=dialTextInput oninput=\"handleDialInput(this, event)\" onkeydown=\"dialOnkeydown(event, this)\" style=\"width:160px; margin-top:15px\"></div>";
+    html += "<div style=\"text-align:center; margin-top:15px\"><input id=dialText class=dialTextInput oninput=\"handleDialInput(this, event)\" onkeydown=\"dialOnkeydown(event, this)\" style=\"width:170px; height:32px\"><button id=dialDeleteKey class=roundButtons onclick=\"KeyPress('del')\">⌫</button></div>";
     html += "<table cellspacing=10 cellpadding=0 style=\"margin-left:auto; margin-right: auto\">";
     html += "<tr><td><button class=dialButtons onclick=\"KeyPress('1')\"><div>1</div><span>&nbsp;</span></button></td>"
     html += "<td><button class=dialButtons onclick=\"KeyPress('2')\"><div>2</div><span>ABC</span></button></td>"
@@ -7525,6 +7525,7 @@ function ShowDial(){
     }
     html += "</div>";
     $("#actionArea").html(html);
+    $("#dialDeleteKey").hide();
     $("#actionArea").show();
     $("#dialText").focus();
 }
@@ -7536,6 +7537,13 @@ function handleDialInput(obj, event){
         $("#dialText").val($("#dialText").val().replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength));
     }
     $("#dialVideo").prop('disabled', ($("#dialText").val().length >= DidLength));
+    if($("#dialText").val().length > 0){
+        $("#dialText").css("width","138px");
+        $("#dialDeleteKey").show();
+    } else {
+        $("#dialText").css("width","170px");
+        $("#dialDeleteKey").hide();
+    }
 }
 function dialOnkeydown(event, obj, buddy) {
     var keycode = (event.keyCode ? event.keyCode : event.which);
@@ -7549,9 +7557,52 @@ function dialOnkeydown(event, obj, buddy) {
     }
 }
 function KeyPress(num){
-    $("#dialText").val(($("#dialText").val()+num).substring(0,MaxDidLength));
+    var currVal = $("#dialText").val();
+    var textElObj = $("#dialText").get(0);
+    var ss = textElObj.selectionStart;
+    var se = textElObj.selectionEnd;
+    var ln = currVal.length;
+
+    var newValue = "";
+    if(ss == se){
+        // Cursor is in a spot with no selection
+        if(num == "del"){
+            newValue = currVal.substring(0, ss-1) + currVal.substring(se, ln);
+        } else {
+            newValue = currVal.substring(0, ss) + num + currVal.substring(se, ln);
+        }
+        $("#dialText").val(newValue.substring(0,MaxDidLength));
+        $("#dialText").focus();
+        if(num == "del"){
+            textElObj.setSelectionRange(ss-1, ss-1);
+        }else {
+            textElObj.setSelectionRange(ss+1, ss+1);
+        }
+    } else {
+        if(num == "del"){
+            newValue = currVal.substring(0, ss) + currVal.substring(se, ln);
+        } else {
+            newValue = currVal.substring(0, ss) + num + currVal.substring(se, ln);
+        }
+        $("#dialText").val(newValue.substring(0,MaxDidLength));
+        $("#dialText").focus();
+        if(num == "del"){
+            textElObj.setSelectionRange(ss, ss);
+        }else {
+            textElObj.setSelectionRange(ss+1, ss+1);
+        }
+    }
+    
     $("#dialVideo").prop('disabled', ($("#dialText").val().length >= DidLength));
+    if($("#dialText").val().length > 0){
+        $("#dialText").css("width","138px");
+        $("#dialDeleteKey").show();
+    } else {
+        $("#dialText").css("width","170px");
+        $("#dialDeleteKey").hide();
+    }
 }
+
 function ShowContacts(){
 
     var localVideo = $("#local-video-preview").get(0);
