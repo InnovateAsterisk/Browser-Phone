@@ -57,7 +57,7 @@ welcomeScreen += "</div>";
  * More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
  * "en.json" is always loaded by default
  */
-const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de"]; // Defines the language packs avaialbe in /lang/ folder
+const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pt-br"]; // Defines the language packs avaialbe in /lang/ folder
 let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional languge packs other thAan /en.json
 
 // User Settings & Defaults
