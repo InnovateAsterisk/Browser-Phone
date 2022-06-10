@@ -57,8 +57,8 @@ welcomeScreen += "</div>";
  * More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
  * "en.json" is always loaded by default
  */
-const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de"]; // Defines the language packs avaialbe in /lang/ folder
-let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional languge packs other thAan /en.json
+const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl"]; // Defines the language packs avaialbe in /lang/ folder
+let loadAlternateLang = (getDbItem("loadAlternateLang", "1") == "1"); // Enables searching and loading for the additional languge packs other thAan /en.json
 
 // User Settings & Defaults
 // ========================
@@ -9392,7 +9392,7 @@ function RefreshStream(buddyObj, filter) {
             if (item.SrcUserId == profileUserID) {
                 // (Outbound) You(profileUserID) initiated a call
                 if(item.Billsec == "0") {
-                    formattedMessage += " "+ lang.you_tried_to_make +" "+ audioVideo +" ("+ item.ReasonText +").";
+                    formattedMessage += " "+ lang.you_tried_to_make +" "+ audioVideo +" ("+ (lang['reason_'+item.ReasonText] || item.ReasonText) +").";
                 } 
                 else {
                     formattedMessage += " "+ lang.you_made + " "+ audioVideo +", "+ lang.and_spoke_for +" " + formatDuration(item.Billsec) + ".";
@@ -9412,7 +9412,7 @@ function RefreshStream(buddyObj, filter) {
             else {
                 // (Inbound) you(profileUserID) received a call
                 if(item.Billsec == "0"){
-                    formattedMessage += " "+ lang.you_missed_a_call + " ("+ item.ReasonText +").";
+                    formattedMessage += " "+ lang.you_missed_a_call + " ("+ (lang['reason_'+item.ReasonText] || item.ReasonText) +").";
                 } 
                 else {
                     formattedMessage += " "+ lang.you_recieved + " "+ audioVideo +", "+ lang.and_spoke_for +" " + formatDuration(item.Billsec) + ".";
@@ -10495,8 +10495,8 @@ function ShowMyProfile(){
     
     AudioVideoHtml += "<div class=UiText>"+ lang.image_orientation +":</div>";
     AudioVideoHtml += "<div class=pill-nav>";
-    AudioVideoHtml += "<input name=Settings_Oriteation id=r20 type=radio value=\"rotateY(0deg)\"><label class=radio_pill for=r20><i class=\"fa fa-address-card\" style=\"transform: rotateY(0deg)\"></i> Normal</label>";
-    AudioVideoHtml += "<input name=Settings_Oriteation id=r21 type=radio value=\"rotateY(180deg)\"><label class=radio_pill for=r21><i class=\"fa fa-address-card\" style=\"transform: rotateY(180deg)\"></i> Mirror</label>";
+    AudioVideoHtml += "<input name=Settings_Oriteation id=r20 type=radio value=\"rotateY(0deg)\"><label class=radio_pill for=r20><i class=\"fa fa-address-card\" style=\"transform: rotateY(0deg)\"></i> " + lang.image_orientation_normal + "</label>";
+    AudioVideoHtml += "<input name=Settings_Oriteation id=r21 type=radio value=\"rotateY(180deg)\"><label class=radio_pill for=r21><i class=\"fa fa-address-card\" style=\"transform: rotateY(180deg)\"></i> " + lang.image_orientation_mirror + "</label>";
     AudioVideoHtml += "</div>";
 
     AudioVideoHtml += "<div class=UiText>"+ lang.aspect_ratio +":</div>";
@@ -11299,7 +11299,7 @@ function ShowMyProfile(){
                         var option = $('<option/>');
                         option.prop("value", "default");
                         if(getVideoSrcID() == "default" || getVideoSrcID() == "" || getVideoSrcID() == "null") option.prop("selected", true);
-                        option.text("(Default)");
+                        option.text("(" + lang.default_video_src + ")");
                         selectVideoScr.append(option);
                     }
                 }).catch(function(e){

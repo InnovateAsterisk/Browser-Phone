@@ -50,6 +50,8 @@
     "frame_rate" : "Cuadros (por segundos)",
     "quality" : "Calidad",
     "image_orientation" : "Orientación de imagen",
+    "image_orientation_normal" : "Normal",
+    "image_orientation_mirror" : "Mirror",
     "aspect_ratio" : "Relación de aspecto",
     "preview" : "Previsualizar",
     "ringtone" : "Tono de timbrado",
@@ -281,5 +283,6 @@
     "basic_extension" : "Extensión básica",
     "extension_including_xmpp" : "Extensión que incluye intercambio de mensajes",
     "addressbook_contact" : "Contacto de la libreta de direcciones",
-    "subscribe_to_dev_state" : "Suscribirse a las notificaciones del estado del dispositivo"
+    "subscribe_to_dev_state" : "Suscribirse a las notificaciones del estado del dispositivo",
+    "default_video_src" : "Default"
 }

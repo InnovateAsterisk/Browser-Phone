@@ -50,6 +50,8 @@
   "frame_rate": "Частота кадров (в секунду)",
   "quality": "Качество",
   "image_orientation": "Ориентация изображения",
+  "image_orientation_normal" : "Normal",
+  "image_orientation_mirror" : "Mirror",
   "aspect_ratio": "Соотношение сторон",
   "preview": "Предварительный просмотр",
   "ringtone": "Мелодия",
@@ -276,5 +278,6 @@
   "basic_extension" : "Основные Extension",
   "extension_including_xmpp" : "Расширение, включая обмен сообщениями",
   "addressbook_contact" : "Адресная книга Контакты",
-  "subscribe_to_dev_state" : "Подписаться на уведомления о состоянии устройства"
+  "subscribe_to_dev_state" : "Подписаться на уведомления о состоянии устройства",
+  "default_video_src" : "Default"
 }

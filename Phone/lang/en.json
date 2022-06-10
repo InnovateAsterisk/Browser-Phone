@@ -50,6 +50,8 @@
     "frame_rate" : "Frame Rate (per second)",
     "quality" : "Quality",
     "image_orientation" : "Image Orientation",
+    "image_orientation_normal" : "Normal",
+    "image_orientation_mirror" : "Mirror",
     "aspect_ratio" : "Aspect Ratio",
     "preview" : "Preview",
     "ringtone" : "Ringtone",
@@ -281,5 +283,12 @@
     "basic_extension" : "Basic Extension",
     "extension_including_xmpp" : "Extension including Message Exchange",
     "addressbook_contact" : "Address Book Contact",
-    "subscribe_to_dev_state" : "Subscribe to Device State Notifications"
+    "subscribe_to_dev_state" : "Subscribe to Device State Notifications",
+    "default_video_src" : "Default",
+    "reason_Normal Call clearing" : "Normal Call clearing",
+	"reason_Client Error" : "Client Error",
+	"reason_Busy Here" : "Busy Here",
+	"reason_Call Cancelled" : "Call Cancelled",
+	"reason_Transfer" : "Transfer",
+	"reason_Attended Transfer" : "Attended Transfer"
 }

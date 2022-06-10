@@ -50,6 +50,8 @@
     "frame_rate" : "Frame Rate (per seconde)",
     "quality" : "Kwaliteit",
     "image_orientation" : "Beel orientatie",
+    "image_orientation_normal" : "Normal",
+    "image_orientation_mirror" : "Mirror",
     "aspect_ratio" : "Beeldverhouding",
     "preview" : "Voorbeeld",
     "ringtone" : "Ringtone",
@@ -276,5 +278,6 @@
     "basic_extension" : "Basisuitbreiding",
     "extension_including_xmpp" : "Extensie inclusief Message Exchange",
     "addressbook_contact" : "Adresboek Contact",
-    "subscribe_to_dev_state" : "Abonneer je op Device State Meldingen"
+    "subscribe_to_dev_state" : "Abonneer je op Device State Meldingen",
+    "default_video_src" : "Default"
 }

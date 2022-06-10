@@ -50,6 +50,8 @@
     "frame_rate" : "帧速率（每秒）",
     "quality" : "质量",
     "image_orientation" : "影像方向",
+    "image_orientation_normal" : "Normal",
+    "image_orientation_mirror" : "Mirror",
     "aspect_ratio" : "纵横比",
     "preview": "预览",
     "ringtone" : "铃声",
@@ -276,5 +278,6 @@
     "basic_extension" : "基本扩展",
     "extension_including_xmpp" : "扩展包括消息交换",
     "addressbook_contact" : "地址簿联系人",
-    "subscribe_to_dev_state" : "订阅设备状态通知"
+    "subscribe_to_dev_state" : "订阅设备状态通知",
+    "default_video_src" : "Default"
 }

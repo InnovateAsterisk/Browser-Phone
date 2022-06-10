@@ -50,6 +50,8 @@
     "frame_rate" : "Bildrate (pro Sekunde)",
     "quality" : "Qualität",
     "image_orientation" : "Bild Ausrichtung",
+    "image_orientation_normal" : "Normal",
+    "image_orientation_mirror" : "Mirror",
     "aspect_ratio" : "Seitenvrhältnis",
     "preview" : "Vorschau",
     "ringtone" : "Klingelton",
@@ -281,5 +283,6 @@
     "basic_extension" : "Basiserweiterung",
     "extension_including_xmpp" : "Erweiterung, einschließlich Message Exchange",
     "addressbook_contact" : "Adressbuchkontakt",
-    "subscribe_to_dev_state" : "Benachrichtigungen zum Gerätestatus abonnieren"
+    "subscribe_to_dev_state" : "Benachrichtigungen zum Gerätestatus abonnieren",
+    "default_video_src" : "Default"
 }
