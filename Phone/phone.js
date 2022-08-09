@@ -7718,7 +7718,7 @@ function DialByLine(type, buddy, numToDial, CallerID, extraHeaders){
         var buddyType = (numDial.length > DidLength)? "contact" : "extension";
         // Assumption but anyway: If the number starts with a * or # then its probably not a subscribable did,  
         // and is probably a feature code.
-        if(buddyType.substring(0,1) == "*" || buddyType.substring(0,1) == "#") buddyType = "contact";
+        if(numDial.substring(0,1) == "*" || numDial.substring(0,1) == "#") buddyType = "contact";
         buddyObj = MakeBuddy(buddyType, true, false, false, (CallerID)? CallerID : numDial, numDial);
     }
 
