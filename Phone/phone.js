@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.8";
+const appversion = "0.3.9";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -57,34 +57,48 @@ welcomeScreen += "</div>";
  * More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
  * "en.json" is always loaded by default
  */
-const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pt-br"]; // Defines the language packs avaialbe in /lang/ folder
 let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional languge packs other thAan /en.json
+const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) avaialbe in /lang/ folder
+
+/**
+ * Assets
+ * Note: You can specify the assets to use below in array format
+ */
+const avatars = ["avatars/default.0.png", "avatars/default.1.png", "avatars/default.2.png", "avatars/default.3.png", "avatars/default.4.png", "avatars/default.5.png", "avatars/default.6.png", "avatars/default.7.png", "avatars/default.8.png"]
+const wallpaperLight = "wallpaper.light.png"            // Wallpaper for Light Theme
+const wallpaperDark = "wallpaper.dark.png"              // Wallpaper for Dark Theme
 
 // User Settings & Defaults
 // ========================
 let profileUserID = getDbItem("profileUserID", null);   // Internal reference ID. (DON'T CHANGE THIS!)
-let profileUser = getDbItem("profileUser", null);       // eg: 100
 let profileName = getDbItem("profileName", null);       // eg: Keyla James
 let wssServer = getDbItem("wssServer", null);           // eg: raspberrypi.local
 let WebSocketPort = getDbItem("WebSocketPort", null);   // eg: 444 | 4443
 let ServerPath = getDbItem("ServerPath", null);         // eg: /ws
+let SipDomain = getDbItem("SipDomain", null);           // eg: raspberrypi.local
 let SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
 let SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
 
-let TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));        // The timeout in seconds for the initial connection to make on the web socket port
-let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 999));  // The number of times to attempt to reconnect to a WebSocket when the connection drops.
-let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 3));    // The time in seconds to wait between WebSocket reconnection attempts.
+let TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));          // The timeout in seconds for the initial connection to make on the web socket port
+let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 999));   // The number of times to attempt to reconnect to a WebSocket when the connection drops.
+let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 3));       // The time in seconds to wait between WebSocket reconnection attempts.
 
-let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");             // Enable Subscribe to voicemail
-let VoicemailDid = getDbItem("VoicemailDid", "");                                  // Number to dail for VoicemialMain()
+let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");                // Enable Subscribe to voicemail
+let VoicemailDid = getDbItem("VoicemailDid", "");                                      // Number to dail for VoicemialMain()
+let SubscribeVoicemailExpires = parseInt(getDbItem("SubscribeVoicemailExpires", 300)); // Voceimail Subscription expiry time (in seconds)
 let userAgentStr = getDbItem("UserAgentStr", "Browser Phone "+ appversion +" (SIPJS - "+ sipjsversion +")");   // Set this to whatever you want.
-let hostingPrefex = getDbItem("HostingPrefex", "");                                 // Use if hosting off root directiory. eg: "/phone/" or "/static/"
-let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                  // Registration expiry time (in seconds)
-let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                     // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
-let IpInContact = (getDbItem("IpInContact", "1") == "1");                           // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
-let IceStunServerJson = getDbItem("IceStunServerJson", "");                         // Sets the JSON string for ice Server. Default: [{ "urls": "stun:stun.l.google.com:19302" }] Must be https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration/iceServers
-let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));          // Set amount of time in milliseconds to wait for the ICE/STUN server
+let hostingPrefex = getDbItem("HostingPrefex", "");                                    // Use if hosting off root directiory. eg: "/phone/" or "/static/"
+let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                     // Registration expiry time (in seconds)
+let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                        // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
+let IpInContact = (getDbItem("IpInContact", "1") == "1");                              // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
+let BundlePolicy = getDbItem("BundlePolicy", "balanced");                              // SDP Media Bundle: max-bundle | max-compat | balanced https://webrtcstandards.info/sdp-bundle/
+let IceStunServerJson = getDbItem("IceStunServerJson", "");                            // Sets the JSON string for ice Server. Default: [{ "urls": "stun:stun.l.google.com:19302" }] Must be https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration/iceServers
+let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));             // Set amount of time in milliseconds to wait for the ICE/STUN server
+let SubscribeBuddyAccept = getDbItem("SubscribeBuddyAccept", "application/pidf+xml");  // Normally only application/dialog-info+xml and application/pidf+xml
+let SubscribeBuddyEvent = getDbItem("SubscribeBuddyEvent", "presence");                // For application/pidf+xml use presence. For application/dialog-info+xml use dialig 
+let SubscribeBuddyExpires = parseInt(getDbItem("SubscribeBuddyExpires", 300));         // Buddy Subscription expiry time (in seconds)
 
+let NoAnswerTimeout = parseInt(getDbItem("NoAnswerTimeout", 120));          // Time in seconds before automatic Busy Here sent
 let AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
 let DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");   // Rejects any inbound call, while allowing outbound calls
 let CallWaitingEnabled = (getDbItem("CallWaitingEnabled", "1") == "1");     // Rejects any inbound call if you are on a call already.
@@ -140,7 +154,7 @@ let IntercomPolicy = getDbItem("IntercomPolicy", "enabled");                    
 let EnableAccountSettings = (getDbItem("EnableAccountSettings", "1") == "1");           // Controls the Account tab in Settings
 let EnableAppearanceSettings = (getDbItem("EnableAppearanceSettings", "1") == "1");     // Controls the Appearance tab in Settings
 let EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") == "1"); // Controls the Notifications tab in Settings
-let EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+]/g default is /[^\d\*\#\+]/g
+let EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+\-\_\.\!\~\'\(\)]/g default is /[^\d\*\#\+]/g 
 let EnableVideoCalling = (getDbItem("EnableVideoCalling", "1") == "1");                 // Enables Video during a call
 let EnableTextExpressions = (getDbItem("EnableTextExpressions", "1") == "1");           // Enables Expressions (Emoji) glyphs when texting
 let EnableTextDictate = (getDbItem("EnableTextDictate", "1") == "1");                   // Enables Dictate (speach-to-text) when texting
@@ -151,13 +165,13 @@ let MaxBuddyAge = parseInt(getDbItem("MaxBuddyAge", 365));                      
 let ChatEngine = getDbItem("ChatEngine", "SIMPLE");    // Select the chat engine XMPP | SIMPLE
 
 // XMPP Settings
-let XmppDomain = getDbItem("XmppDomain", "");                // Domain portion of username will make up username as profileUser@XmppDomain
 let XmppServer = getDbItem("XmppServer", "");                // FQDN of XMPP server HTTP service";
 let XmppWebsocketPort = getDbItem("XmppWebsocketPort", "");  // OpenFire Default : 7443
 let XmppWebsocketPath = getDbItem("XmppWebsocketPath", "");  // OpenFire Default : /ws
+let profileUser = getDbItem("profileUser", null);            // Username for auth with XMPP Server eg: 100
 // XMPP Tenanting
 let XmppRealm = getDbItem("XmppRealm", "");                    // To create a tennant like partition in XMPP server all users and buddies will have this realm prepeded to their details.
-let XmppRealmSeperator = getDbItem("XmppRealmSeperator", "-"); // Separates the realm from the profileUser eg: abc123-100@XmppDomain
+let XmppRealmSeperator = getDbItem("XmppRealmSeperator", "-"); // Separates the realm from the profileUser eg: abc123-100@SipDomain
 // TODO
 let XmppChatGroupService = getDbItem("XmppChatGroupService", "conference");
 
@@ -197,6 +211,8 @@ let Lines = [];
 let lang = {}
 let audioBlobs = {}
 let newLineNumber = 1;
+let telNumericRegEx = /[^\d\*\#\+]/g
+let telAlphanumericRegEx = /[^\da-zA-Z\*\#\+\-\_\.\!\~\'\(\)]/g
 
 // Utilities
 // =========
@@ -348,6 +364,16 @@ $(window).on("offline", function(){
 
     $("#regStatus").html(lang.disconnected_from_web_socket);
     $("#WebRtcFailed").show();
+
+    // If there is an issue with the WS connection
+    // We unregister, so that we register again once its up
+    console.log("Unregister...");
+    try{
+        userAgent.registerer.unregister();
+        userAgent.transport.disconnect();
+    } catch(e){
+        // I know!!!
+    }
 });
 $(window).on("online", function(){
     console.log('Online!');
@@ -363,11 +389,11 @@ $(document).ready(function () {
     var options = (typeof phoneOptions !== 'undefined')? phoneOptions : {};
     if(options.welcomeScreen !== undefined) welcomeScreen = options.welcomeScreen;
     if(options.loadAlternateLang !== undefined) loadAlternateLang = options.loadAlternateLang;
-    if(options.profileUser !== undefined) profileUser = options.profileUser;
     if(options.profileName !== undefined) profileName = options.profileName;
     if(options.wssServer !== undefined) wssServer = options.wssServer;
     if(options.WebSocketPort !== undefined) WebSocketPort = options.WebSocketPort;
     if(options.ServerPath !== undefined) ServerPath = options.ServerPath;
+    if(options.SipDomain !== undefined) SipDomain = options.SipDomain;
     if(options.SipUsername !== undefined) SipUsername = options.SipUsername;
     if(options.SipPassword !== undefined) SipPassword = options.SipPassword;
     if(options.TransportConnectionTimeout !== undefined) TransportConnectionTimeout = options.TransportConnectionTimeout;
@@ -375,13 +401,19 @@ $(document).ready(function () {
     if(options.TransportReconnectionTimeout !== undefined) TransportReconnectionTimeout = options.TransportReconnectionTimeout;
     if(options.VoiceMailSubscribe !== undefined) VoiceMailSubscribe = options.VoiceMailSubscribe;
     if(options.VoicemailDid !== undefined) VoicemailDid = options.VoicemailDid;
+    if(options.SubscribeVoicemailExpires !== undefined) SubscribeVoicemailExpires = options.SubscribeVoicemailExpires;
     if(options.userAgentStr !== undefined) userAgentStr = options.userAgentStr;
     if(options.hostingPrefex !== undefined) hostingPrefex = options.hostingPrefex;
     if(options.RegisterExpires !== undefined) RegisterExpires = options.RegisterExpires;
     if(options.WssInTransport !== undefined) WssInTransport = options.WssInTransport;
     if(options.IpInContact !== undefined) IpInContact = options.IpInContact;
+    if(options.BundlePolicy !== undefined) BundlePolicy = options.BundlePolicy;
     if(options.IceStunServerJson !== undefined) IceStunServerJson = options.IceStunServerJson;
     if(options.IceStunCheckTimeout !== undefined) IceStunCheckTimeout = options.IceStunCheckTimeout;
+    if(options.SubscribeBuddyAccept !== undefined) SubscribeBuddyAccept = options.SubscribeBuddyAccept;
+    if(options.SubscribeBuddyEvent !== undefined) SubscribeBuddyEvent = options.SubscribeBuddyEvent;
+    if(options.SubscribeBuddyExpires !== undefined) SubscribeBuddyExpires = options.SubscribeBuddyExpires;
+    if(options.NoAnswerTimeout !== undefined) NoAnswerTimeout = options.NoAnswerTimeout;
     if(options.AutoAnswerEnabled !== undefined) AutoAnswerEnabled = options.AutoAnswerEnabled;
     if(options.DoNotDisturbEnabled !== undefined) DoNotDisturbEnabled = options.DoNotDisturbEnabled;
     if(options.CallWaitingEnabled !== undefined) CallWaitingEnabled = options.CallWaitingEnabled;
@@ -438,10 +470,10 @@ $(document).ready(function () {
     if(options.MaxBuddies !== undefined) MaxBuddies = options.MaxBuddies;
     if(options.MaxBuddyAge !== undefined) MaxBuddyAge = options.MaxBuddyAge;
     if(options.ChatEngine !== undefined) ChatEngine = options.ChatEngine;
-    if(options.XmppDomain !== undefined) XmppDomain = options.XmppDomain;
     if(options.XmppServer !== undefined) XmppServer = options.XmppServer;
     if(options.XmppWebsocketPort !== undefined) XmppWebsocketPort = options.XmppWebsocketPort;
     if(options.XmppWebsocketPath !== undefined) XmppWebsocketPath = options.XmppWebsocketPath;
+    if(options.profileUser !== undefined) profileUser = options.profileUser;
     if(options.XmppRealm !== undefined) XmppRealm = options.XmppRealm;
     if(options.XmppRealmSeperator !== undefined) XmppRealmSeperator = options.XmppRealmSeperator;
     if(options.XmppChatGroupService !== undefined) XmppChatGroupService = options.XmppChatGroupService;
@@ -578,9 +610,13 @@ function AddSomeoneWindow(numberStr){
     html += "</div>";
 
     html += "<div id=RowExtension>";
+    html += "<div class=UiText>"+ lang.extension_number +":</div>";
+    html += "<div><input id=AddSomeone_Exten class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"'></div>";
+    html += "<div><input type=checkbox id=AddSomeone_Subscribe><label for=AddSomeone_Subscribe>"+ lang.subscribe_to_dev_state +"</label></div>";
+    html += "<div id=RowSubscribe style=\"display:none; margin-left:30px;\">";
     html += "<div class=UiText>"+ lang.internal_subscribe_extension +":</div>";
-    html += "<div><input id=AddSomeone_Exten class=UiInputText type=tel placeholder='"+ lang.eg_internal_subscribe_extension +"'></div>";
-    html += "<div><input type=checkbox id=AddSomeone_Subscribe checked><label for=AddSomeone_Subscribe>"+ lang.subscribe_to_dev_state +"</label></div>";
+    html += "<div><input id=AddSomeone_SubscribeUser class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"'></div>";
+    html += "</div>";
     html += "</div>";
 
     html += "<div id=RowMobileNumber>";
@@ -595,12 +631,17 @@ function AddSomeoneWindow(numberStr){
 
     html += "<div id=RowContact1>";
     html += "<div class=UiText>"+ lang.contact_number_1 +":</div>";
-    html += "<div><input id=AddSomeone_Num1 class=UiInputText type=tel placeholder='"+ lang.eg_contact_number_1 +"'></div>";
+    html += "<div><input id=AddSomeone_Num1 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_1 +"'></div>";
     html += "</div>";
 
     html += "<div id=RowContact2>";
     html += "<div class=UiText>"+ lang.contact_number_2 +":</div>";
-    html += "<div><input id=AddSomeone_Num2 class=UiInputText type=tel placeholder='"+ lang.eg_contact_number_2 +"'></div>";
+    html += "<div><input id=AddSomeone_Num2 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_2 +"'></div>";
+    html += "</div>";
+
+    html += "<div id=Persistance>";
+    html += "<div class=UiText>Auto Delete:</div>";
+    html += "<div><input type=checkbox id=AddSomeone_AutoDelete><label for=AddSomeone_AutoDelete>"+ lang.yes +"</label></div>";
     html += "</div>";
 
     html += "</div>";
@@ -615,17 +656,24 @@ function AddSomeoneWindow(numberStr){
         text: lang.add,
         action: function(){
             // Basic Validation
-            var type = "extension";
-            if($("#type_exten").is(':checked')){
-                type = "extension";
-            } else if($("#type_xmpp").is(':checked')){
-                type = "xmpp";
-            } else if($("#type_contact").is(':checked')){
-                type = "contact";
-            }
             if($("#AddSomeone_Name").val() == "") return;
             if(type == "extension" || type == "xmpp"){
                 if($("#AddSomeone_Exten").val() == "") return;
+            }
+
+            var type = "extension";
+            if($("#type_exten").is(':checked')){
+                type = "extension";
+                if($("#AddSomeone_Subscribe").is(':checked') && $("#AddSomeone_SubscribeUser").val() == ""){
+                    $("#AddSomeone_SubscribeUser").val($("#AddSomeone_Exten").val())
+                }
+            } else if($("#type_xmpp").is(':checked')){
+                type = "xmpp";
+                if($("#AddSomeone_Subscribe").is(':checked') && $("#AddSomeone_SubscribeUser").val() == ""){
+                    $("#AddSomeone_SubscribeUser").val($("#AddSomeone_Exten").val())
+                }
+            } else if($("#type_contact").is(':checked')){
+                type = "contact";
             }
 
             // Add Contact / Extension
@@ -654,10 +702,26 @@ function AddSomeoneWindow(numberStr){
                         Email: $("#AddSomeone_Email").val(),
                         MemberCount: 0,
                         EnableDuringDnd: $("#AddSomeone_Dnd").is(':checked'),
-                        Subscribe: $("#AddSomeone_Subscribe").is(':checked')
+                        Subscribe: $("#AddSomeone_Subscribe").is(':checked'),
+                        SubscribeUser: $("#AddSomeone_SubscribeUser").val(),
+                        AutoDelete: $("#AddSomeone_AutoDelete").is(':checked')
                     }
                 );
-                buddyObj = new Buddy("extension", id, $("#AddSomeone_Name").val(), $("#AddSomeone_Exten").val(), $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val(), jid, $("#AddSomeone_Dnd").is(':checked'), $("#AddSomeone_Subscribe").is(':checked'));
+                buddyObj = new Buddy("extension", 
+                                        id, 
+                                        $("#AddSomeone_Name").val(), 
+                                        $("#AddSomeone_Exten").val(), 
+                                        $("#AddSomeone_Mobile").val(), 
+                                        $("#AddSomeone_Num1").val(), 
+                                        $("#AddSomeone_Num2").val(), 
+                                        dateNow, 
+                                        $("#AddSomeone_Desc").val(), 
+                                        $("#AddSomeone_Email").val(), 
+                                        jid, 
+                                        $("#AddSomeone_Dnd").is(':checked'), 
+                                        $("#AddSomeone_Subscribe").is(':checked'),
+                                        $("#AddSomeone_SubscribeUser").val(),
+                                        $("#AddSomeone_AutoDelete").is(':checked'));
                 
                 // Add memory object
                 AddBuddy(buddyObj, false, false, $("#AddSomeone_Subscribe").is(':checked'), true);
@@ -666,7 +730,7 @@ function AddSomeoneWindow(numberStr){
                 // Add XMPP extension
                 var id = uID();
                 var dateNow = utcDateNow();
-                var jid = $("#AddSomeone_Exten").val() +"@"+ XmppDomain;
+                var jid = $("#AddSomeone_Exten").val() +"@"+ SipDomain;
                 if(XmppRealm != "" && XmppRealmSeperator != "") jid = XmppRealm +""+ XmppRealmSeperator +""+ jid;
                 json.DataCollection.push(
                     {
@@ -685,10 +749,26 @@ function AddSomeoneWindow(numberStr){
                         Email: null,
                         MemberCount: 0,
                         EnableDuringDnd: $("#AddSomeone_Dnd").is(':checked'),
-                        Subscribe: $("#AddSomeone_Subscribe").is(':checked')
+                        Subscribe: $("#AddSomeone_Subscribe").is(':checked'),
+                        SubscribeUser: $("#AddSomeone_SubscribeUser").val(),
+                        AutoDelete: $("#AddSomeone_AutoDelete").is(':checked')
                     }
                 );
-                buddyObj = new Buddy("xmpp", id, $("#AddSomeone_Name").val(), $("#AddSomeone_Exten").val(), "", "", "", dateNow, "", "", jid, $("#AddSomeone_Dnd").is(':checked'), $("#AddSomeone_Subscribe").is(':checked'));
+                buddyObj = new Buddy("xmpp", 
+                                        id, 
+                                        $("#AddSomeone_Name").val(), 
+                                        $("#AddSomeone_Exten").val(), 
+                                        "", 
+                                        "", 
+                                        "", 
+                                        dateNow, 
+                                        "", 
+                                        "", 
+                                        jid, 
+                                        $("#AddSomeone_Dnd").is(':checked'), 
+                                        $("#AddSomeone_Subscribe").is(':checked'),
+                                        $("#AddSomeone_SubscribeUser").val(),
+                                        $("#AddSomeone_AutoDelete").is(':checked'));
                 
                 // XMPP add to roster
                 XmppAddBuddyToRoster(buddyObj);
@@ -717,10 +797,26 @@ function AddSomeoneWindow(numberStr){
                         Email: $("#AddSomeone_Email").val(),
                         MemberCount: 0,
                         EnableDuringDnd: $("#AddSomeone_Dnd").is(':checked'),
-                        Subscribe: false
+                        Subscribe: false,
+                        SubscribeUser: null,
+                        AutoDelete: $("#AddSomeone_AutoDelete").is(':checked')
                     }
                 );
-                buddyObj = new Buddy("contact", id, $("#AddSomeone_Name").val(), "", $("#AddSomeone_Mobile").val(), $("#AddSomeone_Num1").val(), $("#AddSomeone_Num2").val(), dateNow, $("#AddSomeone_Desc").val(), $("#AddSomeone_Email").val(), jid, $("#AddSomeone_Dnd").is(':checked'), false);
+                buddyObj = new Buddy("contact", 
+                                        id, 
+                                        $("#AddSomeone_Name").val(), 
+                                        "", 
+                                        $("#AddSomeone_Mobile").val(), 
+                                        $("#AddSomeone_Num1").val(), 
+                                        $("#AddSomeone_Num2").val(), 
+                                        dateNow, 
+                                        $("#AddSomeone_Desc").val(), 
+                                        $("#AddSomeone_Email").val(), 
+                                        jid, 
+                                        $("#AddSomeone_Dnd").is(':checked'), 
+                                        false,
+                                        null,
+                                        $("#AddSomeone_AutoDelete").is(':checked'));
 
                 // Add memory object
                 AddBuddy(buddyObj, false, false, false, true);
@@ -780,6 +876,16 @@ function AddSomeoneWindow(numberStr){
                 $("#RowEmail").show();
                 $("#RowContact1").show();
                 $("#RowContact2").show();
+            }
+        });
+        $("#AddSomeone_Subscribe").change(function(){
+            if($("#AddSomeone_Subscribe").is(':checked')){
+                if($("#AddSomeone_Exten").val() != "" && $("#AddSomeone_SubscribeUser").val() == ""){
+                    $("#AddSomeone_SubscribeUser").val($("#AddSomeone_Exten").val());
+                }
+                $("#RowSubscribe").show();
+            } else {
+                $("#RowSubscribe").hide();
             }
         });
     }, 0);
@@ -852,9 +958,13 @@ function EditBuddyWindow(buddy){
     html += "<div><input id=AddSomeone_Desc class=UiInputText type=text placeholder='"+ lang.eg_general_manager +"' value='"+ ((buddyJson.Description && buddyJson.Description != "null" && buddyJson.Description != "undefined")? buddyJson.Description : "") +"'></div>";
 
     if(buddyJson.Type == "extension" || buddyJson.Type == "xmpp"){
-        html += "<div class=UiText>"+ lang.internal_subscribe_extension +": </div>";
+        html += "<div class=UiText>"+ lang.extension_number +": </div>";
         html += "<div><input id=AddSomeone_Exten class=UiInputText type=text disabled readonly value="+ buddyJson.ExtensionNumber +"></div>";
         html += "<div><input type=checkbox id=AddSomeone_Subscribe "+ ((buddyJson.Subscribe == true)? "checked" : "" ) +"><label for=AddSomeone_Subscribe>Subscribe to Device State Notifications</label></div>";
+        html += "<div id=RowSubscribe style=\"display:"+ ((buddyJson.Subscribe == true)? "unset" : "none" ) +";\">";
+        html += "<div class=UiText style=\"margin-left:30px\">"+ lang.internal_subscribe_extension +":</div>";
+        html += "<div style=\"margin-left:30px\"><input id=AddSomeone_SubscribeUser class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ ((buddyJson.SubscribeUser && buddyJson.SubscribeUser != "null" && buddyJson.SubscribeUser != "undefined")? buddyJson.SubscribeUser : "") +"'></div>";
+        html += "</div>";
     }
     else {
         html += "<input type=checkbox id=AddSomeone_Subscribe style=\"display:none\">";
@@ -863,17 +973,27 @@ function EditBuddyWindow(buddy){
     html += "<div><input id=AddSomeone_Mobile class=UiInputText type=text placeholder='"+ lang.eg_mobile_number +"' value='"+ ((buddyJson.MobileNumber && buddyJson.MobileNumber != "null" && buddyJson.MobileNumber != "undefined")? buddyJson.MobileNumber : "") +"'></div>";
 
     html += "<div class=UiText>"+ lang.email +":</div>";
-    html += "<div><input id=AddSomeone_Email class=UiInputText type=text placeholder='"+ lang.email +"' value='"+ ((buddyJson.Email && buddyJson.Email != "null" && buddyJson.Email != "undefined")? buddyJson.Email : "") +"'></div>";
+    html += "<div><input id=AddSomeone_Email class=UiInputText type=text placeholder='"+ lang.eg_email +"' value='"+ ((buddyJson.Email && buddyJson.Email != "null" && buddyJson.Email != "undefined")? buddyJson.Email : "") +"'></div>";
 
     html += "<div class=UiText>"+ lang.contact_number_1 +":</div>";
     html += "<div><input id=AddSomeone_Num1 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_1 +"' value='"+((buddyJson.ContactNumber1 && buddyJson.ContactNumber1 != "null" && buddyJson.ContactNumber1 != "undefined")? buddyJson.ContactNumber1 : "") +"'></div>";
 
     html += "<div class=UiText>"+ lang.contact_number_2 +":</div>";
     html += "<div><input id=AddSomeone_Num2 class=UiInputText type=text placeholder='"+ lang.eg_contact_number_2 +"' value='"+ ((buddyJson.ContactNumber2 && buddyJson.ContactNumber2 != "null" && buddyJson.ContactNumber2 != "undefined")? buddyJson.ContactNumber2 : "") +"'></div>";
+
+    html += "<div class=UiText>Auto Delete:</div>";
+    html += "<div><input type=checkbox id=AddSomeone_AutoDelete "+ ((buddyJson.AutoDelete == true)? "checked" : "" ) +"><label for=AddSomeone_AutoDelete>"+ lang.yes +"</label></div>";
+
     html += "</div>"
+
     OpenWindow(html, lang.edit, 480, 640, false, true, lang.save, function(){
 
         if($("#AddSomeone_Name").val() == "") return;
+        if($("#AddSomeone_Subscribe").is(':checked')){
+            if($("#AddSomeone_Exten").val() != "" && $("#AddSomeone_SubscribeUser").val() == ""){
+                $("#AddSomeone_SubscribeUser").val($("#AddSomeone_Exten").val());
+            }
+        }
 
         buddyJson.LastActivity = utcDateNow();
         buddyObj.lastActivity = buddyJson.LastActivity;
@@ -898,11 +1018,26 @@ function EditBuddyWindow(buddy){
 
         buddyJson.EnableDuringDnd = $("#AddSomeone_Dnd").is(':checked');
         buddyObj.EnableDuringDnd = buddyJson.EnableDuringDnd;
-        
+
+        buddyJson.AutoDelete = $("#AddSomeone_AutoDelete").is(':checked');
+        buddyObj.AllowAutoDelete = buddyJson.AutoDelete;
+
         if(buddyJson.Type == "extension" || buddyJson.Type == "xmpp"){
             buddyJson.Subscribe = $("#AddSomeone_Subscribe").is(':checked');
-            if(buddyObj.EnableSubscribe == true) UnsubscribeBuddy(buddyObj);
-            if(buddyJson.Subscribe == true) SubscribeBuddy(buddyObj);
+            buddyObj.Subscribe = buddyJson.Subscribe;
+            if(buddyJson.Subscribe == true){
+                var SubscribeUser = $("#AddSomeone_SubscribeUser").val();
+                buddyJson.SubscribeUser = SubscribeUser;
+                buddyObj.SubscribeUser = SubscribeUser;
+            }
+
+            // Subscribe Actions
+            UnsubscribeBuddy(buddyObj); // Just Unsubscribe anyway
+            UpdateBuddyList();
+            if(buddyJson.Subscribe == true) {
+                SubscribeBuddy(buddyObj);
+                UpdateBuddyList();
+            }
         }
 
         // Update Image
@@ -948,18 +1083,12 @@ function EditBuddyWindow(buddy){
         // Preview Existing Image
         if(buddyJson.Type == "extension"){
             $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.uID, "extension") }).then();
+
+
         }
         if(buddyJson.Type == "xmpp"){
             $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.uID, "xmpp") }).then();
-        }
-        else if(buddyJson.Type == "contact") {
-            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.cID, "contact") }).then();
-        }
-        else if(buddyJson.Type == "group") {
-            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.gID, "group") }).then();
-        }
 
-        if(buddyJson.Type == "xmpp"){
             $("#fileUploader").hide();
             $("#AddSomeone_Name").attr("disabled", true);
             $("#AddSomeone_Desc").attr("disabled", true);
@@ -968,6 +1097,23 @@ function EditBuddyWindow(buddy){
             $("#AddSomeone_Num1").attr("disabled", true);
             $("#AddSomeone_Num2").attr("disabled", true);
         }
+        else if(buddyJson.Type == "contact") {
+            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.cID, "contact") }).then();
+        }
+        else if(buddyJson.Type == "group") {
+            $("#ImageCanvas").croppie('bind', { url: getPicture(buddyJson.gID, "group") }).then();
+        }
+
+        $("#AddSomeone_Subscribe").change(function(){
+            if($("#AddSomeone_Subscribe").is(':checked')){
+                if($("#AddSomeone_Exten").val() != "" && $("#AddSomeone_SubscribeUser").val() == ""){
+                    $("#AddSomeone_SubscribeUser").val($("#AddSomeone_Exten").val());
+                }
+                $("#RowSubscribe").show();
+            } else {
+                $("#RowSubscribe").hide();
+            }
+        });
 
         // Wireup File Change
         $("#fileUploader").change(function () {
@@ -1060,7 +1206,7 @@ function InitUi(){
     leftHTML += "<span id=reglink class=dotOffline></span>";
 
     // User
-    leftHTML += " <span id=UserDID></span> - <span id=UserCallID></span>"
+    leftHTML += " <span id=UserCallID></span>"
     leftHTML += "</div>";
     leftHTML += "<div id=regStatus class=presenceText>&nbsp;</div>";
     leftHTML += "</div>";
@@ -1109,7 +1255,6 @@ function InitUi(){
     
     $("#BtnCreateGroup").hide(); // Not ready for this yet
 
-    $("#UserDID").html(profileUser);
     $("#UserCallID").html(profileName);
     $("#UserProfilePic").css("background-image", "url('"+ getPicture("profilePicture") +"')");
     
@@ -1296,27 +1441,31 @@ function ShowMyProfileMenu(obj){
 function ApplyThemeColor(){
     //UiThemeStyle = light | dark | system (can change at any time)
     var cssUrl = hostingPrefex +"phone.light.css";
-    var wallpaperUrl = hostingPrefex +"wallpaper.light.png";
+    var wallpaperUrl = hostingPrefex +""+ wallpaperLight;
 
     // Overall Theme
     if(UiThemeStyle == "system"){
         if(window.matchMedia){
             if(window.matchMedia('(prefers-color-scheme: dark)').matches){
                 cssUrl = hostingPrefex +"phone.dark.css";
-                wallpaperUrl = hostingPrefex +"wallpaper.dark.png";
+                wallpaperUrl = hostingPrefex +""+ wallpaperDark;
             } else {
                 cssUrl = hostingPrefex +"phone.light.css";
-                wallpaperUrl = hostingPrefex +"wallpaper.light.png";
+                wallpaperUrl = hostingPrefex +""+ wallpaperLight;
             }
         } else {
             cssUrl = hostingPrefex +"phone.dark.css";
         }
-    } else if(UiThemeStyle == "light" || UiThemeStyle == "dark") {
-        cssUrl = hostingPrefex +"phone."+ UiThemeStyle +".css";
-        wallpaperUrl = hostingPrefex +"wallpaper."+ UiThemeStyle +".png";
-    } else {
+    } else if(UiThemeStyle == "light"){
         cssUrl = hostingPrefex +"phone.light.css";
-        wallpaperUrl = hostingPrefex +"wallpaper.light.png";
+        wallpaperUrl = hostingPrefex +""+ wallpaperLight;
+    } else if(UiThemeStyle == "dark") {
+        cssUrl = hostingPrefex +"phone.dark.css";
+        wallpaperUrl = hostingPrefex +""+ wallpaperDark;
+    } else {
+        // Defaults to light
+        cssUrl = hostingPrefex +"phone.light.css";
+        wallpaperUrl = hostingPrefex +""+ wallpaperLight;
     }
     if($("#colorSchemeMode").length){
         // Style Sheet Added
@@ -1371,7 +1520,7 @@ function PreloadAudioFiles(){
 function CreateUserAgent() {
     console.log("Creating User Agent...");
     var options = {
-        uri: SIP.UserAgent.makeURI("sip:"+ SipUsername + "@" + wssServer),
+        uri: SIP.UserAgent.makeURI("sip:"+ SipUsername + "@" + SipDomain),
         transportOptions: {
             server: "wss://" + wssServer + ":"+ WebSocketPort +""+ ServerPath,
             traceSip: false,
@@ -1383,7 +1532,7 @@ function CreateUserAgent() {
         },
         sessionDescriptionHandlerFactoryOptions: {
             peerConnectionConfiguration :{
-                // bundlePolicy: "balanced",
+                bundlePolicy: BundlePolicy,
                 // certificates: undefined,
                 // iceCandidatePoolSize: 10,
                 // iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -1396,13 +1545,12 @@ function CreateUserAgent() {
         displayName: profileName,
         authorizationUsername: SipUsername,
         authorizationPassword: SipPassword,
-        contactParams: { "transport" : "wss" },
         hackIpInContact: IpInContact,           // Asterisk should also be set to rewrite contact
         userAgentString: userAgentStr,
         autoStart: false,
         autoStop: true,
         register: false,
-        noAnswerTimeout: 120,
+        noAnswerTimeout: NoAnswerTimeout,
         // sipExtension100rel: // UNSUPPORTED | SUPPORTED | REQUIRED NOTE: rel100 is not supported
         delegate: {
             onInvite: function (sip){
@@ -1413,13 +1561,19 @@ function CreateUserAgent() {
             }
         }
     }
+    if(WssInTransport){
+        options.contactParams = { 
+            transport : "wss" 
+        }
+    }
     if(IceStunServerJson != ""){
         options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration.iceServers = JSON.parse(IceStunServerJson);
     }
+
     // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
-    // options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration
-    // options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration.bundlePolicy = "max-bundle";
+    // Example: 
+    // options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration.rtcpMuxPolicy = "require";
     
     userAgent = new SIP.UserAgent(options);
     userAgent.isRegistered = function(){
@@ -1486,6 +1640,8 @@ function onTransportConnected(){
     $("#WebRtcFailed").hide();
 
     // Reset the ReconnectionAttempts
+    userAgent.isReRegister = false;
+    userAgent.transport.attemptingReconnection = false;
     userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
 
     // Auto start register
@@ -1493,6 +1649,8 @@ function onTransportConnected(){
         window.setTimeout(function (){
             Register();
         }, 500);
+    } else{
+        console.warn("onTransportConnected: Register() called, but attemptingReconnection is true or registering is true")
     }
 }
 function onTransportConnectError(error){
@@ -1501,10 +1659,19 @@ function onTransportConnectError(error){
     // We set this flag here so that the re-register attepts are fully completed.
     userAgent.isReRegister = false;
 
+    // If there is an issue with the WS connection
+    // We unregister, so that we register again once its up
+    console.log("Unregister...");
+    try{
+        userAgent.registerer.unregister();
+    } catch(e){
+        // I know!!!
+    }
+
     $("#regStatus").html(lang.web_socket_error);
     $("#WebRtcFailed").show();
 
-    ReconnectTransport()
+    ReconnectTransport();
 
     // Custom Web hook
     if(typeof web_hook_on_transportError !== 'undefined') web_hook_on_transportError(userAgent.transport, userAgent);
@@ -1520,25 +1687,28 @@ function ReconnectTransport(){
     if(userAgent.transport.attemptingReconnection) return;
     if(userAgent.transport.ReconnectionAttempts <= 0) return;
 
-    userAgent.transport.attemptingReconnection = true
+    if(userAgent.transport.isConnected()){
+        // Asked to re-connect, but ws is connected
+        Register();
+        return;
+    }
+    console.log("Reconnect Transport...");
+
     window.setTimeout(function(){
         console.log("ReConnecting to WebSocket...");
         $("#regStatus").html(lang.connecting_to_web_socket);
-        userAgent.reconnect().then(function(){
-            console.log("Reconnected to Web Socket!");
-            userAgent.isReRegister = false;
 
-            userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
-            userAgent.transport.attemptingReconnection = false
-
-            onTransportConnected()
-            onRegistered();
-        }).catch(function(error){
+        userAgent.transport.attemptingReconnection = true
+        userAgent.reconnect().catch(function(error){
             userAgent.transport.attemptingReconnection = false
             console.warn("Failed to reconnect", error);
-            onTransportConnectError(error);
+
+            // Try Again
+            ReconnectTransport();
         });
+
     }, TransportReconnectionTimeout * 1000);
+
     $("#regStatus").html(lang.connecting_to_web_socket);
     console.log("Waiting to Re-connect...", TransportReconnectionTimeout, "Attempt remaining", userAgent.transport.ReconnectionAttempts);
     userAgent.transport.ReconnectionAttempts = userAgent.transport.ReconnectionAttempts - 1;
@@ -1547,7 +1717,9 @@ function ReconnectTransport(){
 // Registration
 // ============
 function Register() {
-    if (userAgent == null || userAgent.registering == true || userAgent.isRegistered()) return;
+    if (userAgent == null) return;
+    if (userAgent.registering == true) return;
+    if (userAgent.isRegistered()) return;
 
     var RegistererRegisterOptions = {
         requestDelegate: {
@@ -1571,7 +1743,7 @@ function Unregister() {
         UnsubscribeAll();
     } catch (e) { }
 
-    console.log("Disconnecting...");
+    console.log("Unregister...");
     $("#regStatus").html(lang.disconnecting);
     userAgent.registerer.unregister();
 
@@ -1685,7 +1857,7 @@ function ReceiveCall(session) {
 
         var buddyType = (did.length > DidLength)? "contact" : "extension";
         var focusOnBuddy = (CurrentCalls==0);
-        buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, false, callerID, did, null, false);
+        buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, false, callerID, did, null, false, null, true);
     }
     else {
         // Double check that the buddy has the same caller ID as the incoming call
@@ -1780,7 +1952,7 @@ function ReceiveCall(session) {
     }
 
     // Create the call HTML 
-    AddLineHtml(lineObj);
+    AddLineHtml(lineObj, "inbound");
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.incoming_call);
     $("#line-" + lineObj.LineNumber + "-msg").show();
     $("#line-" + lineObj.LineNumber + "-timer").show();
@@ -2429,6 +2601,8 @@ function onSessionRecievedBye(lineObj, response){
     lineObj.SipSession.data.terminateby = "them";
     lineObj.SipSession.data.reasonCode = 16;
     lineObj.SipSession.data.reasonText = "Normal Call clearing";
+
+    response.accept(); // Send OK
 
     teardownSession(lineObj);
 }
@@ -3730,16 +3904,15 @@ function SubscribeVoicemail(){
         UnsubscribeVoicemail();
     }
 
-    console.log("SUBSCRIBE VOICEMAIL: "+ SipUsername +"@" + wssServer);
-
-    var vmOptions = { expires : 300 }
-    var targetURI = SIP.UserAgent.makeURI("sip:" + SipUsername + "@" + wssServer);
+    var vmOptions = { expires : SubscribeVoicemailExpires }
+    var targetURI = SIP.UserAgent.makeURI("sip:" + SipUsername + "@" + SipDomain);
     userAgent.voicemailSub = new SIP.Subscriber(userAgent, targetURI, "message-summary", vmOptions);
     userAgent.voicemailSub.delegate = {
         onNotify: function(sip) {
-            VocemailNotify(sip);
+            VoicemailNotify(sip);
         }
     }
+    console.log("SUBSCRIBE VOICEMAIL: "+ SipUsername +"@" + SipDomain);
     userAgent.voicemailSub.subscribe().catch(function(error){
         console.warn("Error subscribing to voimail notifications:", error);
     });
@@ -3747,18 +3920,19 @@ function SubscribeVoicemail(){
 function SubscribeBuddy(buddyObj) {
     if(!userAgent.isRegistered()) return;
 
-    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && buddyObj.EnableSubscribe == true) {
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && buddyObj.EnableSubscribe == true && buddyObj.SubscribeUser != "") {
         // PIDF Subscription TODO: make this an option.
-        // Dialog Subscription (This version isnt as nice as PIDF)
-        // var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/dialog-info+xml'] }
+        // Dialog Subscription (This version isnt as nice as PIDF - Presence Information Data Format)
+        // Rember that you can generally only subsribe to a buddy DID, since they are not likely to hand out their sip username
 
-        var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml'] }
-        // var dialogOptions = { expires: 300, extraHeaders: ['Accept: application/pidf+xml', 'application/xpidf+xml', 'application/simple-message-summary', 'application/im-iscomposing+xml'] }
+        var targetURI = SIP.UserAgent.makeURI("sip:" + buddyObj.SubscribeUser + "@" + SipDomain);
+        // var blfSubscribe = new SIP.Subscriber(userAgent, targetURI, "dialog", options);
+        var options = { 
+            expires: SubscribeBuddyExpires, 
+            extraHeaders: ['Accept: '+ SubscribeBuddyAccept]
+        }
+        var blfSubscribe = new SIP.Subscriber(userAgent, targetURI, SubscribeBuddyEvent, options);
 
-        console.log("SUBSCRIBE: "+ buddyObj.ExtNo +"@" + wssServer);
-
-        var targetURI = SIP.UserAgent.makeURI("sip:" + buddyObj.ExtNo + "@" + wssServer);
-        var blfSubscribe = new SIP.Subscriber(userAgent, targetURI, "presence", dialogOptions);
         blfSubscribe.data = {}
         blfSubscribe.data.buddyId = buddyObj.identity;
         blfSubscribe.delegate = {
@@ -3766,6 +3940,7 @@ function SubscribeBuddy(buddyObj) {
                 RecieveBlf(sip);
             }
         }
+        console.log("SUBSCRIBE: "+ buddyObj.SubscribeUser +"@" + SipDomain);
         blfSubscribe.subscribe().catch(function(error){
             console.warn("Error subscribing to Buddy notifications:", error);
         });
@@ -3842,7 +4017,7 @@ function UnsubscribeBuddy(buddyObj) {
 }
 // Subscription Events
 // ===================
-function VocemailNotify(notification){
+function VoicemailNotify(notification){
     // Messages-Waiting: yes        <-- yes/no
     // Voice-Message: 1/0           <-- new/old
     // Voice-Message: 1/0 (0/0)     <-- new/old (ugent new/old)
@@ -3947,17 +4122,115 @@ function RecieveBlf(notification) {
             </tuple>
             <dm:person />
         </presence>
+
+        // OpenSIPS 
+        <?xml version="1.0"?>
+        <presence 
+            xmlns="urn:ietf:params:xml:ns:pidf" 
+            entity="sip:200@ws-eu-west-1.innovateasterisk.com">
+            <tuple xmlns="urn:ietf:params:xml:ns:pidf" id="tuple_mixingid">
+                <status>
+                    <basic>closed</basic>
+                </status>
+            </tuple>
+        </presence>
+
+        <?xml version="1.0"?>
+        <presence 
+            xmlns="urn:ietf:params:xml:ns:pidf" 
+            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com">
+            <tuple 
+                xmlns="urn:ietf:params:xml:ns:pidf" 
+                id="0x7ffe17f496c0">
+                <status>
+                    <basic>open</basic>
+                </status>
+            </tuple>
+        </presence>
+
+
+        <?xml version="1.0"?>
+        <presence 
+            xmlns="urn:ietf:params:xml:ns:pidf" 
+            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com">
+            <tuple 
+                xmlns="urn:ietf:params:xml:ns:pidf" 
+                id="tuple_mixingid">
+                <status>
+                    <basic>open</basic>
+                </status>
+            </tuple>
+            <note xmlns="urn:ietf:params:xml:ns:pidf">On the phone</note>
+            <dm:person 
+                xmlns:dm="urn:ietf:params:xml:ns:pidf:data-model" 
+                xmlns:rpid="urn:ietf:params:xml:ns:pidf:rpid" 
+                id="pers_mixingid">
+                <rpid:activities>
+                    <rpid:on-the-phone/>
+                </rpid:activities>
+                <dm:note>On the phone</dm:note>
+            </dm:person>
+        </presence>
+
+        // There can be more than one tuple
+        <?xml version="1.0"?>
+        <presence 
+            xmlns="urn:ietf:params:xml:ns:pidf" 
+            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com">
+            <tuple 
+                xmlns="urn:ietf:params:xml:ns:pidf" 
+                id="0x7ffce2b4b1a0">
+                <status>
+                    <basic>open</basic>
+                </status>
+            </tuple>
+            <tuple 
+                xmlns="urn:ietf:params:xml:ns:pidf"
+                id="0x7ffd6abd4a40">
+                <status>
+                    <basic>open</basic>
+                </status>
+            </tuple>
+        </presence>
+"
+
+
+open: In the context of INSTANT MESSAGES, this value means that the
+    associated <contact> element, if any, corresponds to an INSTANT
+    INBOX that is ready to accept an INSTANT MESSAGE.
+
+closed: In the context of INSTANT MESSAGES, this value means that
+    the associated <contact> element, if any, corresponds to an
+    INSTANT INBOX that is unable to accept an INSTANT MESSAGE.
+
         */
 
         var xml = $($.parseXML(notification.request.body));
-        buddy = xml.find("presence").find("tuple").attr("id");
 
-        var Entity = xml.find("presence").attr("entity");
-        var Contact = xml.find("presence").find("tuple").find("contact").text();
-        var statusObj = xml.find("presence").find("tuple").find("status");
-        var availability = xml.find("presence").find("tuple").find("status").find("basic").text();
+        // The value of the 'entity' attribute is the 'pres' URL of the PRESENTITY publishing this presence document.
+        // (In some cases this can present as the user... what if using DIDs)
+        var ObservedUser = xml.find("presence").attr("entity");
+        buddy = ObservedUser.split("@")[0].split(":")[1];
+        // buddy = xml.find("presence").find("tuple").attr("id"); // Asterisk does this, but its not correct.
+        // buddy = notification.request.from.uri.user; // Unreliable 
 
-        Presence = xml.find("presence").find("note").text();
+        var availability = "closed"
+        // availability = xml.find("presence").find("tuple").find("status").find("basic").text();
+        var tuples = xml.find("presence").find("tuple");
+        if(tuples){
+            $.each(tuples, function(i, obj){
+                // So if any of the contacts are open, then say open
+                if($(obj).find("status").find("basic").text() == "open") {
+                    availability = "open";
+                }
+            });
+        }
+
+        Presence = xml.find("presence").find("note").text(); 
+        if(Presence == ""){
+            if (availability == "open") Presence = "Ready";
+            if (availability == "closed") Presence = "Not online";
+        }
     }
     else if (ContentType == "application/dialog-info+xml") {
         // Handle "Dialog" State
@@ -3965,6 +4238,7 @@ function RecieveBlf(notification) {
         var xml = $($.parseXML(notification.request.body));
 
         /*
+        Asteriks:
         <?xml version="1.0"?>
         <dialog-info 
             xmlns="urn:ietf:params:xml:ns:dialog-info" 
@@ -3975,14 +4249,46 @@ function RecieveBlf(notification) {
                 <state>trying | proceeding | early | terminated | confirmed</state>
             </dialog>
         </dialog-info>
+
+        OpenSIPS:
+        <?xml version="1.0"?>
+        <dialog-info 
+            xmlns="urn:ietf:params:xml:ns:dialog-info" 
+            version="18" 
+            state="full" 
+            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com"
+        />
+
+        <?xml version="1.0"?>
+        <dialog-info 
+            xmlns="urn:ietf:params:xml:ns:dialog-info" 
+            version="17" 
+            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com" 
+            state="partial">
+            <dialog 
+                id="qjsoe2vr886cbn1ccj3h.0" 
+    *           local-tag="rceq735vrh" 
+    *           remote-tag="a1d22259-28ea-434f-9680-b925218b7418" 
+                direction="initiator">
+                <state>terminated</state>
+    *           <remote>
+                    <identity display="Bob">sip:*65@ws-eu-west-1.innovateasterisk.com</identity>
+                    <target uri="sip:*65@ws-eu-west-1.innovateasterisk.com"/>
+    *           </remote>
+    *           <local>
+                    <identity display="Conrad De Wet">sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com</identity>
+                    <target uri="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com"/>
+                </local>
+            </dialog>
+        </dialog-info>
         */
 
         var ObservedUser = xml.find("dialog-info").attr("entity");
         buddy = ObservedUser.split("@")[0].split(":")[1];
 
-        var version = xml.find("dialog-info").attr("version");
-        var DialogState = xml.find("dialog-info").attr("state");
-        var extId = xml.find("dialog-info").find("dialog").attr("id");
+        var version = xml.find("dialog-info").attr("version"); // 1|2|etc
+        var DialogState = xml.find("dialog-info").attr("state"); // full|partial
+        var extId = xml.find("dialog-info").find("dialog").attr("id"); // qjsoe2vr886cbn1ccj3h.0
 
         var state = xml.find("dialog-info").find("dialog").find("state").text();
         if (state == "terminated") Presence = "Ready";
@@ -3994,7 +4300,8 @@ function RecieveBlf(notification) {
         // The dialog states only report devices states, and cant say online or offline.
     }
     
-    var buddyObj = FindBuddyByExtNo(buddy);
+    // var buddyObj = FindBuddyByExtNo(buddy);
+    var buddyObj = FindBuddyByObservedUser(buddy);
     if(buddyObj == null) {
         console.warn("Buddy not found");
         return;
@@ -4002,11 +4309,12 @@ function RecieveBlf(notification) {
 
     // dotOnline | dotOffline | dotRinging | dotInUse | dotReady | dotOnHold
     if (Presence == "Not online") dotClass = "dotOffline";
+    if (Presence == "Unavailable") dotClass = "dotOffline";
     if (Presence == "Ready") dotClass = "dotOnline";
     if (Presence == "On the phone") dotClass = "dotInUse";
+    if (Presence == "Proceeding") dotClass = "dotInUse";
     if (Presence == "Ringing") dotClass = "dotRinging";
     if (Presence == "On hold") dotClass = "dotOnHold";
-    if (Presence == "Unavailable") dotClass = "dotOffline";
 
     // SIP Device Sate indicators
     console.log("Setting DevSate State for "+ buddyObj.CallerIDName +" to "+ dotClass);
@@ -4024,6 +4332,7 @@ function RecieveBlf(notification) {
         if (Presence == "Not online") Presence = lang.state_not_online;
         if (Presence == "Ready") Presence = lang.state_ready;
         if (Presence == "On the phone") Presence = lang.state_on_the_phone;
+        if (Presence == "Proceeding") Presence = lang.state_on_the_phone;
         if (Presence == "Ringing") Presence = lang.state_ringing;
         if (Presence == "On hold") Presence = lang.state_on_hold;
         if (Presence == "Unavailable") Presence = lang.state_unavailable;
@@ -4071,8 +4380,8 @@ function SendChatMessage(buddy) {
         ItemType: "MSG",
         ItemDate: DateTime,
         SrcUserId: profileUserID,
-        Src: "\""+ profileName +"\" <"+ profileUser +">",
-        DstUserId: buddy,
+        Src: "\""+ profileName +"\"",
+        DstUserId: buddyObj.identity,
         Dst: "",
         MessageData: message
     }
@@ -4084,7 +4393,7 @@ function SendChatMessage(buddy) {
     // SIP Messages (Note, this may not work as required)
     // ============
     if(buddyObj.type == "extension") {
-        var chatBuddy = SIP.UserAgent.makeURI("sip:"+ buddyObj.ExtNo + "@" + wssServer);
+        var chatBuddy = SIP.UserAgent.makeURI("sip:"+ buddyObj.ExtNo.replace(/#/g, "%23") + "@" + SipDomain);
         console.log("MESSAGE: "+ chatBuddy + " (extension)");
 
 
@@ -4222,6 +4531,7 @@ function ReceiveOutOfDialogMessage(message) {
 
     // Out of dialog Message Receiver
     var messageType = (message.request.headers["Content-Type"].length >=1)? message.request.headers["Content-Type"][0].parsed : "Unknown" ;
+    // Text Messages
     if(messageType.indexOf("text/plain") > -1){
         // Plain Text Messages SIP SIMPLE
         console.log("New Incoming Message!", "\""+ callerID +"\" <"+ did +">");
@@ -4285,6 +4595,11 @@ function ReceiveOutOfDialogMessage(message) {
         RefreshStream(buddyObj);
         ActivateStream(buddyObj, origionalMessage);
     }
+    // Message Summary
+    else if(messageType.indexOf("application/simple-message-summary") > -1){
+        console.warn("This message-summary is unsolicited (out-of-dialog). Consider using the SUBSCRIBE method.")
+        VoicemailNotify(message);
+    }
     else{
         console.warn("Unknown Out Of Dialog Message Type: ", messageType);
         message.reject();
@@ -4302,7 +4617,7 @@ function AddMessageToStream(buddyObj, messageId, type, message, DateTime){
         ItemType: type,
         ItemDate: DateTime,
         SrcUserId: buddyObj.identity,
-        Src: "\""+ buddyObj.CallerIDName +"\" <"+ buddyObj.ExtNo +">",
+        Src: "\""+ buddyObj.CallerIDName +"\"",
         DstUserId: profileUserID,
         Dst: "",
         MessageData: message
@@ -4395,13 +4710,13 @@ function AddCallMessage(buddy, session) {
     if(session.data.calldirection == "inbound") {
         srcId = buddy;
         dstId = profileUserID;
-        srcCallerID = "<"+ session.remoteIdentity.uri.user +"> "+ session.remoteIdentity.displayName;
-        dstCallerID = "<"+ profileUser+"> "+ profileName;
+        srcCallerID = session.remoteIdentity.displayName;
+        dstCallerID = profileName;
     } else if(session.data.calldirection == "outbound") {
         srcId = profileUserID;
         dstId = buddy;
-        srcCallerID = "<"+ profileUser+"> "+ profileName;
-        dstCallerID = session.remoteIdentity.uri.user;
+        srcCallerID = profileName;
+        dstCallerID = session.data.dst;
     }
 
     var callDirection = session.data.calldirection;
@@ -4783,9 +5098,9 @@ function VideoCall(lineObj, dialledNumber, extraHeaders) {
     var startTime = moment.utc();
 
     // Invite
-    console.log("INVITE (video): " + dialledNumber + "@" + wssServer);
+    console.log("INVITE (video): " + dialledNumber + "@" + SipDomain); 
 
-    var targetURI = SIP.UserAgent.makeURI("sip:" + dialledNumber + "@" + wssServer);
+    var targetURI = SIP.UserAgent.makeURI("sip:" + dialledNumber.replace(/#/g, "%23") + "@" + SipDomain);
     lineObj.SipSession = new SIP.Inviter(userAgent, targetURI, spdOptions);
     lineObj.SipSession.data = {}
     lineObj.SipSession.data.line = lineObj.LineNumber;
@@ -4983,9 +5298,9 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
     var startTime = moment.utc();
 
     // Invite
-    console.log("INVITE (audio): " + dialledNumber + "@" + wssServer);
+    console.log("INVITE (audio): " + dialledNumber + "@" + SipDomain);
 
-    var targetURI = SIP.UserAgent.makeURI("sip:" + dialledNumber + "@" + wssServer);
+    var targetURI = SIP.UserAgent.makeURI("sip:" + dialledNumber.replace(/#/g, "%23") + "@" + SipDomain);
     lineObj.SipSession = new SIP.Inviter(userAgent, targetURI, spdOptions);
     lineObj.SipSession.data = {}
     lineObj.SipSession.data.line = lineObj.LineNumber;
@@ -5489,6 +5804,7 @@ function PlayVideoCallRecording(obj, cdrId, uID, buddy){
     videoObj.id = "callrecording-video-"+ cdrId;
     videoObj.autoplay = false;
     videoObj.controls = true;
+    videoObj.playsinline = true;
     videoObj.ontimeupdate = function(event){
         $("#cdr-video-meta-width-"+ cdrId +"-"+ uID).html(lang.width + " : "+ event.target.videoWidth +"px");
         $("#cdr-video-meta-height-"+ cdrId +"-"+ uID).html(lang.height +" : "+ event.target.videoHeight +"px");
@@ -5658,15 +5974,17 @@ function QuickFindBuddy(obj){
         if(buddyObj.ContactNumber2.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
         if(display) {
             // Filtered Results
-            var iconColor = "#404040";
-            if(buddyObj.presence == "Unknown" || buddyObj.presence == "Not online" || buddyObj.presence == "Unavailable") iconColor = "#666666";
-            if(buddyObj.presence == "Ready") iconColor = "#3fbd3f";
-            if(buddyObj.presence == "On the phone" || buddyObj.presence == "Ringing" || buddyObj.presence == "On hold") iconColor = "#c99606";
+            var iconClass = "dotOffline";
+            if(buddyObj.presence == "Unknown" || buddyObj.presence == "Not online" || buddyObj.presence == "Unavailable") iconClass = "dotOffline";
+            if(buddyObj.presence == "Ready") iconClass = "dotOnline";
+            if(buddyObj.presence == "On the phone" || buddyObj.presence == "Proceeding") iconClass = "dotInUse";
+            if(buddyObj.presence == "Ringing") iconClass = "dotRinging";
+            if(buddyObj.presence == "On hold") iconClass = "dotOnHold";
 
             if(visibleItems > 0) items.push({ value: null, text: "-"});
             items.push({ value: null, text: buddyObj.CallerIDName, isHeader: true });
             if(buddyObj.ExtNo != "") {
-                items.push({ icon : "fa fa-phone-square", text: lang.extension +" ("+ buddyObj.presence +"): "+ buddyObj.ExtNo, value: buddyObj.ExtNo });
+                items.push({ icon : "fa fa-phone-square "+ iconClass, text: lang.extension +" ("+ buddyObj.presence +"): "+ buddyObj.ExtNo, value: buddyObj.ExtNo });
             }
             if(buddyObj.MobileNumber != "") {
                 items.push({ icon : "fa fa-mobile", text: lang.mobile +": "+ buddyObj.MobileNumber, value: buddyObj.MobileNumber });
@@ -5766,9 +6084,15 @@ function CancelTransferSession(lineNum){
     updateLineScroll(lineNum);
 }
 function BlindTransfer(lineNum) {
-    var dstNo = $("#line-"+ lineNum +"-txt-FindTransferBuddy").val().replace(/[^0-9\*\#\+]/g,'');
+    var dstNo = $("#line-"+ lineNum +"-txt-FindTransferBuddy").val();
+    if(EnableAlphanumericDial){
+        dstNo = dstNo.replace(telAlphanumericRegEx, "").substring(0,MaxDidLength);
+    }
+    else {
+        dstNo = dstNo.replace(telNumericRegEx, "").substring(0,MaxDidLength);
+    }
     if(dstNo == ""){
-        console.warn("Cannot transfer, must be [0-9*+#]");
+        console.warn("Cannot transfer, no number");
         return;
     }
 
@@ -5832,8 +6156,8 @@ function BlindTransfer(lineNum) {
             }
         }
     }
-    console.log("REFER: ", dstNo + "@" + wssServer);
-    var referTo = SIP.UserAgent.makeURI("sip:"+ dstNo + "@" + wssServer);
+    console.log("REFER: ", dstNo + "@" + SipDomain);
+    var referTo = SIP.UserAgent.makeURI("sip:"+ dstNo.replace(/#/g, "%23") + "@" + SipDomain);
     session.refer(referTo, transferOptions).catch(function(error){
         console.warn("Failed to REFER", error);
     });;
@@ -5843,9 +6167,15 @@ function BlindTransfer(lineNum) {
     updateLineScroll(lineNum);
 }
 function AttendedTransfer(lineNum){
-    var dstNo = $("#line-"+ lineNum +"-txt-FindTransferBuddy").val().replace(/[^0-9\*\#\+]/g,'');
+    var dstNo = $("#line-"+ lineNum +"-txt-FindTransferBuddy").val();
+    if(EnableAlphanumericDial){
+        dstNo = dstNo.replace(telAlphanumericRegEx, "").substring(0,MaxDidLength);
+    }
+    else {
+        dstNo = dstNo.replace(telNumericRegEx, "").substring(0,MaxDidLength);
+    }
     if(dstNo == ""){
-        console.warn("Cannot transfer, must be [0-9*+#]");
+        console.warn("Cannot transfer, no number");
         return;
     }
     
@@ -5932,8 +6262,8 @@ function AttendedTransfer(lineNum){
     }
 
     // Create new call session
-    console.log("TRANSFER INVITE: ", "sip:" + dstNo + "@" + wssServer);
-    var targetURI = SIP.UserAgent.makeURI("sip:"+ dstNo + "@" + wssServer);
+    console.log("TRANSFER INVITE: ", "sip:" + dstNo + "@" + SipDomain);
+    var targetURI = SIP.UserAgent.makeURI("sip:"+ dstNo.replace(/#/g, "%23") + "@" + SipDomain);
     var newSession = new SIP.Inviter(userAgent, targetURI, spdOptions);
     newSession.data = {}
     newSession.delegate = {
@@ -6218,7 +6548,13 @@ function CancelConference(lineNum){
     updateLineScroll(lineNum);
 }
 function ConferenceDail(lineNum){
-    var dstNo = $("#line-"+ lineNum +"-txt-FindConferenceBuddy").val().replace(/[^0-9\*\#\+]/g,'');
+    var dstNo = $("#line-"+ lineNum +"-txt-FindConferenceBuddy").val();
+    if(EnableAlphanumericDial){
+        dstNo = dstNo.replace(telAlphanumericRegEx, "").substring(0,MaxDidLength);
+    }
+    else {
+        dstNo = dstNo.replace(telNumericRegEx, "").substring(0,MaxDidLength);
+    }
     if(dstNo == ""){
         console.warn("Cannot transfer, must be [0-9*+#]");
         return;
@@ -6304,9 +6640,9 @@ function ConferenceDail(lineNum){
     }
 
     // Create new call session
-    console.log("CONFERENCE INVITE: ", "sip:" + dstNo + "@" + wssServer);
+    console.log("CONFERENCE INVITE: ", "sip:" + dstNo + "@" + SipDomain);
 
-    var targetURI = SIP.UserAgent.makeURI("sip:"+ dstNo + "@" + wssServer);
+    var targetURI = SIP.UserAgent.makeURI("sip:"+ dstNo.replace(/#/g, "%23") + "@" + SipDomain);
     var newSession = new SIP.Inviter(userAgent, targetURI, spdOptions);
     newSession.data = {}
     newSession.delegate = {
@@ -7448,9 +7784,9 @@ function HideCallStats(lineNum){
 function ToggleMoreButtons(lineNum){
     if($("#line-"+ lineNum +"-btn-more").is(":visible")){
         // The more buttons are showing, drop them down
-        RestoreCallControls(lineNum)
+        RestoreCallControls(lineNum);
     } else {
-        ExpandCallControls(lineNum)
+        ExpandCallControls(lineNum);
     }
 }
 function ExpandCallControls(lineNum){
@@ -7690,7 +8026,7 @@ function ShowContacts(){
  * @param {Buddy} buddy = (optional) The buddy to dial if provided.
  * @param {sting} numToDial = (required) The number to dial.
  * @param {string} CallerID = (optional) If no buddy provided, one is generated automatically using this callerID and the numToDial
- * @param {Array<string>} extraHeaders = (optinal) Array of headers to include in the INVITE eg: ["foo: bar"] (Note the space after the :)
+ * @param {Array<string>} extraHeaders = (optional) Array of headers to include in the INVITE eg: ["foo: bar"] (Note the space after the :)
  */
 function DialByLine(type, buddy, numToDial, CallerID, extraHeaders){
     if(userAgent == null || userAgent.isRegistered() == false){
@@ -7700,10 +8036,10 @@ function DialByLine(type, buddy, numToDial, CallerID, extraHeaders){
 
     var numDial = (numToDial)? numToDial : $("#dialText").val();
     if(EnableAlphanumericDial){
-        numDial = numDial.replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0,MaxDidLength);
-    } 
+        numDial = numDial.replace(telAlphanumericRegEx, "").substring(0,MaxDidLength);
+    }
     else {
-        numDial = numDial.replace(/[^\d\*\#\+]/g, "").substring(0,MaxDidLength);
+        numDial = numDial.replace(telNumericRegEx, "").substring(0,MaxDidLength);
     }
     if(numDial.length == 0) {
         console.warn("Enter number to dial");
@@ -7718,15 +8054,15 @@ function DialByLine(type, buddy, numToDial, CallerID, extraHeaders){
         var buddyType = (numDial.length > DidLength)? "contact" : "extension";
         // Assumption but anyway: If the number starts with a * or # then its probably not a subscribable did,  
         // and is probably a feature code.
-        if(buddyType.substring(0,1) == "*" || buddyType.substring(0,1) == "#") buddyType = "contact";
-        buddyObj = MakeBuddy(buddyType, true, false, false, (CallerID)? CallerID : numDial, numDial);
+        if(numDial.substring(0,1) == "*" || numDial.substring(0,1) == "#") buddyType = "contact";
+        buddyObj = MakeBuddy(buddyType, true, false, false, (CallerID)? CallerID : numDial, numDial, null, false, null, true);
     }
 
     // Create a Line
     newLineNumber = newLineNumber + 1;
     var lineObj = new Line(newLineNumber, buddyObj.CallerIDName, numDial, buddyObj);
     Lines.push(lineObj);
-    AddLineHtml(lineObj);
+    AddLineHtml(lineObj, "outbound");
     SelectLine(newLineNumber);
     UpdateBuddyList();
 
@@ -7792,7 +8128,7 @@ function FindLineByNumber(lineNum) {
     }
     return null;
 }
-function AddLineHtml(lineObj){
+function AddLineHtml(lineObj, direction){
     var avatar = getPicture(lineObj.BuddyObj.identity);
 
     var html = "<table id=\"line-ui-"+ lineObj.LineNumber +"\" class=stream cellspacing=0 cellpadding=0>";
@@ -7923,6 +8259,12 @@ function AddLineHtml(lineObj){
     html += "<div id=\"line-"+ lineObj.LineNumber +"-conference-status\" class=callStatus style=\"margin-top:10px; display:none\">...</div>";
     html += "<audio id=\"line-"+ lineObj.LineNumber +"-conference-remoteAudio\" style=\"display:none\"></audio>";
     html += "</div>"; //-Conference
+
+    // CRM
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-active-audio-call-crm-space\">"
+    // Use this DIV for anything really. Call your own CRM, and have the results display here
+    html += "</div>"; // crm
+
     html += "</div>"; //.CallUi
     html += "</div>"; //AudioCall
 
@@ -7957,11 +8299,18 @@ function AddLineHtml(lineObj){
     // Hold
     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Hold\" onclick=\"holdSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\"  title=\""+ lang.hold_call +"\"><i class=\"fa fa-pause-circle\"></i></button>";
     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Unhold\" onclick=\"unholdSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.resume_call +"\" style=\"color: red; display:none\"><i class=\"fa fa-play-circle\"></i></button>";
-    // Transfer (Audio Only)
-    if(EnableTransfer){
-        html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Transfer\" onclick=\"StartTransferSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.transfer_call +"\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
-        html += "<button id=\"line-"+ lineObj.LineNumber+"-btn-CancelTransfer\" onclick=\"CancelTransferSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.cancel_transfer +"\" style=\"color: red; display:none\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
+
+    if(direction == "outbound"){
+        // DTMF
+        html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-ShowDtmf\" onclick=\"ShowDtmfMenu('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.send_dtmf +"\"><i class=\"fa fa-keyboard-o\"></i></button>";
+    } else {
+        // Transfer (Audio Only)
+        if(EnableTransfer){
+            html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Transfer\" onclick=\"StartTransferSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.transfer_call +"\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
+            html += "<button id=\"line-"+ lineObj.LineNumber+"-btn-CancelTransfer\" onclick=\"CancelTransferSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.cancel_transfer +"\" style=\"color: red; display:none\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
+        }
     }
+
     // Expand UI (Video Only)
     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-expand\" onclick=\"ExpandVideoArea('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\"><i class=\"fa fa-expand\"></i></button>";
     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-restore\" onclick=\"RestoreVideoArea('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" style=\"display:none\"><i class=\"fa fa-compress\"></i></button>";
@@ -7981,8 +8330,16 @@ function AddLineHtml(lineObj){
         html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Conference\" onclick=\"StartConferenceCall('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.conference_call +"\"><i class=\"fa fa-users\"></i></button>";
         html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-CancelConference\" onclick=\"CancelConference('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.cancel_conference +"\" style=\"color: red; display:none\"><i class=\"fa fa-users\"></i></button>";
     }
-    // DTMF
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-ShowDtmf\" onclick=\"ShowDtmfMenu('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.send_dtmf +"\"><i class=\"fa fa-keyboard-o\"></i></button>";
+    if(direction == "outbound"){
+        // Transfer (Audio Only)
+        if(EnableTransfer){
+            html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Transfer\" onclick=\"StartTransferSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.transfer_call +"\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
+            html += "<button id=\"line-"+ lineObj.LineNumber+"-btn-CancelTransfer\" onclick=\"CancelTransferSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.cancel_transfer +"\" style=\"color: red; display:none\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i></button>";
+        }
+    } else {
+        // DTMF
+        html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-ShowDtmf\" onclick=\"ShowDtmfMenu('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.send_dtmf +"\"><i class=\"fa fa-keyboard-o\"></i></button>";
+    }
     // Settings
     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-settings\" onclick=\"ChangeSettings('"+ lineObj.LineNumber +"', this)\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.device_settings +"\"><i class=\"fa fa-volume-up\"></i></button>";
     // Present
@@ -8029,6 +8386,10 @@ function AddLineHtml(lineObj){
     html += "</table>";
 
     $("#rightContent").append(html);
+
+    $("#line-"+ lineObj.LineNumber +"-AudioOrVideoCall").on("click", function(){
+        RestoreCallControls(lineObj.LineNumber);
+    });
 }
 function RemoveLine(lineObj){
     if(lineObj == null) return;
@@ -8240,7 +8601,7 @@ function RefreshLineActivity(lineNum){
 
 // Buddy & Contacts
 // ================
-var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactNumber1, ContactNumber2, lastActivity, desc, Email, jid, dnd, subscribe){
+var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactNumber1, ContactNumber2, lastActivity, desc, Email, jid, dnd, subscribe, subscription, autoDelete){
     this.type = type; // extension | contact | group
     this.identity = identity;
     this.jid = jid;
@@ -8260,13 +8621,15 @@ var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactN
     this.presenceText = lang.default_status;
     this.EnableDuringDnd = dnd;
     this.EnableSubscribe = subscribe;
+    this.SubscribeUser = (subscription)? subscription : ExtNo;
+    this.AllowAutoDelete = (autoDelete)? autoDelete : true;
 }
 function InitUserBuddies(){
     var template = { TotalRows:0, DataCollection:[] }
     localDB.setItem(profileUserID + "-Buddies", JSON.stringify(template));
     return JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
 }
-function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuringDnd){
+function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuringDnd, subscribeUser, autoDelete){
     var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
     if(json == null) json = InitUserBuddies();
 
@@ -8291,9 +8654,11 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             Email: "",
             MemberCount: 0,
             EnableDuringDnd: AllowDuringDnd,
-            Subscribe: subscribe
+            Subscribe: subscribe,
+            SubscribeUser: subscribeUser,
+            AutoDelete: autoDelete
         });
-        buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "", null, AllowDuringDnd, subscribe);
+        buddyObj = new Buddy("extension", id, callerID, did, "", "", "", dateNow, "", "", null, AllowDuringDnd, subscribe, subscribeUser, autoDelete);
         AddBuddy(buddyObj, update, focus, subscribe, true);
     }
     if(type == "xmpp") {
@@ -8313,9 +8678,11 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             Email: "",
             MemberCount: 0,
             EnableDuringDnd: AllowDuringDnd,
-            Subscribe: subscribe
+            Subscribe: subscribe,
+            SubscribeUser: subscribeUser,
+            AutoDelete: autoDelete
         });
-        buddyObj = new Buddy("xmpp", id, callerID, did, "", "", "", dateNow, "", "", jid, AllowDuringDnd, subscribe);
+        buddyObj = new Buddy("xmpp", id, callerID, did, "", "", "", dateNow, "", "", jid, AllowDuringDnd, subscribe, subscribeUser, autoDelete);
         AddBuddy(buddyObj, update, focus, subscribe, true);
     }
     if(type == "contact"){
@@ -8335,9 +8702,11 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             Email: "",
             MemberCount: 0,
             EnableDuringDnd: AllowDuringDnd,
-            Subscribe: false
+            Subscribe: false,
+            SubscribeUser: null,
+            AutoDelete: autoDelete
         });
-        buddyObj = new Buddy("contact", id, callerID, "", "", did, "", dateNow, "", "", null, AllowDuringDnd, false);
+        buddyObj = new Buddy("contact", id, callerID, "", "", did, "", dateNow, "", "", null, AllowDuringDnd, false, null, autoDelete);
         AddBuddy(buddyObj, update, focus, false, true);
     }
     if(type == "group") {
@@ -8357,9 +8726,11 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             Email: "",
             MemberCount: 0,
             EnableDuringDnd: false,
-            Subscribe: false
+            Subscribe: false,
+            SubscribeUser: null,
+            AutoDelete: autoDelete
         });
-        buddyObj = new Buddy("group", id, callerID, did, "", "", "", dateNow, "", "", null, false, false);
+        buddyObj = new Buddy("group", id, callerID, did, "", "", "", dateNow, "", "", null, false, false, null, autoDelete);
         AddBuddy(buddyObj, update, focus, false, true);
     }
     // Update Size: 
@@ -8419,16 +8790,20 @@ function CleanupBuddies(){
                     // This one is fine
                 } else {
                     // Too Old
-                    console.warn("This buddy is too old, and will be deleted: ", lastActivity.format(DisplayDateFormat+" "+DisplayTimeFormat));
-                    DoRemoveBuddy(Buddies[b].identity)
+                    if(Buddies[b].AllowAutoDelete == true){
+                        console.warn("This buddy is too old, and will be deleted: ", lastActivity.format(DisplayDateFormat+" "+DisplayTimeFormat));
+                        DoRemoveBuddy(Buddies[b].identity);
+                    }
                 }
             }
         }
         if(MaxBuddies > 1 && MaxBuddies < Buddies.length){
             console.log("Running Buddy Cleanup for buddies more than: ", MaxBuddies);
             for (var b = Buddies.length - 1; b >= MaxBuddies; b--) {
-                console.warn("This buddy is too Many, and will be deleted: ", Buddies[b].identity);
-                DoRemoveBuddy(Buddies[b].identity)
+                if(Buddies[b].AllowAutoDelete == true){
+                    console.warn("This buddy is too Many, and will be deleted: ", Buddies[b].identity);
+                    DoRemoveBuddy(Buddies[b].identity);
+                }
             }
         }
     }
@@ -8444,22 +8819,78 @@ function PopulateBuddyList() {
     $.each(json.DataCollection, function (i, item) {
         if(item.Type == "extension"){
             // extension
-            var buddy = new Buddy("extension", item.uID, item.DisplayName, item.ExtensionNumber, item.MobileNumber, item.ContactNumber1, item.ContactNumber2, item.LastActivity, item.Description, item.Email, null, item.EnableDuringDnd, item.Subscribe);
+            var buddy = new Buddy("extension", 
+                                    item.uID, 
+                                    item.DisplayName, 
+                                    item.ExtensionNumber, 
+                                    item.MobileNumber, 
+                                    item.ContactNumber1, 
+                                    item.ContactNumber2, 
+                                    item.LastActivity, 
+                                    item.Description, 
+                                    item.Email, 
+                                    null, 
+                                    item.EnableDuringDnd, 
+                                    item.Subscribe,
+                                    item.SubscribeUser,
+                                    item.AutoDelete);
             AddBuddy(buddy, false, false, false);
         }
         else if(item.Type == "xmpp"){
             // xmpp
-            var buddy = new Buddy("xmpp", item.uID, item.DisplayName, item.ExtensionNumber, "", "", "", item.LastActivity, "", "", item.jid, item.EnableDuringDnd, item.Subscribe);
+            var buddy = new Buddy("xmpp", 
+                                    item.uID, 
+                                    item.DisplayName, 
+                                    item.ExtensionNumber, 
+                                    "", 
+                                    "", 
+                                    "", 
+                                    item.LastActivity, 
+                                    "", 
+                                    "", 
+                                    item.jid, 
+                                    item.EnableDuringDnd, 
+                                    item.Subscribe,
+                                    item.SubscribeUser,
+                                    item.AutoDelete);
             AddBuddy(buddy, false, false, false);
         }
         else if(item.Type == "contact"){
             // contact
-            var buddy = new Buddy("contact", item.cID, item.DisplayName, "", item.MobileNumber, item.ContactNumber1, item.ContactNumber2, item.LastActivity, item.Description, item.Email, null, item.EnableDuringDnd, item.Subscribe);
+            var buddy = new Buddy("contact", 
+                                    item.cID, 
+                                    item.DisplayName, 
+                                    "", 
+                                    item.MobileNumber, 
+                                    item.ContactNumber1, 
+                                    item.ContactNumber2, 
+                                    item.LastActivity, 
+                                    item.Description, 
+                                    item.Email, 
+                                    null, 
+                                    item.EnableDuringDnd, 
+                                    item.Subscribe,
+                                    item.SubscribeUser,
+                                    item.AutoDelete);
             AddBuddy(buddy, false, false, false);
         }
         else if(item.Type == "group"){
             // group
-            var buddy = new Buddy("group", item.gID, item.DisplayName, item.ExtensionNumber, "", "", "", item.LastActivity, item.MemberCount + " member(s)", item.Email, null, item.EnableDuringDnd, item.Subscribe);
+            var buddy = new Buddy("group", 
+                                    item.gID, 
+                                    item.DisplayName, 
+                                    item.ExtensionNumber, 
+                                    "", 
+                                    "", 
+                                    "", 
+                                    item.LastActivity, 
+                                    item.MemberCount + " member(s)", 
+                                    item.Email, 
+                                    null, 
+                                    item.EnableDuringDnd, 
+                                    item.Subscribe,
+                                    item.SubscribeUser,
+                                    itme.AutoDelete);
             AddBuddy(buddy, false, false, false);
         }
     });
@@ -8499,9 +8930,15 @@ function UpdateBuddyList(){
 
     // End here if they are not using the buddy system
     if(DisableBuddies == true){
-        // If there are no calls, this could look fi=unny
+        // If there are no calls, show the dial pad
         if(callCount == 0){
-            ShowDial();
+            if(UiCustomDialButton == true){
+                if(typeof web_hook_dial_out !== 'undefined') {
+                    web_hook_dial_out(null);
+                }
+            } else {
+                ShowDial();
+            }
         }
         return;
     }
@@ -8511,7 +8948,18 @@ function UpdateBuddyList(){
         $("#myContacts").append("<hr class=hrline>");
     }
 
-    
+    // If there are no buddies, and no calls, then, show the dial pad
+    if(Buddies.length == 0 && callCount == 0){
+        if(UiCustomDialButton == true){
+            if(typeof web_hook_dial_out !== 'undefined') {
+                web_hook_dial_out(null);
+            }
+        } else {
+            ShowDial();
+        }
+        return;
+    }
+
     // Sort and shuffle Buddy List
     // ===========================
     Buddies.sort(function(a, b){
@@ -8567,7 +9015,7 @@ function UpdateBuddyList(){
             html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
             html += "<div class=contactNameText>";
             html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
-            html += " "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName
+            html += " "+ buddyObj.CallerIDName
             html += "</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText>"+ friendlyState +"</div>";
@@ -8585,7 +9033,7 @@ function UpdateBuddyList(){
             html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
             html += "<div class=contactNameText>";
             html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
-            html += " "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName;
+            html += " "+ buddyObj.CallerIDName;
             html += "</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText><i class=\"fa fa-comments\"></i> "+ friendlyState +"</div>";
@@ -8663,7 +9111,7 @@ function AddBuddyMessageStream(buddyObj) {
     if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         profileRow += "<div class=contactNameText style=\"margin-right: 0px;\">";
         profileRow += "<span id=\"contact-"+ buddyObj.identity +"-devstate-main\" class=\""+ buddyObj.devState +"\"></span>";
-        profileRow += " "+ buddyObj.ExtNo +" - "+ buddyObj.CallerIDName 
+        profileRow += " "+ buddyObj.CallerIDName 
         profileRow += "</div>";
     }
     else if(buddyObj.type == "contact") {
@@ -8959,38 +9407,6 @@ function ToggleExtraButtons(lineNum, normal, expanded){
     }
 }
 
-function MakeUpName(){
-    var shortname = 4;
-    var longName = 12;
-    var letters = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
-    var rtn = "";
-    rtn += letters[Math.floor(Math.random() * letters.length)];
-    for(var n=0; n<Math.floor(Math.random() * longName) + shortname; n++){
-        rtn += letters[Math.floor(Math.random() * letters.length)].toLowerCase();
-    }
-    rtn += " ";
-    rtn += letters[Math.floor(Math.random() * letters.length)];
-    for(var n=0; n<Math.floor(Math.random() * longName) + shortname; n++){
-        rtn += letters[Math.floor(Math.random() * letters.length)].toLowerCase();
-    }
-    return rtn;
-}
-function MakeUpNumber(){
-    var numbers = ["0","1","2","3","4","5","6","7","8","9","0"];
-    var rtn = "0";
-    for(var n=0; n<9; n++){
-        rtn += numbers[Math.floor(Math.random() * numbers.length)];
-    }
-    return rtn;
-}
-function MakeUpBuddies(int){
-    for(var i=0; i<int; i++){
-        var buddyObj = new Buddy("contact", uID(), MakeUpName(), "", "", MakeUpNumber(), "", utcDateNow(), "Testing", "");
-        AddBuddy(buddyObj, false, false);
-    }
-    UpdateBuddyList();
-}
-
 function SelectBuddy(buddy) {
     var buddyObj = FindBuddyByIdentity(buddy);
     if(buddyObj == null) return;
@@ -9151,6 +9567,13 @@ function FindBuddyByJid(jid){
     console.warn("Buddy not found on jid: "+ jid);
     return null;
 }
+function FindBuddyByObservedUser(SubscribeUser){
+    for(var b = 0; b < Buddies.length; b++){
+        if(Buddies[b].SubscribeUser == SubscribeUser) return Buddies[b];
+    }
+    return null;
+}
+
 function SearchStream(obj, buddy){
     var q = obj.value;
 
@@ -9934,7 +10357,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                             var recordingDuration = moment.duration(StopTime.diff(StartTime));
                             recordingsHtml += "<div>";
                             if(cdr.WithVideo){
-                                recordingsHtml += "<div><video id=\"callrecording-video-"+ recording.uID +"\" controls style=\"width: 100%\"></div>";
+                                recordingsHtml += "<div><video id=\"callrecording-video-"+ recording.uID +"\" controls playsinline style=\"width: 100%\"></div>";
                             } 
                             else {
                                 recordingsHtml += "<div><audio id=\"callrecording-audio-"+ recording.uID +"\" controls style=\"width: 100%\"></div>";
@@ -10408,17 +10831,25 @@ function ShowMyProfile(){
     AccountHtml += "<div class=UiText>"+ lang.websocket_path +":</div>";
     AccountHtml += "<div><input id=Configure_Account_ServerPath class=UiInputText type=text placeholder='"+ lang.eg_websocket_path +"' value='"+ getDbItem("ServerPath", "") +"'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.internal_subscribe_extension +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_profileUser class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ getDbItem("profileUser", "") +"'></div>";
-
     AccountHtml += "<div class=UiText>"+ lang.full_name +":</div>";
     AccountHtml += "<div><input id=Configure_Account_profileName class=UiInputText type=text placeholder='"+ lang.eg_full_name +"' value='"+ getDbItem("profileName", "") +"'></div>";
+
+    AccountHtml += "<div class=UiText>"+ lang.sip_domain +":</div>";
+    AccountHtml += "<div><input id=Configure_Account_SipDomain class=UiInputText type=text placeholder='"+ lang.eg_sip_domain +"' value='"+ getDbItem("SipDomain", "") +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.sip_username +":</div>";
     AccountHtml += "<div><input id=Configure_Account_SipUsername class=UiInputText type=text placeholder='"+ lang.eg_sip_username +"' value='"+ getDbItem("SipUsername", "") +"'></div>";
 
     AccountHtml += "<div class=UiText>"+ lang.sip_password +":</div>";
     AccountHtml += "<div><input id=Configure_Account_SipPassword class=UiInputText type=password placeholder='"+ lang.eg_sip_password +"' value='"+ getDbItem("SipPassword", "") +"'></div>";
+
+    AccountHtml += "<div class=UiText>"+ lang.subscribe_voicemail +":</div>";
+    AccountHtml += "<div><input type=checkbox id=Configure_Account_Voicemail_Subscribe "+ ((VoiceMailSubscribe == true)? "checked" : "") +"><label for=Configure_Account_Voicemail_Subscribe>"+ lang.yes +"</label></div>";
+
+    AccountHtml += "<div id=Voicemail_Did_row style=\"display:"+ ((VoiceMailSubscribe == true)? "unset" : "none") +"\">";
+    AccountHtml += "<div class=UiText style=\"margin-left:20px\">"+ lang.voicemail_did +":</div>";
+    AccountHtml += "<div style=\"margin-left:20px\"><input id=Configure_Account_Voicemail_Did class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ getDbItem("VoicemailDid", "") +"'></div>";
+    AccountHtml += "</div>";
 
     AccountHtml += "<div class=UiText>"+ lang.chat_engine +":</div>";
 
@@ -10429,10 +10860,7 @@ function ShowMyProfile(){
 
     AccountHtml += "<div id=RowChatEngine_xmpp style=\"display:"+ ((ChatEngine == "XMPP")? "unset" : "none") +"\">";
 
-    AccountHtml += "<div class=UiText>XMPP "+ lang.xmpp_domain +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_xmpp_domain class=UiInputText type=text placeholder='"+ lang.eg_xmpp_domain +"' value='"+ getDbItem("XmppDomain", "") +"'></div>";
-
-    AccountHtml += "<div class=UiText>XMPP "+ lang.server_address +":</div>";
+    AccountHtml += "<div class=UiText>"+ lang.xmpp_server_address +":</div>";
     AccountHtml += "<div><input id=Configure_Account_xmpp_address class=UiInputText type=text placeholder='"+ lang.eg_xmpp_server_address +"' value='"+ getDbItem("XmppServer", "") +"'></div>";
 
     AccountHtml += "<div class=UiText>XMPP "+ lang.websocket_port +":</div>";
@@ -10440,6 +10868,9 @@ function ShowMyProfile(){
 
     AccountHtml += "<div class=UiText>XMPP "+ lang.websocket_path +":</div>";
     AccountHtml += "<div><input id=Configure_Account_xmpp_path class=UiInputText type=text placeholder='"+ lang.eg_websocket_path +"' value='"+ getDbItem("XmppWebsocketPath", "") +"'></div>";
+
+    AccountHtml += "<div class=UiText>"+ lang.extension_number +":</div>";
+    AccountHtml += "<div><input id=Configure_Account_profileUser class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ getDbItem("profileUser", "") +"'></div>";
     AccountHtml += "</div>";
 
     AccountHtml += "</div>";
@@ -10495,8 +10926,8 @@ function ShowMyProfile(){
     
     AudioVideoHtml += "<div class=UiText>"+ lang.image_orientation +":</div>";
     AudioVideoHtml += "<div class=pill-nav>";
-    AudioVideoHtml += "<input name=Settings_Oriteation id=r20 type=radio value=\"rotateY(0deg)\"><label class=radio_pill for=r20><i class=\"fa fa-address-card\" style=\"transform: rotateY(0deg)\"></i> Normal</label>";
-    AudioVideoHtml += "<input name=Settings_Oriteation id=r21 type=radio value=\"rotateY(180deg)\"><label class=radio_pill for=r21><i class=\"fa fa-address-card\" style=\"transform: rotateY(180deg)\"></i> Mirror</label>";
+    AudioVideoHtml += "<input name=Settings_Oriteation id=r20 type=radio value=\"rotateY(0deg)\"><label class=radio_pill for=r20><i class=\"fa fa-address-card\" style=\"transform: rotateY(0deg)\"></i> "+ lang.image_orientation_normal +"</label>";
+    AudioVideoHtml += "<input name=Settings_Oriteation id=r21 type=radio value=\"rotateY(180deg)\"><label class=radio_pill for=r21><i class=\"fa fa-address-card\" style=\"transform: rotateY(180deg)\"></i> "+ lang.image_orientation_mirror +"</label>";
     AudioVideoHtml += "</div>";
 
     AudioVideoHtml += "<div class=UiText>"+ lang.aspect_ratio +":</div>";
@@ -10579,14 +11010,14 @@ function ShowMyProfile(){
                     console.warn("Validation Failed");
                     return;
                 } 
-                if($("#Configure_Account_profileUser").val() == "") {
-                    console.warn("Validation Failed");
-                    return;
-                } 
                 if($("#Configure_Account_profileName").val() == "") {
                     console.warn("Validation Failed");
                     return;
                 } 
+                if($("#Configure_Account_SipDomain").val() == "") {
+                    console.warn("Validation Failed");
+                    return;
+                }
                 if($("#Configure_Account_SipUsername").val() == "") {
                     console.warn("Validation Failed");
                     return;
@@ -10596,10 +11027,6 @@ function ShowMyProfile(){
                     return;
                 }
                 if(chatEng == "XMPP"){
-                    if($("#Configure_Account_xmpp_domain").val() == "") {
-                        console.warn("Validation Failed");
-                        return;
-                    } 
                     if($("#Configure_Account_xmpp_address").val() == "") {
                         console.warn("Validation Failed");
                         return;
@@ -10607,7 +11034,11 @@ function ShowMyProfile(){
                     if($("#Configure_Account_xmpp_port").val() == "") {
                         console.warn("Validation Failed");
                         return;
-                    } 
+                    }
+                    if($("#Configure_Account_profileUser").val() == "") {
+                        console.warn("Validation Failed");
+                        return;
+                    }
                 }
             }
 
@@ -10619,14 +11050,16 @@ function ShowMyProfile(){
                 localDB.setItem("wssServer", $("#Configure_Account_wssServer").val());
                 localDB.setItem("WebSocketPort", $("#Configure_Account_WebSocketPort").val());
                 localDB.setItem("ServerPath", $("#Configure_Account_ServerPath").val());
-                localDB.setItem("profileUser", $("#Configure_Account_profileUser").val());
                 localDB.setItem("profileName", $("#Configure_Account_profileName").val());
+                localDB.setItem("SipDomain", $("#Configure_Account_SipDomain").val());
                 localDB.setItem("SipUsername", $("#Configure_Account_SipUsername").val());
                 localDB.setItem("SipPassword", $("#Configure_Account_SipPassword").val());
-        
+                localDB.setItem("VoiceMailSubscribe", ($("#Configure_Account_Voicemail_Subscribe").is(':checked'))? "1" : "0");
+                localDB.setItem("VoicemailDid", $("#Configure_Account_Voicemail_Did").val());
+
                 localDB.setItem("ChatEngine", chatEng);
-        
-                localDB.setItem("XmppDomain", $("#Configure_Account_xmpp_domain").val());
+
+                localDB.setItem("profileUser", $("#Configure_Account_profileUser").val());
                 localDB.setItem("XmppServer", $("#Configure_Account_xmpp_address").val());
                 localDB.setItem("XmppWebsocketPort", $("#Configure_Account_xmpp_port").val());
                 localDB.setItem("XmppWebsocketPath", $("#Configure_Account_xmpp_path").val());
@@ -10715,6 +11148,13 @@ function ShowMyProfile(){
             $("#chat_type_xmpp").change(function(){
                 if($("#chat_type_xmpp").is(':checked')){
                     $("#RowChatEngine_xmpp").show();
+                }
+            });
+            $("#Configure_Account_Voicemail_Subscribe").change(function(){
+                if($("#Configure_Account_Voicemail_Subscribe").is(':checked')){
+                    $("#Voicemail_Did_row").show();
+                } else {
+                    $("#Voicemail_Did_row").hide();
                 }
             });
         }
@@ -11299,7 +11739,7 @@ function ShowMyProfile(){
                         var option = $('<option/>');
                         option.prop("value", "default");
                         if(getVideoSrcID() == "default" || getVideoSrcID() == "" || getVideoSrcID() == "null") option.prop("selected", true);
-                        option.text("(Default)");
+                        option.text("("+ lang.default_video_src +")");
                         selectVideoScr.append(option);
                     }
                 }).catch(function(e){
@@ -11908,8 +12348,8 @@ function ReformatMessage(str) {
     return msg;
 }
 function getPicture(buddy, typestr, ignoreCache){
-    var rndInt = Math.floor(Math.random() * 8) + 1;
-    var defaultImg = hostingPrefex + "avatars/default."+ String(rndInt) +".png";
+    var rndInt = Math.floor(Math.random() * avatars.length);
+    var defaultImg = hostingPrefex + "" + avatars[rndInt];
     if(buddy == "profilePicture"){
         // Special handling for profile image
         var dbImg = localDB.getItem("profilePicture");
@@ -12987,7 +13427,7 @@ function XmppSendPing(){
 
     if(!XMPP || XMPP.connected == false) reconnectXmpp();
 
-    var iq_request = $iq({"type":"get", "id":XMPP.getUniqueId(), "to":XmppDomain, "from":XMPP.jid});
+    var iq_request = $iq({"type":"get", "id":XMPP.getUniqueId(), "to":SipDomain, "from":XMPP.jid});
     iq_request.c("ping", {"xmlns":"urn:xmpp:ping"});
 
     XMPP.sendIQ(iq_request, function (result){
@@ -13829,7 +14269,7 @@ function onInfoQueryCommand(iq){
     return true;
 }
 function XMPP_GetGroups(){
-    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : XmppChatGroupService +"."+ XmppDomain, "from" : XMPP.jid});
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : XmppChatGroupService +"."+ SipDomain, "from" : XMPP.jid});
     iq_request.c("query", {"xmlns" : "http://jabber.org/protocol/disco#items", "node" : "http://jabber.org/protocol/muc#rooms"});
 
     XMPP.sendIQ(iq_request, function (result){
@@ -13839,7 +14279,7 @@ function XMPP_GetGroups(){
     }, 30 * 1000);
 }
 function XMPP_GetGroupMembers(){
-    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : "directors@"+ XmppChatGroupService +"."+ XmppDomain, "from" : XMPP.jid});
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : "directors@"+ XmppChatGroupService +"."+ SipDomain, "from" : XMPP.jid});
     iq_request.c("query", {"xmlns":"http://jabber.org/protocol/disco#items"});
 
     XMPP.sendIQ(iq_request, function (result){
@@ -13849,7 +14289,7 @@ function XMPP_GetGroupMembers(){
     }, 30 * 1000);
 }
 function XMPP_JoinGroup(){
-    var pres_request = $pres({"id" : XMPP.getUniqueId(), "from" : XMPP.jid, "to" : "directors@"+ XmppChatGroupService +"."+ XmppDomain +"/nickname" });
+    var pres_request = $pres({"id" : XMPP.getUniqueId(), "from" : XMPP.jid, "to" : "directors@"+ XmppChatGroupService +"."+ SipDomain +"/nickname" });
     pres_request.c("x", {"xmlns" : "http://jabber.org/protocol/muc" });
 
     XMPP.sendPresence(pres_request, function (result){
@@ -13878,12 +14318,12 @@ var reconnectXmpp = function(){
     if(XMPP) XMPP.reset();
 
     var xmpp_websocket_uri = "wss://"+ XmppServer +":"+ XmppWebsocketPort +""+ XmppWebsocketPath; 
-    var xmpp_username = profileUser +"@"+ XmppDomain;
+    var xmpp_username = profileUser +"@"+ SipDomain;
     if(XmppRealm != "" && XmppRealmSeperator) xmpp_username = XmppRealm + XmppRealmSeperator + xmpp_username;
     var xmpp_password = SipPassword;
 
     XMPP = null;
-    if(XmppDomain == "" || XmppServer == "" || XmppWebsocketPort == "" || XmppWebsocketPath == ""){
+    if(SipDomain == "" || XmppServer == "" || XmppWebsocketPort == "" || XmppWebsocketPath == ""){
         return;
     }
     XMPP = new Strophe.Connection(xmpp_websocket_uri);
