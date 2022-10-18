@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.10";
+const appversion = "0.3.11";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -517,6 +517,7 @@ if(window.matchMedia){
 // ==============
 function UpdateUI(){
     var windowWidth = $(window).outerWidth()
+    var windowHeight = $(window).outerHeight();
     if(windowWidth > UiMaxWidth){
         $("#leftContentTable").css("border-left-width", "1px");
         if(selectedBuddy == null && selectedLine == null) {
@@ -575,6 +576,88 @@ function UpdateUI(){
     for(var l=0; l<Lines.length; l++){
         updateLineScroll(Lines[l].LineNumber);
         RedrawStage(Lines[l].LineNumber, false);
+    }
+
+    if(windowObj != null){
+        var offsetTextHeight = windowObj.parent().outerHeight();
+        var width = windowObj.width();
+        if(windowWidth <= width || windowHeight <= offsetTextHeight) {
+            // First apply to dialog, then set css
+            windowObj.dialog("option", "height", windowHeight);
+            windowObj.dialog("option", "width", windowWidth - (1+1+2+2)); // There is padding and a border
+            windowObj.parent().css('top', '0px');
+            windowObj.parent().css('left', '0px');
+        } 
+        else {
+            windowObj.parent().css('left', windowWidth/2 - width/2 + 'px');
+            windowObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+        }
+    }
+    if(alertObj != null){
+        var width = 300;
+        var offsetTextHeight = alertObj.parent().outerHeight();
+        if(windowWidth <= width || windowHeight <= offsetTextHeight) {
+            if(windowWidth <= width){
+                // First apply to dialog, then set css
+                alertObj.dialog("option", "width", windowWidth - (1+1+2+2));
+                alertObj.parent().css('left', '0px');
+                alertObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+            }
+            if(windowHeight <= offsetTextHeight){
+                // First apply to dialog, then set css
+                alertObj.dialog("option", "height", windowHeight);
+                alertObj.parent().css('left', windowWidth/2 - width/2 + 'px');
+                alertObj.parent().css('top', '0px');
+            }
+        }
+        else {
+            alertObj.parent().css('left', windowWidth/2 - width/2 + 'px');
+            alertObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+        }
+    }
+    if(confirmObj != null){
+        var width = 300;
+        var offsetTextHeight = confirmObj.parent().outerHeight();
+        if(windowWidth <= width || windowHeight <= offsetTextHeight) {
+            if(windowWidth <= width){
+                // First apply to dialog, then set css
+                confirmObj.dialog("option", "width", windowWidth - (1+1+2+2));
+                confirmObj.parent().css('left', '0px');
+                confirmObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+            }
+            if(windowHeight <= offsetTextHeight){
+                // First apply to dialog, then set css
+                confirmObj.dialog("option", "height", windowHeight);
+                confirmObj.parent().css('left', windowWidth/2 - width/2 + 'px');
+                confirmObj.parent().css('top', '0px');
+            }
+        }
+        else {
+            confirmObj.parent().css('left', windowWidth/2 - width/2 + 'px');
+            confirmObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+        }
+    }
+    if(promptObj != null){
+        var width = 300;
+        var offsetTextHeight = promptObj.parent().outerHeight();
+        if(windowWidth <= width || windowHeight <= offsetTextHeight) {
+            if(windowWidth <= width){
+                // First apply to dialog, then set css
+                promptObj.dialog("option", "width", windowWidth - (1+1+2+2));
+                promptObj.parent().css('left', '0px');
+                promptObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+            }
+            if(windowHeight <= offsetTextHeight){
+                // First apply to dialog, then set css
+                promptObj.dialog("option", "height", windowHeight);
+                promptObj.parent().css('left', windowWidth/2 - width/2 + 'px');
+                promptObj.parent().css('top', '0px');
+            }
+        }
+        else {
+            promptObj.parent().css('left', windowWidth/2 - width/2 + 'px');
+            promptObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+        }
     }
     HidePopup();
 }
@@ -1786,6 +1869,12 @@ function onRegistered(){
         if(ChatEngine == "XMPP") reconnectXmpp();
 
         userAgent.registering = false;
+
+        // Close possible Alerts that may be open. (Can be from failed registers)
+        if (alertObj != null) {
+            alertObj.dialog("close");
+            alertObj = null;
+        }
 
         // Custom Web hook
         if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
@@ -8271,19 +8360,17 @@ function AddLineHtml(lineObj, direction){
 
     // Video Call UI
     html += "<div id=\"line-"+ lineObj.LineNumber +"-VideoCall\" style=\"height:100%; display:none\">";
-    if(lineObj.BuddyObj.type == "extension" || lineObj.BuddyObj.type == "xmpp") {
-        // Preview
-        html += "<div id=\"line-"+ lineObj.LineNumber +"-preview-container\" class=\"PreviewContainer cleanScroller\">";
-        html += "<video id=\"line-"+ lineObj.LineNumber +"-localVideo\" muted playsinline></video>"; // Default Display
-        html += "</div>";
+    // Video Preview
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-preview-container\" class=\"PreviewContainer cleanScroller\">";
+    html += "<video id=\"line-"+ lineObj.LineNumber +"-localVideo\" muted playsinline></video>"; // Default Display
+    html += "</div>";
 
-        // Stage
-        html += "<div id=\"line-"+ lineObj.LineNumber +"-stage-container\" class=StageContainer>";
-        html += "<div id=\"line-"+ lineObj.LineNumber +"-remote-videos\" class=VideosContainer></div>";
-        html += "<div id=\"line-"+ lineObj.LineNumber +"-scratchpad-container\" class=ScratchpadContainer style=\"display:none\"></div>";
-        html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted playsinline style=\"display:none; object-fit: contain; width: 100%;\"></video>";
-        html += "</div>";
-    }
+    // Stage
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-stage-container\" class=StageContainer>";
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-remote-videos\" class=VideosContainer></div>";
+    html += "<div id=\"line-"+ lineObj.LineNumber +"-scratchpad-container\" class=ScratchpadContainer style=\"display:none\"></div>";
+    html += "<video id=\"line-"+ lineObj.LineNumber +"-sharevideo\" controls muted playsinline style=\"display:none; object-fit: contain; width: 100%;\"></video>";
+    html += "</div>";
     html += "</div>"; //-VideoCall
     html += "</div>"; //-AudioOrVideoCall
 
@@ -12953,29 +13040,19 @@ function OpenWindow(html, title, height, width, hideCloseButton, allowResize, bu
     windowObj.dialog("open");
 
     if (hideCloseButton) windowObj.dialog({ dialogClass: 'no-close' });
-
-    var windowWidth = $(window).outerWidth();
-    var windowHeight = $(window).outerHeight();
-    var offsetTextHeight = windowObj.parent().outerHeight();
-
-    if(windowWidth <= width || windowHeight <= offsetTextHeight) {
-        windowObj.parent().css('top', '0px'); // option
-        windowObj.parent().css('left', '0px');
-        windowObj.dialog("option", "height", windowHeight); // option
-        windowObj.dialog("option", "width", windowWidth);
-    } 
-    else {
-        windowObj.parent().css('left', windowWidth/2 - width/2 + 'px');
-        windowObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
-    }
-
     // Doubl Click to maximise
     $(".ui-dialog-titlebar").dblclick(function(){
+        var windowWidth = $(window).outerWidth()
+        var windowHeight = $(window).outerHeight();
         windowObj.parent().css('top', '0px'); // option
         windowObj.parent().css('left', '0px');
         windowObj.dialog("option", "height", windowHeight); // option
         windowObj.dialog("option", "width", windowWidth);
+        UpdateUI();
     });
+
+    // Call UpdateUI to perform all the nesesary UI updates.
+    UpdateUI();
 }
 function CloseWindow(all) {
     console.log("Call to close any open window");
@@ -13057,19 +13134,8 @@ function Alert(messageStr, TitleStr, onOk) {
 
     alertObj.dialog({ dialogClass: 'no-close' });
 
-    var windowWidth = $(window).outerWidth();
-    var windowHeight = $(window).outerHeight();
-    var offsetTextHeight = alertObj.parent().outerHeight();
-
-    alertObj.parent().css('left', windowWidth/2 - 300/2 + 'px');
-
-    if(windowHeight  <= offsetTextHeight){
-        alertObj.parent().css('top', '0px');
-        alertObj.dialog("option", "height", windowHeight);
-    }
-    else {
-        alertObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
-    }
+     // Call UpdateUI to perform all the nesesary UI updates.
+     UpdateUI();
 
 }
 function Confirm(messageStr, TitleStr, onOk, onCancel) {
@@ -13134,19 +13200,8 @@ function Confirm(messageStr, TitleStr, onOk, onCancel) {
 
     confirmObj.dialog({ dialogClass: 'no-close' });
 
-    var windowWidth = $(window).outerWidth();
-    var windowHeight = $(window).outerHeight();
-    var offsetTextHeight = confirmObj.parent().outerHeight();
-
-    confirmObj.parent().css('left', windowWidth/2 - 300/2 + 'px');
-
-    if(windowHeight  <= offsetTextHeight){
-        confirmObj.parent().css('top', '0px');
-        confirmObj.dialog("option", "height", windowHeight);
-    }
-    else {
-        confirmObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
-    }
+    // Call UpdateUI to perform all the nesesary UI updates.
+    UpdateUI();
 }
 function Prompt(messageStr, TitleStr, FieldText, defaultValue, dataType, placeholderText, onOk, onCancel) {
     if (alertObj != null) {
@@ -13213,19 +13268,8 @@ function Prompt(messageStr, TitleStr, FieldText, defaultValue, dataType, placeho
 
     promptObj.dialog({ dialogClass: 'no-close' });
 
-    var windowWidth = $(window).outerWidth();
-    var windowHeight = $(window).outerHeight();
-    var offsetTextHeight = promptObj.parent().outerHeight();
-
-    promptObj.parent().css('left', windowWidth/2 - 300/2 + 'px');
-
-    if(windowHeight  <= offsetTextHeight){
-        promptObj.parent().css('top', '0px');
-        promptObj.dialog("option", "height", windowHeight);
-    }
-    else {
-        promptObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
-    }
+    // Call UpdateUI to perform all the nesesary UI updates.
+    UpdateUI();
 }
 function PopupMenu(obj, menu){
     console.log("Show Popup Menu");

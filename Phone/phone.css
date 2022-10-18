@@ -389,6 +389,11 @@ body {
 /* Windows */
 .ui-dialog{
     position: fixed !important;
+
+    /* We add padding here so we can remove it in resize */
+    padding: 2px !important; 
+
+    /* This creates a resize issue, but makes it work nicely at fullscreen */
     /* box-sizing: border-box; */
 }
 
