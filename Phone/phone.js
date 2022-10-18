@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.9";
+const appversion = "0.3.10";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -1519,6 +1519,7 @@ function PreloadAudioFiles(){
 // =================
 function CreateUserAgent() {
     console.log("Creating User Agent...");
+    if(SipDomain==null || SipDomain=="" || SipDomain=="null" || SipDomain=="undefined") SipDomain = wssServer; // Sets globally
     var options = {
         uri: SIP.UserAgent.makeURI("sip:"+ SipUsername + "@" + SipDomain),
         transportOptions: {
