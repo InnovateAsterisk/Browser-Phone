@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.11";
+const appversion = "0.3.12";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -78,6 +78,8 @@ let ServerPath = getDbItem("ServerPath", null);         // eg: /ws
 let SipDomain = getDbItem("SipDomain", null);           // eg: raspberrypi.local
 let SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
 let SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
+
+let SingleInstance = (getDbItem("SingleInstance", "1") == "1");      // Unregisters this account if the phone is opened in another tab/window
 
 let TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));          // The timeout in seconds for the initial connection to make on the web socket port
 let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 999));   // The number of times to attempt to reconnect to a WebSocket when the connection drops.
@@ -190,6 +192,7 @@ let EnableEmail = false;           // Enables Email sending to the server (requi
 
 // System variables
 // ================
+const instanceID = String(Date.now());
 let localDB = window.localStorage;
 let userAgent = null;
 let CanvasCollection = [];
@@ -367,9 +370,9 @@ $(window).on("offline", function(){
 
     // If there is an issue with the WS connection
     // We unregister, so that we register again once its up
-    console.log("Unregister...");
+    console.log("Disconnect Transport...");
     try{
-        userAgent.registerer.unregister();
+        // userAgent.registerer.unregister();
         userAgent.transport.disconnect();
     } catch(e){
         // I know!!!
@@ -396,6 +399,7 @@ $(document).ready(function () {
     if(options.SipDomain !== undefined) SipDomain = options.SipDomain;
     if(options.SipUsername !== undefined) SipUsername = options.SipUsername;
     if(options.SipPassword !== undefined) SipPassword = options.SipPassword;
+    if(options.SingleInstance !== undefined) SingleInstance = options.SingleInstance;
     if(options.TransportConnectionTimeout !== undefined) TransportConnectionTimeout = options.TransportConnectionTimeout;
     if(options.TransportReconnectionAttempts !== undefined) TransportReconnectionAttempts = options.TransportReconnectionAttempts;
     if(options.TransportReconnectionTimeout !== undefined) TransportReconnectionTimeout = options.TransportReconnectionTimeout;
@@ -480,6 +484,16 @@ $(document).ready(function () {
 
     console.log("Runtime options", options);
 
+    // Single Instace Check 
+    if(SingleInstance == true){
+        console.log("Instance ID :", instanceID);
+        // Fitst we set (or try to set) the instance ID
+        localDB.setItem("InstanceId", instanceID);
+
+        // Now we attach a listener
+        window.addEventListener('storage', onLocalStorageEvent, false);
+    }
+
     // Load Langauge File
     // ==================
     $.getJSON(hostingPrefex + "lang/en.json", function(data){
@@ -512,6 +526,23 @@ if(window.matchMedia){
         ApplyThemeColor()
     });
 }
+function onLocalStorageEvent(event){
+    if(event.key == "InstanceId"){
+        // Another script is writing to the localstorage,
+        // because the event lister is attached after the 
+        // Instance ID, its from another window/tab/script.
+
+        // Because you cannot change focus to another tab (even
+        // from a tab with the same domain), and because you cannot
+        // close a tab, the best we can do is de-register this
+        // UserAgent, so that we are only registered here.
+
+        Unregister();
+        // TOO: what if you re-register?
+        // Should this unload the entire page, what about calls? 
+    }
+}
+
 
 // User Interface
 // ==============
@@ -1768,29 +1799,33 @@ function onTransportDisconnected(){
 }
 function ReconnectTransport(){
     if(userAgent == null) return;
-    if(userAgent.transport.attemptingReconnection) return;
-    if(userAgent.transport.ReconnectionAttempts <= 0) return;
 
-    if(userAgent.transport.isConnected()){
+    userAgent.registering = false; // if the transport was down, you will not be registered
+    if(userAgent.transport && userAgent.transport.isConnected()){
         // Asked to re-connect, but ws is connected
-        Register();
+        onTransportConnected();
         return;
     }
     console.log("Reconnect Transport...");
 
     window.setTimeout(function(){
-        console.log("ReConnecting to WebSocket...");
         $("#regStatus").html(lang.connecting_to_web_socket);
+        console.log("ReConnecting to WebSocket...");
 
-        userAgent.transport.attemptingReconnection = true
-        userAgent.reconnect().catch(function(error){
-            userAgent.transport.attemptingReconnection = false
-            console.warn("Failed to reconnect", error);
+        if(userAgent.transport && userAgent.transport.isConnected()){
+            // Already Connected
+            onTransportConnected();
+            return;
+        } else {
+            userAgent.transport.attemptingReconnection = true
+            userAgent.reconnect().catch(function(error){
+                userAgent.transport.attemptingReconnection = false
+                console.warn("Failed to reconnect", error);
 
-            // Try Again
-            ReconnectTransport();
-        });
-
+                // Try Again
+                ReconnectTransport();
+            });
+        }
     }, TransportReconnectionTimeout * 1000);
 
     $("#regStatus").html(lang.connecting_to_web_socket);
