@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.12";
+const appversion = "0.3.13";
 const sipjsversion = "0.20.0";
 
 // Set the following to null to disable
@@ -50,15 +50,15 @@ welcomeScreen += "==============================================================
 welcomeScreen += "</div>";
 
 /**
- * Lanaguage Packs (lang/xx.json)
+ * Language Packs (lang/xx.json)
  * Note: The following should correspond to files on your server. 
  * eg: If you list "fr" then you need to add the file "fr.json".
  * Use the "en.json" as a template.
- * More specific lanagauge must be first. ie: "zh-hans" should be before "zh".
+ * More specific language must be first. ie: "zh-hans" should be before "zh".
  * "en.json" is always loaded by default
  */
-let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional languge packs other thAan /en.json
-const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) avaialbe in /lang/ folder
+let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional language packs other thAan /en.json
+const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) available in /lang/ folder
 
 /**
  * Assets
@@ -79,25 +79,29 @@ let SipDomain = getDbItem("SipDomain", null);           // eg: raspberrypi.local
 let SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
 let SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
 
-let SingleInstance = (getDbItem("SingleInstance", "1") == "1");      // Unregisters this account if the phone is opened in another tab/window
+let SingleInstance = (getDbItem("SingleInstance", "1") == "1");      // Un-registers this account if the phone is opened in another tab/window
 
 let TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));          // The timeout in seconds for the initial connection to make on the web socket port
 let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 999));   // The number of times to attempt to reconnect to a WebSocket when the connection drops.
 let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 3));       // The time in seconds to wait between WebSocket reconnection attempts.
 
 let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");                // Enable Subscribe to voicemail
-let VoicemailDid = getDbItem("VoicemailDid", "");                                      // Number to dail for VoicemialMain()
+let VoicemailDid = getDbItem("VoicemailDid", "");                                      // Number to dial for VoicemialMain()
 let SubscribeVoicemailExpires = parseInt(getDbItem("SubscribeVoicemailExpires", 300)); // Voceimail Subscription expiry time (in seconds)
+let ContactUserName = getDbItem("ContactUserName", "");                                // Optional name for contact header uri
 let userAgentStr = getDbItem("UserAgentStr", "Browser Phone "+ appversion +" (SIPJS - "+ sipjsversion +")");   // Set this to whatever you want.
-let hostingPrefex = getDbItem("HostingPrefex", "");                                    // Use if hosting off root directiory. eg: "/phone/" or "/static/"
+let hostingPrefix = getDbItem("HostingPrefix", "");                                    // Use if hosting off root directory. eg: "/phone/" or "/static/"
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                     // Registration expiry time (in seconds)
-let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                        // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesnt support Path)
+let RegisterExtraHeaders = getDbItem("RegisterExtraHeaders", "{}");                    // Parsable Json string of headers to include in register process. eg: '{"foo":"bar"}'
+let RegisterExtraContactParams = getDbItem("RegisterExtraContactParams", "{}");        // Parsable Json string of extra parameters add to the end (after >) of contact header during register. eg: '{"foo":"bar"}'
+let RegisterContactParams = getDbItem("RegisterContactParams", "{}");                  // Parsable Json string of extra parameters added to contact URI during register. eg: '{"foo":"bar"}'
+let WssInTransport = (getDbItem("WssInTransport", "1") == "1");                        // Set the transport parameter to wss when used in SIP URIs. (Required for Asterisk as it doesn't support Path)
 let IpInContact = (getDbItem("IpInContact", "1") == "1");                              // Set a random IP address as the host value in the Contact header field and Via sent-by parameter. (Suggested for Asterisk)
 let BundlePolicy = getDbItem("BundlePolicy", "balanced");                              // SDP Media Bundle: max-bundle | max-compat | balanced https://webrtcstandards.info/sdp-bundle/
 let IceStunServerJson = getDbItem("IceStunServerJson", "");                            // Sets the JSON string for ice Server. Default: [{ "urls": "stun:stun.l.google.com:19302" }] Must be https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration/iceServers
 let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));             // Set amount of time in milliseconds to wait for the ICE/STUN server
 let SubscribeBuddyAccept = getDbItem("SubscribeBuddyAccept", "application/pidf+xml");  // Normally only application/dialog-info+xml and application/pidf+xml
-let SubscribeBuddyEvent = getDbItem("SubscribeBuddyEvent", "presence");                // For application/pidf+xml use presence. For application/dialog-info+xml use dialig 
+let SubscribeBuddyEvent = getDbItem("SubscribeBuddyEvent", "presence");                // For application/pidf+xml use presence. For application/dialog-info+xml use dialog 
 let SubscribeBuddyExpires = parseInt(getDbItem("SubscribeBuddyExpires", 300));         // Buddy Subscription expiry time (in seconds)
 
 let NoAnswerTimeout = parseInt(getDbItem("NoAnswerTimeout", 120));          // Time in seconds before automatic Busy Here sent
@@ -105,11 +109,11 @@ let AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // A
 let DoNotDisturbEnabled = (getDbItem("DoNotDisturbEnabled", "0") == "1");   // Rejects any inbound call, while allowing outbound calls
 let CallWaitingEnabled = (getDbItem("CallWaitingEnabled", "1") == "1");     // Rejects any inbound call if you are on a call already.
 let RecordAllCalls = (getDbItem("RecordAllCalls", "0") == "1");             // Starts Call Recording when a call is established.
-let StartVideoFullScreen = (getDbItem("StartVideoFullScreen", "1") == "1"); // Starts a vdeo call in the full screen (browser screen, not dektop)
+let StartVideoFullScreen = (getDbItem("StartVideoFullScreen", "1") == "1"); // Starts a video call in the full screen (browser screen, not desktop)
 let SelectRingingLine = (getDbItem("SelectRingingLine", "1") == "1");       // Selects the ringing line if you are not on another call ()
 
 let UiMaxWidth = parseInt(getDbItem("UiMaxWidth", 1240));                     // Sets the max-width for the UI elements (don't set this less than 920. Set to very high number for full screen eg: 999999)
-let UiThemeStyle = getDbItem("UiThemeStyle", "system");                       // Sets the colour theme for the UI dark | light | system (set by your systems dark/light settings)
+let UiThemeStyle = getDbItem("UiThemeStyle", "system");                       // Sets the color theme for the UI dark | light | system (set by your systems dark/light settings)
 let UiMessageLayout = getDbItem("UiMessageLayout", "middle");                 // Put the message Stream at the top or middle can be either: top | middle 
 let UiCustomConfigMenu = (getDbItem("UiCustomConfigMenu", "0") == "1");       // If set to true, will only call web_hook_on_config_menu
 let UiCustomDialButton = (getDbItem("UiCustomDialButton", "0") == "1");       // If set to true, will only call web_hook_dial_out
@@ -119,8 +123,8 @@ let UiCustomMediaSettings = (getDbItem("UiCustomMediaSettings", "0") == "1"); //
 let UiCustomMessageAction = (getDbItem("UiCustomMessageAction", "0") == "1"); // If set to true, will only call web_hook_on_message_action
 
 let AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");        // Attempts to adjust the microphone volume to a good audio level. (OS may be better at this)
-let EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");      // Attemots to remove echo over the line.
-let NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");      // Attempts to clear the call qulity of noise.
+let EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");      // Attempts to remove echo over the line.
+let NoiseSuppression = (getDbItem("NoiseSuppression", "1") == "1");      // Attempts to clear the call quality of noise.
 let MirrorVideo = getDbItem("VideoOrientation", "rotateY(180deg)");      // Displays the self-preview in normal or mirror view, to better present the preview. 
 let maxFrameRate = getDbItem("FrameRate", "");                           // Suggests a frame rate to your webcam if possible.
 let videoHeight = getDbItem("VideoHeight", "");                          // Suggests a video height (and therefor picture quality) to your webcam.
@@ -129,24 +133,24 @@ let videoAspectRatio = getDbItem("AspectRatio", "1.33");                  // Sug
 let NotificationsActive = (getDbItem("Notifications", "0") == "1");
 
 let StreamBuffer = parseInt(getDbItem("StreamBuffer", 50));                 // The amount of rows to buffer in the Buddy Stream
-let MaxDataStoreDays = parseInt(getDbItem("MaxDataStoreDays", 0));          // Defines the maximum amount of days worth of data (calls, recordsing, messages, etc) to store locally. 0=Stores all data always. >0 Trims n days back worth of data at various events where. 
+let MaxDataStoreDays = parseInt(getDbItem("MaxDataStoreDays", 0));          // Defines the maximum amount of days worth of data (calls, recordings, messages, etc) to store locally. 0=Stores all data always. >0 Trims n days back worth of data at various events where. 
 let PosterJpegQuality = parseFloat(getDbItem("PosterJpegQuality", 0.6));    // The image quality of the Video Poster images
 let VideoResampleSize = getDbItem("VideoResampleSize", "HD");               // The resample size (height) to re-render video that gets presented (sent). (SD = ???x360 | HD = ???x720 | FHD = ???x1080)
-let RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recodings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
+let RecordingVideoSize = getDbItem("RecordingVideoSize", "HD");             // The size/quality of the video track in the recordings (SD = 640x360 | HD = 1280x720 | FHD = 1920x1080)
 let RecordingVideoFps = parseInt(getDbItem("RecordingVideoFps", 12));       // The Frame Per Second of the Video Track recording
 let RecordingLayout = getDbItem("RecordingLayout", "them-pnp");             // The Layout of the Recording Video Track (side-by-side | them-pnp | us-only | them-only)
 
 let DidLength = parseInt(getDbItem("DidLength", 6));                 // DID length from which to decide if an incoming caller is a "contact" or an "extension".
-let MaxDidLength = parseInt(getDbItem("MaxDidLength", 16));          // Maximum langth of any DID number including international dialled numbers.
+let MaxDidLength = parseInt(getDbItem("MaxDidLength", 16));          // Maximum length of any DID number including international dialled numbers.
 let DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");       // The display format for all dates. https://momentjs.com/docs/#/displaying/
 let DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");        // The display format for all times. https://momentjs.com/docs/#/displaying/
-let Language = getDbItem("Language", "auto");                        // Overrides the langauage selector or "automatic". Must be one of availableLang[]. If not defaults to en. Testing: zh-Hans-CN, zh-cmn-Hans-CN, zh-Hant, de, de-DE, en-US, fr, fr-FR, es-ES, sl-IT-nedis, hy-Latn-IT-arevela
+let Language = getDbItem("Language", "auto");                        // Overrides the language selector or "automatic". Must be one of availableLang[]. If not defaults to en.
 
 // Permission Settings
 let EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");               // Enables the Text Messaging
 let DisableFreeDial = (getDbItem("DisableFreeDial", "0") == "1");                       // Removes the Dial icon in the profile area, users will need to add buddies in order to dial.
 let DisableBuddies = (getDbItem("DisableBuddies", "0") == "1");                         // Removes the Add Someone menu item and icon from the profile area. Buddies will still be created automatically. Please also use MaxBuddies or MaxBuddyAge
-let EnableTransfer = (getDbItem("EnableTransfer", "1") == "1");                         // Controls Transfering during a call
+let EnableTransfer = (getDbItem("EnableTransfer", "1") == "1");                         // Controls Transferring during a call
 let EnableConference = (getDbItem("EnableConference", "1") == "1");                     // Controls Conference during a call
 let AutoAnswerPolicy = getDbItem("AutoAnswerPolicy", "allow");                          // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
 let DoNotDisturbPolicy = getDbItem("DoNotDisturbPolicy", "allow");                      // allow = user can choose | disabled = feature is disabled | enabled = feature is always on
@@ -159,10 +163,11 @@ let EnableNotificationSettings = (getDbItem("EnableNotificationSettings", "1") =
 let EnableAlphanumericDial = (getDbItem("EnableAlphanumericDial", "0") == "1");         // Allows calling /[^\da-zA-Z\*\#\+\-\_\.\!\~\'\(\)]/g default is /[^\d\*\#\+]/g 
 let EnableVideoCalling = (getDbItem("EnableVideoCalling", "1") == "1");                 // Enables Video during a call
 let EnableTextExpressions = (getDbItem("EnableTextExpressions", "1") == "1");           // Enables Expressions (Emoji) glyphs when texting
-let EnableTextDictate = (getDbItem("EnableTextDictate", "1") == "1");                   // Enables Dictate (speach-to-text) when texting
+let EnableTextDictate = (getDbItem("EnableTextDictate", "1") == "1");                   // Enables Dictate (speech-to-text) when texting
 let EnableRingtone = (getDbItem("EnableRingtone", "1") == "1");                         // Enables a ring tone when an inbound call comes in.  (media/Ringtone_1.mp3)
 let MaxBuddies = parseInt(getDbItem("MaxBuddies", 999));                                // Sets the Maximum number of buddies the system will accept. Older ones get deleted. (Considered when(after) adding buddies)
 let MaxBuddyAge = parseInt(getDbItem("MaxBuddyAge", 365));                              // Sets the Maximum age in days (by latest activity). Older ones get deleted. (Considered when(after) adding buddies)
+let AutoDeleteDefault = (getDbItem("AutoDeleteDefault", "1") == "1");                   // For automatically created buddies (inbound and outbound), should the buddy be set to AutoDelete.
 
 let ChatEngine = getDbItem("ChatEngine", "SIMPLE");    // Select the chat engine XMPP | SIMPLE
 
@@ -172,8 +177,8 @@ let XmppWebsocketPort = getDbItem("XmppWebsocketPort", "");  // OpenFire Default
 let XmppWebsocketPath = getDbItem("XmppWebsocketPath", "");  // OpenFire Default : /ws
 let profileUser = getDbItem("profileUser", null);            // Username for auth with XMPP Server eg: 100
 // XMPP Tenanting
-let XmppRealm = getDbItem("XmppRealm", "");                    // To create a tennant like partition in XMPP server all users and buddies will have this realm prepeded to their details.
-let XmppRealmSeperator = getDbItem("XmppRealmSeperator", "-"); // Separates the realm from the profileUser eg: abc123-100@SipDomain
+let XmppRealm = getDbItem("XmppRealm", "");                    // To create a tenant like partition in XMPP server all users and buddies will have this realm prepended to their details.
+let XmppRealmSeparator = getDbItem("XmppRealmSeparator", "-"); // Separates the realm from the profileUser eg: abc123-100@SipDomain
 // TODO
 let XmppChatGroupService = getDbItem("XmppChatGroupService", "conference");
 
@@ -315,7 +320,7 @@ function GetAlternateLanguage(){
     for(l = 0; l < availableLang.length; l++){
         if(userLanguage.indexOf(availableLang[l].toLowerCase()) == 0){
             console.log("Alternate Language detected: ", userLanguage);
-            // Set up Moment with the same langugae settings
+            // Set up Moment with the same language settings
             moment.locale(userLanguage);
             return availableLang[l].toLowerCase();
         }
@@ -357,7 +362,7 @@ function MakeDataArray(defaultValue, count){
 // Window and Document Events
 // ==========================
 $(window).on("beforeunload", function() {
-    Unregister();
+    Unregister(true);
 });
 $(window).on("resize", function() {
     UpdateUI();
@@ -387,7 +392,7 @@ $(document).ready(function () {
     // =================
     // Note: These options can be defined in the containing HTML page, and simply defined as a global variable
     // var phoneOptions = {} // would work in index.html
-    // Even if the setting is defined on the database, these variabled get loaded after.
+    // Even if the setting is defined on the database, these variables get loaded after.
 
     var options = (typeof phoneOptions !== 'undefined')? phoneOptions : {};
     if(options.welcomeScreen !== undefined) welcomeScreen = options.welcomeScreen;
@@ -406,9 +411,13 @@ $(document).ready(function () {
     if(options.VoiceMailSubscribe !== undefined) VoiceMailSubscribe = options.VoiceMailSubscribe;
     if(options.VoicemailDid !== undefined) VoicemailDid = options.VoicemailDid;
     if(options.SubscribeVoicemailExpires !== undefined) SubscribeVoicemailExpires = options.SubscribeVoicemailExpires;
+    if(options.ContactUserName !== undefined) ContactUserName = options.ContactUserName;
     if(options.userAgentStr !== undefined) userAgentStr = options.userAgentStr;
-    if(options.hostingPrefex !== undefined) hostingPrefex = options.hostingPrefex;
+    if(options.hostingPrefix !== undefined) hostingPrefix = options.hostingPrefix;
     if(options.RegisterExpires !== undefined) RegisterExpires = options.RegisterExpires;
+    if(options.RegisterExtraHeaders !== undefined) RegisterExtraHeaders = options.RegisterExtraHeaders;
+    if(options.RegisterExtraContactParams !== undefined) RegisterExtraContactParams = options.RegisterExtraContactParams;
+    if(options.RegisterContactParams !== undefined) RegisterContactParams = options.RegisterContactParams;
     if(options.WssInTransport !== undefined) WssInTransport = options.WssInTransport;
     if(options.IpInContact !== undefined) IpInContact = options.IpInContact;
     if(options.BundlePolicy !== undefined) BundlePolicy = options.BundlePolicy;
@@ -479,39 +488,39 @@ $(document).ready(function () {
     if(options.XmppWebsocketPath !== undefined) XmppWebsocketPath = options.XmppWebsocketPath;
     if(options.profileUser !== undefined) profileUser = options.profileUser;
     if(options.XmppRealm !== undefined) XmppRealm = options.XmppRealm;
-    if(options.XmppRealmSeperator !== undefined) XmppRealmSeperator = options.XmppRealmSeperator;
+    if(options.XmppRealmSeparator !== undefined) XmppRealmSeparator = options.XmppRealmSeparator;
     if(options.XmppChatGroupService !== undefined) XmppChatGroupService = options.XmppChatGroupService;
 
     console.log("Runtime options", options);
 
-    // Single Instace Check 
+    // Single Instance Check 
     if(SingleInstance == true){
         console.log("Instance ID :", instanceID);
-        // Fitst we set (or try to set) the instance ID
+        // First we set (or try to set) the instance ID
         localDB.setItem("InstanceId", instanceID);
 
         // Now we attach a listener
         window.addEventListener('storage', onLocalStorageEvent, false);
     }
 
-    // Load Langauge File
+    // Load Language File
     // ==================
-    $.getJSON(hostingPrefex + "lang/en.json", function(data){
+    $.getJSON(hostingPrefix + "lang/en.json", function(data){
         lang = data;
-        console.log("English Lanaguage Pack loaded: ", lang);
+        console.log("English Language Pack loaded: ", lang);
         if(loadAlternateLang == true){
             var userLang = GetAlternateLanguage();
             if(userLang != ""){
-                console.log("Loading Alternate Lanaguage Pack: ", userLang);
-                $.getJSON(hostingPrefex +"lang/"+ userLang +".json", function (altdata){
-                    lang = altdata;
+                console.log("Loading Alternate Language Pack: ", userLang);
+                $.getJSON(hostingPrefix +"lang/"+ userLang +".json", function (alt_data){
+                    lang = alt_data;
                 }).always(function() {
-                    console.log("Alternate Lanaguage Pack loaded: ", lang);
+                    console.log("Alternate Language Pack loaded: ", lang);
                     InitUi();
                 });
             }
             else {
-                console.log("No Alternate Lanaguage Found.");
+                console.log("No Alternate Language Found.");
                 InitUi();
             }
         }
@@ -528,7 +537,7 @@ if(window.matchMedia){
 }
 function onLocalStorageEvent(event){
     if(event.key == "InstanceId"){
-        // Another script is writing to the localstorage,
+        // Another script is writing to the local storage,
         // because the event lister is attached after the 
         // Instance ID, its from another window/tab/script.
 
@@ -845,7 +854,7 @@ function AddSomeoneWindow(numberStr){
                 var id = uID();
                 var dateNow = utcDateNow();
                 var jid = $("#AddSomeone_Exten").val() +"@"+ SipDomain;
-                if(XmppRealm != "" && XmppRealmSeperator != "") jid = XmppRealm +""+ XmppRealmSeperator +""+ jid;
+                if(XmppRealm != "" && XmppRealmSeparator != "") jid = XmppRealm +""+ XmppRealmSeparator +""+ jid;
                 json.DataCollection.push(
                     {
                         Type: "xmpp", 
@@ -1229,7 +1238,7 @@ function EditBuddyWindow(buddy){
             }
         });
 
-        // Wireup File Change
+        // Wire-up File Change
         $("#fileUploader").change(function () {
             var filesArray = $(this).prop('files');
         
@@ -1375,10 +1384,20 @@ function InitUi(){
     $("#BtnFindBuddy").attr("title", lang.find_someone)
     $("#BtnFindBuddy").on('click', function(event){
         $("#divFindBuddy").toggle();
+        if($("#divFindBuddy").is(":visible")){
+            // Search Text Box is now shown
+            $("#txtFindBuddy").focus();
+            UpdateBuddyList();
+        } else {
+            // Hidden search box, should clear the text field and re-run UpdateBuddyList()
+            $("#txtFindBuddy").val("");
+            UpdateBuddyList();
+        }
     });
     $("#txtFindBuddy").attr("placeholder", lang.find_someone)
     $("#txtFindBuddy").on('keyup', function(event){
         UpdateBuddyList();
+        $("#txtFindBuddy").focus();
     });
     $("#BtnFreeDial").attr("title", lang.call)
     $("#BtnFreeDial").on('click', function(event){
@@ -1554,32 +1573,32 @@ function ShowMyProfileMenu(obj){
 }
 function ApplyThemeColor(){
     //UiThemeStyle = light | dark | system (can change at any time)
-    var cssUrl = hostingPrefex +"phone.light.css";
-    var wallpaperUrl = hostingPrefex +""+ wallpaperLight;
+    var cssUrl = hostingPrefix +"phone.light.css";
+    var wallpaperUrl = hostingPrefix +""+ wallpaperLight;
 
     // Overall Theme
     if(UiThemeStyle == "system"){
         if(window.matchMedia){
             if(window.matchMedia('(prefers-color-scheme: dark)').matches){
-                cssUrl = hostingPrefex +"phone.dark.css";
-                wallpaperUrl = hostingPrefex +""+ wallpaperDark;
+                cssUrl = hostingPrefix +"phone.dark.css";
+                wallpaperUrl = hostingPrefix +""+ wallpaperDark;
             } else {
-                cssUrl = hostingPrefex +"phone.light.css";
-                wallpaperUrl = hostingPrefex +""+ wallpaperLight;
+                cssUrl = hostingPrefix +"phone.light.css";
+                wallpaperUrl = hostingPrefix +""+ wallpaperLight;
             }
         } else {
-            cssUrl = hostingPrefex +"phone.dark.css";
+            cssUrl = hostingPrefix +"phone.dark.css";
         }
     } else if(UiThemeStyle == "light"){
-        cssUrl = hostingPrefex +"phone.light.css";
-        wallpaperUrl = hostingPrefex +""+ wallpaperLight;
+        cssUrl = hostingPrefix +"phone.light.css";
+        wallpaperUrl = hostingPrefix +""+ wallpaperLight;
     } else if(UiThemeStyle == "dark") {
-        cssUrl = hostingPrefex +"phone.dark.css";
-        wallpaperUrl = hostingPrefex +""+ wallpaperDark;
+        cssUrl = hostingPrefix +"phone.dark.css";
+        wallpaperUrl = hostingPrefix +""+ wallpaperDark;
     } else {
         // Defaults to light
-        cssUrl = hostingPrefex +"phone.light.css";
-        wallpaperUrl = hostingPrefex +""+ wallpaperLight;
+        cssUrl = hostingPrefix +"phone.light.css";
+        wallpaperUrl = hostingPrefix +""+ wallpaperLight;
     }
     if($("#colorSchemeMode").length){
         // Style Sheet Added
@@ -1599,19 +1618,19 @@ function ApplyThemeColor(){
 }
 
 function PreloadAudioFiles(){
-    audioBlobs.Alert = { file : "Alert.mp3", url : hostingPrefex +"media/Alert.mp3" }
-    audioBlobs.Ringtone = { file : "Ringtone_1.mp3", url : hostingPrefex +"media/Ringtone_1.mp3" }
-    audioBlobs.speech_orig = { file : "speech_orig.mp3", url : hostingPrefex +"media/speech_orig.mp3" }
-    audioBlobs.Busy_UK = { file : "Tone_Busy-UK.mp3", url : hostingPrefex +"media/Tone_Busy-UK.mp3" }
-    audioBlobs.Busy_US = { file : "Tone_Busy-US.mp3", url : hostingPrefex +"media/Tone_Busy-US.mp3" }
-    audioBlobs.CallWaiting = { file : "Tone_CallWaiting.mp3", url : hostingPrefex +"media/Tone_CallWaiting.mp3" }
-    audioBlobs.Congestion_UK = { file : "Tone_Congestion-UK.mp3", url : hostingPrefex +"media/Tone_Congestion-UK.mp3" }
-    audioBlobs.Congestion_US = { file : "Tone_Congestion-US.mp3", url : hostingPrefex +"media/Tone_Congestion-US.mp3" }
-    audioBlobs.EarlyMedia_Australia = { file : "Tone_EarlyMedia-Australia.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-Australia.mp3" }
-    audioBlobs.EarlyMedia_European = { file : "Tone_EarlyMedia-European.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-European.mp3" }
-    audioBlobs.EarlyMedia_Japan = { file : "Tone_EarlyMedia-Japan.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-Japan.mp3" }
-    audioBlobs.EarlyMedia_UK = { file : "Tone_EarlyMedia-UK.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-UK.mp3" }
-    audioBlobs.EarlyMedia_US = { file : "Tone_EarlyMedia-US.mp3", url : hostingPrefex +"media/Tone_EarlyMedia-US.mp3" }
+    audioBlobs.Alert = { file : "Alert.mp3", url : hostingPrefix +"media/Alert.mp3" }
+    audioBlobs.Ringtone = { file : "Ringtone_1.mp3", url : hostingPrefix +"media/Ringtone_1.mp3" }
+    audioBlobs.speech_orig = { file : "speech_orig.mp3", url : hostingPrefix +"media/speech_orig.mp3" }
+    audioBlobs.Busy_UK = { file : "Tone_Busy-UK.mp3", url : hostingPrefix +"media/Tone_Busy-UK.mp3" }
+    audioBlobs.Busy_US = { file : "Tone_Busy-US.mp3", url : hostingPrefix +"media/Tone_Busy-US.mp3" }
+    audioBlobs.CallWaiting = { file : "Tone_CallWaiting.mp3", url : hostingPrefix +"media/Tone_CallWaiting.mp3" }
+    audioBlobs.Congestion_UK = { file : "Tone_Congestion-UK.mp3", url : hostingPrefix +"media/Tone_Congestion-UK.mp3" }
+    audioBlobs.Congestion_US = { file : "Tone_Congestion-US.mp3", url : hostingPrefix +"media/Tone_Congestion-US.mp3" }
+    audioBlobs.EarlyMedia_Australia = { file : "Tone_EarlyMedia-Australia.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-Australia.mp3" }
+    audioBlobs.EarlyMedia_European = { file : "Tone_EarlyMedia-European.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-European.mp3" }
+    audioBlobs.EarlyMedia_Japan = { file : "Tone_EarlyMedia-Japan.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-Japan.mp3" }
+    audioBlobs.EarlyMedia_UK = { file : "Tone_EarlyMedia-UK.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-UK.mp3" }
+    audioBlobs.EarlyMedia_US = { file : "Tone_EarlyMedia-US.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-US.mp3" }
     
     $.each(audioBlobs, function (i, item) {
         var oReq = new XMLHttpRequest();
@@ -1641,9 +1660,9 @@ function CreateUserAgent() {
             traceSip: false,
             connectionTimeout: TransportConnectionTimeout
             // keepAliveInterval: 30 // Uncomment this and make this any number greater then 0 for keep alive... 
-            // NB, adding a keep alive will NOT fix bad interent, if your connection cannot stay open (permanent WebSocket Connection) you probably 
+            // NB, adding a keep alive will NOT fix bad internet, if your connection cannot stay open (permanent WebSocket Connection) you probably 
             // have a router or ISP issue, and if your internet is so poor that you need to some how keep it alive with empty packets
-            // upgrade you internt connection. This is voip we are talking about here.
+            // upgrade you internet connection. This is voip we are talking about here.
         },
         sessionDescriptionHandlerFactoryOptions: {
             peerConnectionConfiguration :{
@@ -1657,6 +1676,7 @@ function CreateUserAgent() {
             },
             iceGatheringTimeout: IceStunCheckTimeout
         },
+        contactName: ContactUserName,
         displayName: profileName,
         authorizationUsername: SipUsername,
         authorizationPassword: SipPassword,
@@ -1683,6 +1703,12 @@ function CreateUserAgent() {
     }
     if(IceStunServerJson != ""){
         options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration.iceServers = JSON.parse(IceStunServerJson);
+    }
+    if(RegisterContactParams && RegisterContactParams != "" && RegisterContactParams != "{}"){
+        try{
+            var registerContactParams = JSON.parse(RegisterContactParams);
+            options.contactParams = registerContactParams;
+        } catch(e){}
     }
 
     // Add (Hardcode) other RTCPeerConnection({ rtcConfiguration }) config dictionary options here
@@ -1718,6 +1744,32 @@ function CreateUserAgent() {
     var RegistererOptions = { 
         expires: RegisterExpires
     }
+    if(RegisterExtraHeaders && RegisterExtraHeaders != "" && RegisterExtraHeaders != "{}"){
+        try{
+            var registerExtraHeaders = JSON.parse(RegisterExtraHeaders);
+            RegistererOptions.extraHeaders = [];
+            for (const [key, value] of Object.entries(registerExtraHeaders)) {
+                if(value != ""){
+                    RegistererOptions.extraHeaders.push(key + ": "+  value);
+                }
+            }
+        } catch(e){}
+    }
+    
+    if(RegisterExtraContactParams && RegisterExtraContactParams != "" && RegisterExtraContactParams != "{}"){
+        try{
+            var registerExtraContactParams = JSON.parse(RegisterExtraContactParams);
+            RegistererOptions.extraContactHeaderParams = [];
+            for (const [key, value] of Object.entries(registerExtraContactParams)) {
+                if(value == ""){
+                    RegistererOptions.extraContactHeaderParams.push(key);
+                } else {
+                    RegistererOptions.extraContactHeaderParams.push(key + ":"+  value);
+                }
+            }
+        } catch(e){}
+    }
+
     userAgent.registerer = new SIP.Registerer(userAgent, RegistererOptions);
     console.log("Creating Registerer... Done");
 
@@ -1771,7 +1823,7 @@ function onTransportConnected(){
 function onTransportConnectError(error){
     console.warn("WebSocket Connection Failed:", error);
 
-    // We set this flag here so that the re-register attepts are fully completed.
+    // We set this flag here so that the re-register attempts are fully completed.
     userAgent.isReRegister = false;
 
     // If there is an issue with the WS connection
@@ -1853,14 +1905,18 @@ function Register() {
     userAgent.registering = true
     userAgent.registerer.register(RegistererRegisterOptions);
 }
-function Unregister() {
+function Unregister(skipUnsubscribe) {
     if (userAgent == null || !userAgent.isRegistered()) return;
 
-    console.log("Unsubscribing...");
-    $("#regStatus").html(lang.unsubscribing);
-    try {
-        UnsubscribeAll();
-    } catch (e) { }
+    if(skipUnsubscribe == true){
+        console.log("Skipping Unsubscribe");
+    } else {
+        console.log("Unsubscribing...");
+        $("#regStatus").html(lang.unsubscribing);
+        try {
+            UnsubscribeAll();
+        } catch (e) { }
+    }
 
     console.log("Unregister...");
     $("#regStatus").html(lang.disconnecting);
@@ -1877,7 +1933,7 @@ function Unregister() {
  * Called when account is registered
  */
 function onRegistered(){
-    // This code fires on re-resiter after session timeout
+    // This code fires on re-register after session timeout
     // to ensure that events are not fired multiple times
     // a isReRegister state is kept.
     // TODO: This check appears obsolete
@@ -1958,7 +2014,7 @@ function onUnregistered(){
         // Was never really registered, so cant really say unregistered
     }
 
-    // We set this flag here so that the re-register attepts are fully completed.
+    // We set this flag here so that the re-register attempts are fully completed.
     userAgent.isReRegister = false;
 }
 
@@ -1982,16 +2038,16 @@ function ReceiveCall(session) {
 
         var buddyType = (did.length > DidLength)? "contact" : "extension";
         var focusOnBuddy = (CurrentCalls==0);
-        buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, false, callerID, did, null, false, null, true);
+        buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, false, callerID, did, null, false, null, AutoDeleteDefault);
     }
     else {
         // Double check that the buddy has the same caller ID as the incoming call
         // With Buddies that are contacts, eg +441234567890 <+441234567890> leave as as
         if(buddyObj.type == "extension" && buddyObj.CallerIDName != callerID){
-            UpdateBuddyCalerID(buddyObj, callerID);
+            UpdateBuddyCallerID(buddyObj, callerID);
         }
         else if(buddyObj.type == "contact" && callerID != did && buddyObj.CallerIDName != callerID){
-            UpdateBuddyCalerID(buddyObj, callerID);
+            UpdateBuddyCallerID(buddyObj, callerID);
         }
     }
 
@@ -2021,13 +2077,13 @@ function ReceiveCall(session) {
     lineObj.SipSession.data.withvideo = false;
     if(EnableVideoCalling == true && lineObj.SipSession.request.body){
         // Asterisk 13 PJ_SIP always sends m=video if endpoint has video codec,
-        // even if origional invite does not specify video.
+        // even if original invite does not specify video.
         if(lineObj.SipSession.request.body.indexOf("m=video") > -1) {
             lineObj.SipSession.data.withvideo = true;
             // The invite may have video, but the buddy may be a contact
             if(buddyObj.type == "contact"){
                 // videoInvite = false;
-                // TODO: Is this limitation nesessary?
+                // TODO: Is this limitation necessary?
             }
         }
     }
@@ -2035,10 +2091,10 @@ function ReceiveCall(session) {
     // Session Delegates
     lineObj.SipSession.delegate = {
         onBye: function(sip){
-            onSessionRecievedBye(lineObj, sip)
+            onSessionReceivedBye(lineObj, sip)
         },
         onMessage: function(sip){
-            onSessionRecievedMessage(lineObj, sip);
+            onSessionReceivedMessage(lineObj, sip);
         },
         onInvite: function(sip){
             onSessionReinvited(lineObj, sip);
@@ -2089,7 +2145,7 @@ function ReceiveCall(session) {
     }
     $("#line-" + lineObj.LineNumber + "-AnswerCall").show();
 
-    // Update the buddy list now so that any early rejected calls dont flash on
+    // Update the buddy list now so that any early rejected calls don't flash on
     UpdateBuddyList();
 
     // Auto Answer options
@@ -2147,7 +2203,7 @@ function ReceiveCall(session) {
                 // If the call is with video, assume the auto answer is also
                 // In order for this to work nicely, the recipient maut be "ready" to accept video calls
                 // In order to ensure video call compatibility (i.e. the recipient must have their web cam in, and working)
-                // The NULL video sould be configured
+                // The NULL video should be configured
                 // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
                 if(lineObj.SipSession.data.withvideo) {
                     AnswerVideoCall(lineObj.LineNumber);
@@ -2208,47 +2264,47 @@ function ReceiveCall(session) {
         if(CurrentCalls >= 1){
             // Play Alert
             console.log("Audio:", audioBlobs.CallWaiting.url);
-            var rinnger = new Audio(audioBlobs.CallWaiting.blob);
-            rinnger.preload = "auto";
-            rinnger.loop = false;
-            rinnger.oncanplaythrough = function(e) {
-                if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
-                    rinnger.setSinkId(getRingerOutputID()).then(function() {
+            var ringer = new Audio(audioBlobs.CallWaiting.blob);
+            ringer.preload = "auto";
+            ringer.loop = false;
+            ringer.oncanplaythrough = function(e) {
+                if (typeof ringer.sinkId !== 'undefined' && getRingerOutputID() != "default") {
+                    ringer.setSinkId(getRingerOutputID()).then(function() {
                         console.log("Set sinkId to:", getRingerOutputID());
                     }).catch(function(e){
                         console.warn("Failed not apply setSinkId.", e);
                     });
                 }
                 // If there has been no interaction with the page at all... this page will not work
-                rinnger.play().then(function(){
+                ringer.play().then(function(){
                     // Audio Is Playing
                 }).catch(function(e){
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            lineObj.SipSession.data.rinngerObj = rinnger;
+            lineObj.SipSession.data.ringerObj = ringer;
         } else {
             // Play Ring Tone
             console.log("Audio:", audioBlobs.Ringtone.url);
-            var rinnger = new Audio(audioBlobs.Ringtone.blob);
-            rinnger.preload = "auto";
-            rinnger.loop = true;
-            rinnger.oncanplaythrough = function(e) {
-                if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
-                    rinnger.setSinkId(getRingerOutputID()).then(function() {
+            var ringer = new Audio(audioBlobs.Ringtone.blob);
+            ringer.preload = "auto";
+            ringer.loop = true;
+            ringer.oncanplaythrough = function(e) {
+                if (typeof ringer.sinkId !== 'undefined' && getRingerOutputID() != "default") {
+                    ringer.setSinkId(getRingerOutputID()).then(function() {
                         console.log("Set sinkId to:", getRingerOutputID());
                     }).catch(function(e){
                         console.warn("Failed not apply setSinkId.", e);
                     });
                 }
                 // If there has been no interaction with the page at all... this page will not work
-                rinnger.play().then(function(){
+                ringer.play().then(function(){
                     // Audio Is Playing
                 }).catch(function(e){
                     console.warn("Unable to play audio file.", e);
                 }); 
             }
-            lineObj.SipSession.data.rinngerObj = rinnger;
+            lineObj.SipSession.data.ringerObj = ringer;
         }
     
     }
@@ -2266,11 +2322,11 @@ function AnswerAudioCall(lineNumber) {
     }
     var session = lineObj.SipSession;
     // Stop the ringtone
-    if(session.data.rinngerObj){
-        session.data.rinngerObj.pause();
-        session.data.rinngerObj.removeAttribute('src');
-        session.data.rinngerObj.load();
-        session.data.rinngerObj = null;
+    if(session.data.ringerObj){
+        session.data.ringerObj.pause();
+        session.data.ringerObj.removeAttribute('src');
+        session.data.ringerObj.load();
+        session.data.ringerObj = null;
     }
     // Check vitals
     if(HasAudioDevice == false){
@@ -2349,11 +2405,11 @@ function AnswerVideoCall(lineNumber) {
     }
     var session = lineObj.SipSession;
     // Stop the ringtone
-    if(session.data.rinngerObj){
-        session.data.rinngerObj.pause();
-        session.data.rinngerObj.removeAttribute('src');
-        session.data.rinngerObj.load();
-        session.data.rinngerObj = null;
+    if(session.data.ringerObj){
+        session.data.ringerObj.pause();
+        session.data.ringerObj.removeAttribute('src');
+        session.data.ringerObj.load();
+        session.data.ringerObj = null;
     }
     // Check vitals
     if(HasAudioDevice == false){
@@ -2504,7 +2560,7 @@ function onInviteCancel(lineObj, response){
 
         teardownSession(lineObj);
 }
-// Both Incoming an doutgoing INVITE
+// Both Incoming an outgoing INVITE
 function onInviteAccepted(lineObj, includeVideo, response){
     // Call in progress
     var session = lineObj.SipSession;
@@ -2531,7 +2587,7 @@ function onInviteAccepted(lineObj, includeVideo, response){
     session.data.started = true;
 
     if(includeVideo){
-        // Preview our stream from peer conneciton
+        // Preview our stream from peer connection
         var localVideoStream = new MediaStream();
         var pc = session.sessionDescriptionHandler.peerConnection;
         pc.getSenders().forEach(function (sender) {
@@ -2662,7 +2718,7 @@ function onInviteProgress(lineObj, response){
         if(lineObj.SipSession.data.earlyMedia){
             // There is already early media playing
             // onProgress can be called multiple times
-            // Dont add it again
+            // Don't add it again
             console.log("Early Media already playing");
         }
         else {
@@ -2717,8 +2773,8 @@ function onInviteRedirected(response){
     // Follow???
 }
 
-// General Sessoin delegates
-function onSessionRecievedBye(lineObj, response){
+// General Session delegates
+function onSessionReceivedBye(lineObj, response){
     // They Ended the call
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_ended);
     console.log("Call ended, bye!");
@@ -2761,7 +2817,7 @@ function onSessionReinvited(lineObj, response){
         RedrawStage(lineObj.LineNumber, false);
     }
 }
-function onSessionRecievedMessage(lineObj, response){
+function onSessionReceivedMessage(lineObj, response){
     var messageType = (response.request.headers["Content-Type"].length >=1)? response.request.headers["Content-Type"][0].parsed : "Unknown" ;
     if(messageType.indexOf("application/x-asterisk-confbridge-event") > -1){
         // Conference Events JSON
@@ -2783,7 +2839,7 @@ function onSessionRecievedMessage(lineObj, response){
 
             session.data.ConfbridgeChannels = msgJson.channels; // Write over this
             session.data.ConfbridgeChannels.forEach(function(chan) {
-                // The mute and unmute status doesnt appear to be a realtime state, only what the 
+                // The mute and unmute status doesn't appear to be a realtime state, only what the 
                 // startmuted= setting of the default profile is.
                 console.log(chan.caller.name, "Is in the conference. Muted:", chan.muted, "Admin:", chan.admin);
             });
@@ -3030,7 +3086,7 @@ function teardownSession(lineObj) {
             session.data.childsession = null;
         }).catch(function(error){
             session.data.childsession = null;
-            // Supress message
+            // Suppress message
         });
     }
 
@@ -3047,11 +3103,11 @@ function teardownSession(lineObj) {
         session.data.earlyMedia = null;
     }
     // Stop any ringing calls
-    if(session.data.rinngerObj){
-        session.data.rinngerObj.pause();
-        session.data.rinngerObj.removeAttribute('src');
-        session.data.rinngerObj.load();
-        session.data.rinngerObj = null;
+    if(session.data.ringerObj){
+        session.data.ringerObj.pause();
+        session.data.ringerObj.removeAttribute('src');
+        session.data.ringerObj.load();
+        session.data.ringerObj = null;
     }
     
     // Stop Recording if we are
@@ -3512,7 +3568,7 @@ function StartLocalAudioMediaMonitoring(lineNum, session) {
                             SendPacketRateChart.update();
                         }
                         if(report.type == "track") {
-                            // Bug/security consern... this seems always to report "0"
+                            // Bug/security concern... this seems always to report "0"
                             // Possible reason: When applied to isolated streams, media metrics may allow an application to infer some characteristics of the isolated stream, such as if anyone is speaking (by watching the audioLevel statistic).
                             // console.log("Audio Sender: " + report.audioLevel);
                         }
@@ -3708,7 +3764,7 @@ function SaveQosData(QosData, sessionId, buddy){
         var transaction = IDB.transaction(["CallQos"], "readwrite");
         var objectStoreAdd = transaction.objectStore("CallQos").add(data);
         objectStoreAdd.onsuccess = function(event) {
-            console.log("Call CallQos Sucess: ", sessionId);
+            console.log("Call CallQos Success: ", sessionId);
         }
     }
 }
@@ -3774,17 +3830,17 @@ function DisplayQosData(sessionId){
 
 
                 // ReceiveBitRateChart
-                var labelset = [];
+                var labelSet = [];
                 var dataset = [];
                 var data = (QosData0.ReceiveBitRate.length > 0)? QosData0.ReceiveBitRate : QosData1.ReceiveBitRate;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
+                    labelSet.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var ReceiveBitRateChart = new Chart($("#cdr-AudioReceiveBitRate"), {
                     type: 'line',
                     data: {
-                        labels: labelset,
+                        labels: labelSet,
                         datasets: [{
                             label: lang.receive_kilobits_per_second,
                             data: dataset,
@@ -3798,17 +3854,17 @@ function DisplayQosData(sessionId){
                 });
 
                 // ReceivePacketRateChart
-                var labelset = [];
+                var labelSet = [];
                 var dataset = [];
                 var data = (QosData0.ReceivePacketRate.length > 0)? QosData0.ReceivePacketRate : QosData1.ReceivePacketRate;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
+                    labelSet.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var ReceivePacketRateChart = new Chart($("#cdr-AudioReceivePacketRate"), {
                     type: 'line',
                     data: {
-                        labels: labelset,
+                        labels: labelSet,
                         datasets: [{
                             label: lang.receive_packets_per_second,
                             data: dataset,
@@ -3822,17 +3878,17 @@ function DisplayQosData(sessionId){
                 });
 
                 // AudioReceivePacketLossChart
-                var labelset = [];
+                var labelSet = [];
                 var dataset = [];
                 var data = (QosData0.ReceivePacketLoss.length > 0)? QosData0.ReceivePacketLoss : QosData1.ReceivePacketLoss;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
+                    labelSet.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var AudioReceivePacketLossChart = new Chart($("#cdr-AudioReceivePacketLoss"), {
                     type: 'line',
                     data: {
-                        labels: labelset,
+                        labels: labelSet,
                         datasets: [{
                             label: lang.receive_packet_loss,
                             data: dataset,
@@ -3846,17 +3902,17 @@ function DisplayQosData(sessionId){
                 });
 
                 // AudioReceiveJitterChart
-                var labelset = [];
+                var labelSet = [];
                 var dataset = [];
                 var data = (QosData0.ReceiveJitter.length > 0)? QosData0.ReceiveJitter : QosData1.ReceiveJitter;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
+                    labelSet.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var AudioReceiveJitterChart = new Chart($("#cdr-AudioReceiveJitter"), {
                     type: 'line',
                     data: {
-                        labels: labelset,
+                        labels: labelSet,
                         datasets: [{
                             label: lang.receive_jitter,
                             data: dataset,
@@ -3870,17 +3926,17 @@ function DisplayQosData(sessionId){
                 });
                 
                 // AudioReceiveLevelsChart
-                var labelset = [];
+                var labelSet = [];
                 var dataset = [];
                 var data = (QosData0.ReceiveLevels.length > 0)? QosData0.ReceiveLevels : QosData1.ReceiveLevels;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
+                    labelSet.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var AudioReceiveLevelsChart = new Chart($("#cdr-AudioReceiveLevels"), {
                     type: 'line',
                     data: {
-                        labels: labelset,
+                        labels: labelSet,
                         datasets: [{
                             label: lang.receive_audio_levels,
                             data: dataset,
@@ -3894,17 +3950,17 @@ function DisplayQosData(sessionId){
                 });
                 
                 // SendPacketRateChart
-                var labelset = [];
+                var labelSet = [];
                 var dataset = [];
                 var data = (QosData0.SendPacketRate.length > 0)? QosData0.SendPacketRate : QosData1.SendPacketRate;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
+                    labelSet.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var SendPacketRateChart = new Chart($("#cdr-AudioSendPacketRate"), {
                     type: 'line',
                     data: {
-                        labels: labelset,
+                        labels: labelSet,
                         datasets: [{
                             label: lang.send_packets_per_second,
                             data: dataset,
@@ -3918,17 +3974,17 @@ function DisplayQosData(sessionId){
                 });
 
                 // AudioSendBitRateChart
-                var labelset = [];
+                var labelSet = [];
                 var dataset = [];
                 var data = (QosData0.SendBitRate.length > 0)? QosData0.SendBitRate : QosData1.SendBitRate;
                 $.each(data, function(i,item){
-                    labelset.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
+                    labelSet.push(moment.utc(item.timestamp.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat));
                     dataset.push(item.value);
                 });
                 var AudioSendBitRateChart = new Chart($("#cdr-AudioSendBitRate"), {
                     type: 'line',
                     data: {
-                        labels: labelset,
+                        labels: labelSet,
                         datasets: [{
                             label: lang.send_kilobits_per_second,
                             data: dataset,
@@ -3971,7 +4027,7 @@ function DeleteQosData(buddy, stream){
 
         // Loop and Delete
         // Note:  This database can only delete based on Primary Key
-        // The The Primary Key is arbitary, so you must get all the rows based
+        // The The Primary Key is arbitrary, so you must get all the rows based
         // on a lookup, and delete from there.
         $.each(stream.DataCollection, function (i, item) {
             if (item.ItemType == "CDR" && item.SessionId && item.SessionId != "") {
@@ -4024,7 +4080,7 @@ function SubscribeAll() {
 function SubscribeVoicemail(){
     if(!userAgent.isRegistered()) return;
 
-    if(userAgent.VoicemailSub){
+    if(userAgent.voicemailSub){
         console.log("Unsubscribe from old voicemail Messages...");
         UnsubscribeVoicemail();
     }
@@ -4039,7 +4095,7 @@ function SubscribeVoicemail(){
     }
     console.log("SUBSCRIBE VOICEMAIL: "+ SipUsername +"@" + SipDomain);
     userAgent.voicemailSub.subscribe().catch(function(error){
-        console.warn("Error subscribing to voimail notifications:", error);
+        console.warn("Error subscribing to voicemail notifications:", error);
     });
 }
 function SubscribeBuddy(buddyObj) {
@@ -4047,8 +4103,7 @@ function SubscribeBuddy(buddyObj) {
 
     if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && buddyObj.EnableSubscribe == true && buddyObj.SubscribeUser != "") {
         // PIDF Subscription TODO: make this an option.
-        // Dialog Subscription (This version isnt as nice as PIDF - Presence Information Data Format)
-        // Rember that you can generally only subsribe to a buddy DID, since they are not likely to hand out their sip username
+        // Dialog Subscription (This version isn't as nice as PIDF - Presence Information Data Format)
 
         var targetURI = SIP.UserAgent.makeURI("sip:" + buddyObj.SubscribeUser + "@" + SipDomain);
         // var blfSubscribe = new SIP.Subscriber(userAgent, targetURI, "dialog", options);
@@ -4062,7 +4117,7 @@ function SubscribeBuddy(buddyObj) {
         blfSubscribe.data.buddyId = buddyObj.identity;
         blfSubscribe.delegate = {
             onNotify: function(sip) {
-                RecieveBlf(sip);
+                ReceiveBlf(sip);
             }
         }
         console.log("SUBSCRIBE: "+ buddyObj.SubscribeUser +"@" + SipDomain);
@@ -4076,6 +4131,7 @@ function SubscribeBuddy(buddyObj) {
 function UnsubscribeAll() {
     if(!userAgent.isRegistered()) return;
 
+    console.log("Unsubscribe from voicemail Messages...");
     UnsubscribeVoicemail();
 
     if(userAgent.BlfSubs && userAgent.BlfSubs.length > 0){
@@ -4113,18 +4169,20 @@ function UnsubscribeBlf(blfSubscribe){
 function UnsubscribeVoicemail(){
     if(!userAgent.isRegistered()) return;
 
-    if(userAgent.VoicemailSub){
-        if(userAgent.VoicemailSub.state == SIP.SubscriptionState.Subscribed){
-            console.log("Unsubscribe to voicemail Messages...");
-            userAgent.VoicemailSub.unsubscribe().catch(function(error){
+    if(userAgent.voicemailSub){
+        console.log("Unsubscribe to voicemail Messages...", userAgent.voicemailSub.state);
+        if(userAgent.voicemailSub.state == SIP.SubscriptionState.Subscribed){
+            userAgent.voicemailSub.unsubscribe().catch(function(error){
                 console.warn("Error removing voicemail notifications:", error);
             });
         }
-        userAgent.VoicemailSub.dispose().catch(function(error){
+        userAgent.voicemailSub.dispose().catch(function(error){
             console.warn("Error disposing voicemail notifications:", error);
         });
+    } else {
+        console.log("Not subscribed to MWI");
     }
-    userAgent.VoicemailSub = null;
+    userAgent.voicemailSub = null;
 }
 function UnsubscribeBuddy(buddyObj) {
     if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
@@ -4188,11 +4246,11 @@ function VoicemailNotify(notification){
         if(typeof web_hook_on_messages_waiting !== 'undefined')  web_hook_on_messages_waiting(newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
     }
     else {
-        // Doenst seem to be an message notification https://datatracker.ietf.org/doc/html/rfc3842
+        // Doesn't seem to be an message notification https://datatracker.ietf.org/doc/html/rfc3842
         notification.reject();
     }
 }
-function RecieveBlf(notification) {
+function ReceiveBlf(notification) {
     if (userAgent == null || !userAgent.isRegistered()) return;
 
     notification.accept();
@@ -4205,13 +4263,13 @@ function RecieveBlf(notification) {
     if (ContentType == "application/pidf+xml") {
         // Handle Presence
         /*
-        // Asteriks chan_sip
+        // Asterisk chan_sip
         <?xml version="1.0" encoding="ISO-8859-1"?>
         <presence
             xmlns="urn:ietf:params:xml:ns:pidf" 
             xmlns:pp="urn:ietf:params:xml:ns:pidf:person" 
-            xmlns:es="urn:ietf:params:xml:ns:pidf:rpid:status:rpid-status"
-            xmlns:ep="urn:ietf:params:xml:ns:pidf:rpid:rpid-person"
+            xmlns:es="urn:ietf:params:xml:ns:pidf:rid:status:rid-status"
+            xmlns:ep="urn:ietf:params:xml:ns:pidf:rid:rid-person"
             entity="sip:webrtc@192.168.88.98">
 
             <pp:person>
@@ -4231,13 +4289,13 @@ function RecieveBlf(notification) {
             </tuple>
         </presence>
 
-        // Asterisk chan_pjsip
+        // Asterisk chan_pj-sip
         <?xml version="1.0" encoding="UTF-8"?>
         <presence 
             entity="sip:300@192.168.88.40:443;transport=ws" 
             xmlns="urn:ietf:params:xml:ns:pidf" 
             xmlns:dm="urn:ietf:params:xml:ns:pidf:data-model" 
-            xmlns:rpid="urn:ietf:params:xml:ns:pidf:rpid">
+            xmlns:rid="urn:ietf:params:xml:ns:pidf:rid">
             <note>Ready</note>
             <tuple id="300">
                 <status>
@@ -4253,7 +4311,7 @@ function RecieveBlf(notification) {
         <presence 
             xmlns="urn:ietf:params:xml:ns:pidf" 
             entity="sip:200@ws-eu-west-1.innovateasterisk.com">
-            <tuple xmlns="urn:ietf:params:xml:ns:pidf" id="tuple_mixingid">
+            <tuple xmlns="urn:ietf:params:xml:ns:pidf" id="tuple_mixing-id">
                 <status>
                     <basic>closed</basic>
                 </status>
@@ -4263,7 +4321,7 @@ function RecieveBlf(notification) {
         <?xml version="1.0"?>
         <presence 
             xmlns="urn:ietf:params:xml:ns:pidf" 
-            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com">
+            entity="sip:TTbXG7XMO@ws-eu-west-1.innovateasterisk.com">
             <tuple 
                 xmlns="urn:ietf:params:xml:ns:pidf" 
                 id="0x7ffe17f496c0">
@@ -4277,10 +4335,10 @@ function RecieveBlf(notification) {
         <?xml version="1.0"?>
         <presence 
             xmlns="urn:ietf:params:xml:ns:pidf" 
-            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com">
+            entity="sip:TTbXG7XMO@ws-eu-west-1.innovateasterisk.com">
             <tuple 
                 xmlns="urn:ietf:params:xml:ns:pidf" 
-                id="tuple_mixingid">
+                id="tuple_mixing-id">
                 <status>
                     <basic>open</basic>
                 </status>
@@ -4288,11 +4346,11 @@ function RecieveBlf(notification) {
             <note xmlns="urn:ietf:params:xml:ns:pidf">On the phone</note>
             <dm:person 
                 xmlns:dm="urn:ietf:params:xml:ns:pidf:data-model" 
-                xmlns:rpid="urn:ietf:params:xml:ns:pidf:rpid" 
-                id="pers_mixingid">
-                <rpid:activities>
-                    <rpid:on-the-phone/>
-                </rpid:activities>
+                xmlns:rid="urn:ietf:params:xml:ns:pidf:rid" 
+                id="peers_mixing-id">
+                <rid:activities>
+                    <rid:on-the-phone/>
+                </rid:activities>
                 <dm:note>On the phone</dm:note>
             </dm:person>
         </presence>
@@ -4301,7 +4359,7 @@ function RecieveBlf(notification) {
         <?xml version="1.0"?>
         <presence 
             xmlns="urn:ietf:params:xml:ns:pidf" 
-            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com">
+            entity="sip:TTbXG7XMO@ws-eu-west-1.innovateasterisk.com">
             <tuple 
                 xmlns="urn:ietf:params:xml:ns:pidf" 
                 id="0x7ffce2b4b1a0">
@@ -4332,7 +4390,7 @@ closed: In the context of INSTANT MESSAGES, this value means that
 
         var xml = $($.parseXML(notification.request.body));
 
-        // The value of the 'entity' attribute is the 'pres' URL of the PRESENTITY publishing this presence document.
+        // The value of the 'entity' attribute is the 'pres' URL of the PRESENT publishing this presence document.
         // (In some cases this can present as the user... what if using DIDs)
         var ObservedUser = xml.find("presence").attr("entity");
         buddy = ObservedUser.split("@")[0].split(":")[1];
@@ -4363,7 +4421,7 @@ closed: In the context of INSTANT MESSAGES, this value means that
         var xml = $($.parseXML(notification.request.body));
 
         /*
-        Asteriks:
+        Asterisk:
         <?xml version="1.0"?>
         <dialog-info 
             xmlns="urn:ietf:params:xml:ns:dialog-info" 
@@ -4381,18 +4439,18 @@ closed: In the context of INSTANT MESSAGES, this value means that
             xmlns="urn:ietf:params:xml:ns:dialog-info" 
             version="18" 
             state="full" 
-            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com"
+            entity="sip:TTbXG7XMO@ws-eu-west-1.innovateasterisk.com"
         />
 
         <?xml version="1.0"?>
         <dialog-info 
             xmlns="urn:ietf:params:xml:ns:dialog-info" 
             version="17" 
-            entity="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com" 
+            entity="sip:TTbXG7XMO@ws-eu-west-1.innovateasterisk.com" 
             state="partial">
             <dialog 
-                id="qjsoe2vr886cbn1ccj3h.0" 
-    *           local-tag="rceq735vrh" 
+                id="soe2vr886cbn1ccj3h.0" 
+    *           local-tag="ceq735vrh" 
     *           remote-tag="a1d22259-28ea-434f-9680-b925218b7418" 
                 direction="initiator">
                 <state>terminated</state>
@@ -4401,8 +4459,8 @@ closed: In the context of INSTANT MESSAGES, this value means that
                     <target uri="sip:*65@ws-eu-west-1.innovateasterisk.com"/>
     *           </remote>
     *           <local>
-                    <identity display="Conrad De Wet">sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com</identity>
-                    <target uri="sip:TTbXG7XMOC@ws-eu-west-1.innovateasterisk.com"/>
+                    <identity display="Conrad De Wet">sip:TTbXG7XMO@ws-eu-west-1.innovateasterisk.com</identity>
+                    <target uri="sip:TTbXG7XMO@ws-eu-west-1.innovateasterisk.com"/>
                 </local>
             </dialog>
         </dialog-info>
@@ -4413,7 +4471,7 @@ closed: In the context of INSTANT MESSAGES, this value means that
 
         var version = xml.find("dialog-info").attr("version"); // 1|2|etc
         var DialogState = xml.find("dialog-info").attr("state"); // full|partial
-        var extId = xml.find("dialog-info").find("dialog").attr("id"); // qjsoe2vr886cbn1ccj3h.0
+        var extId = xml.find("dialog-info").find("dialog").attr("id"); // qoe2vr886cbn1ccj3h.0
 
         var state = xml.find("dialog-info").find("dialog").find("state").text();
         if (state == "terminated") Presence = "Ready";
@@ -4449,7 +4507,7 @@ closed: In the context of INSTANT MESSAGES, this value means that
 
     // Presence (SIP / XMPP)
     // SIP uses Devices states only
-    // XMPP uses Device states, and Presence, but only XMMP Presence will display a text message
+    // XMPP uses Device states, and Presence, but only XMPP Presence will display a text message
     if(buddyObj.type != "xmpp"){
         console.log("Setting Presence for "+ buddyObj.CallerIDName +" to "+ Presence);
         
@@ -4464,11 +4522,14 @@ closed: In the context of INSTANT MESSAGES, this value means that
         $("#contact-" + buddyObj.identity + "-presence").html(Presence);
         $("#contact-" + buddyObj.identity + "-presence-main").html(Presence);
     }
+
+    // Custom Handling of Notify/BLF
+    if(typeof web_hook_on_notify !== 'undefined')  web_hook_on_notify(ContentType, buddyObj, notification.request.body);
 }
 
 // Buddy: Chat / Instant Message / XMPP
 // ====================================
-function InitinaliseStream(buddy){
+function InitialiseStream(buddy){
     var template = { TotalRows:0, DataCollection:[] }
     localDB.setItem(buddy + "-stream", JSON.stringify(template));
     return JSON.parse(localDB.getItem(buddy + "-stream"));
@@ -4477,7 +4538,7 @@ function SendChatMessage(buddy) {
     if (userAgent == null) return;
     if (!userAgent.isRegistered()) return;
 
-    $("#contact-" + buddy + "-ChatMessage").focus(); // refocus on the textare
+    $("#contact-" + buddy + "-ChatMessage").focus(); // refocus on the textarea
 
     var message = $("#contact-" + buddy + "-ChatMessage").val();
     message = $.trim(message);
@@ -4487,7 +4548,7 @@ function SendChatMessage(buddy) {
     }
     // Note: AMI has this limit, but only if you use AMI to transmit
     // if(message.length > 755){
-    //     Alert("Asterisk has a limit on the message size (755). This message is too long, and connot be delivered.", "Message Too Long");
+    //     Alert("Asterisk has a limit on the message size (755). This message is too long, and cannot be delivered.", "Message Too Long");
     //     return;
     // }
 
@@ -4497,7 +4558,7 @@ function SendChatMessage(buddy) {
     // Update Stream
     var DateTime = moment.utc().format("YYYY-MM-DD HH:mm:ss UTC");
     var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
-    if(currentStream == null) currentStream = InitinaliseStream(buddy);
+    if(currentStream == null) currentStream = InitialiseStream(buddy);
 
     // Add New Message
     var newMessageJson = {
@@ -4709,16 +4770,16 @@ function ReceiveOutOfDialogMessage(message) {
             localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
         }
 
-        var origionalMessage = message.request.body;
+        var originalMessage = message.request.body;
         var messageId = uID();
         var DateTime = utcDateNow();
 
         message.accept();
 
-        AddMessageToStream(buddyObj, messageId, "MSG", origionalMessage, DateTime)
+        AddMessageToStream(buddyObj, messageId, "MSG", originalMessage, DateTime)
         UpdateBuddyActivity(buddyObj.identity);
         RefreshStream(buddyObj);
-        ActivateStream(buddyObj, origionalMessage);
+        ActivateStream(buddyObj, originalMessage);
     }
     // Message Summary
     else if(messageType.indexOf("application/simple-message-summary") > -1){
@@ -4734,7 +4795,7 @@ function ReceiveOutOfDialogMessage(message) {
 }
 function AddMessageToStream(buddyObj, messageId, type, message, DateTime){
     var currentStream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
-    if(currentStream == null) currentStream = InitinaliseStream(buddyObj.identity);
+    if(currentStream == null) currentStream = InitialiseStream(buddyObj.identity);
 
     // Add New Message
     var newMessageJson = {
@@ -4778,25 +4839,25 @@ function ActivateStream(buddyObj, message){
         }
         // Play Alert
         console.log("Audio:", audioBlobs.Alert.url);
-        var rinnger = new Audio(audioBlobs.Alert.blob);
-        rinnger.preload = "auto";
-        rinnger.loop = false;
-        rinnger.oncanplaythrough = function(e) {
-            if (typeof rinnger.sinkId !== 'undefined' && getRingerOutputID() != "default") {
-                rinnger.setSinkId(getRingerOutputID()).then(function() {
+        var ringer = new Audio(audioBlobs.Alert.blob);
+        ringer.preload = "auto";
+        ringer.loop = false;
+        ringer.oncanplaythrough = function(e) {
+            if (typeof ringer.sinkId !== 'undefined' && getRingerOutputID() != "default") {
+                ringer.setSinkId(getRingerOutputID()).then(function() {
                     console.log("Set sinkId to:", getRingerOutputID());
                 }).catch(function(e){
                     console.warn("Failed not apply setSinkId.", e);
                 });
             }
             // If there has been no interaction with the page at all... this page will not work
-            rinnger.play().then(function(){
+            ringer.play().then(function(){
                 // Audio Is Playing
             }).catch(function(e){
                 console.warn("Unable to play audio file.", e);
             });
         }
-        // message.data.rinngerObj = rinnger;
+        // message.data.ringerObj = ringer;
     } else {
         // Message window is active.
     }
@@ -4804,7 +4865,7 @@ function ActivateStream(buddyObj, message){
 function AddCallMessage(buddy, session) {
 
     var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
-    if(currentStream == null) currentStream = InitinaliseStream(buddy);
+    if(currentStream == null) currentStream = InitialiseStream(buddy);
 
     var CallEnd = moment.utc(); // Take Now as the Hangup Time
     var callDuration = 0;
@@ -4847,7 +4908,7 @@ function AddCallMessage(buddy, session) {
     var callDirection = session.data.calldirection;
     var withVideo = session.data.withvideo;
     var sessionId = session.id;
-    var hanupBy = session.data.terminateby;
+    var hangupBy = session.data.terminateby;
 
     var newMessageJson = {
         CdrId: uID(),
@@ -4867,7 +4928,7 @@ function AddCallMessage(buddy, session) {
         WithVideo: withVideo,
         SessionId: sessionId,
         CallDirection: callDirection,
-        Terminate: hanupBy,
+        Terminate: hangupBy,
         // CRM
         MessageData: null,
         Tags: [],
@@ -5249,10 +5310,10 @@ function VideoCall(lineObj, dialledNumber, extraHeaders) {
     lineObj.SipSession.isOnHold = false;
     lineObj.SipSession.delegate = {
         onBye: function(sip){
-            onSessionRecievedBye(lineObj, sip);
+            onSessionReceivedBye(lineObj, sip);
         },
         onMessage: function(sip){
-            onSessionRecievedMessage(lineObj, sip);
+            onSessionReceivedMessage(lineObj, sip);
         },
         onInvite: function(sip){
             onSessionReinvited(lineObj, sip);
@@ -5449,10 +5510,10 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
     lineObj.SipSession.isOnHold = false;
     lineObj.SipSession.delegate = {
         onBye: function(sip){
-            onSessionRecievedBye(lineObj, sip);
+            onSessionReceivedBye(lineObj, sip);
         },
         onMessage: function(sip){
-            onSessionRecievedMessage(lineObj, sip);
+            onSessionReceivedMessage(lineObj, sip);
         },
         onInvite: function(sip){
             onSessionReinvited(lineObj, sip);
@@ -5562,7 +5623,7 @@ function StartRecording(lineNum){
     if(session.data.mediaRecorder && session.data.mediaRecorder.state == "recording"){
         console.warn("Call Recording was somehow on... stopping call recording");
         StopRecording(lineNum, true);
-        // State should be inactive now, but the dataavailable event will fire
+        // State should be inactive now, but the data available event will fire
         // Note: potential race condition here if someone hits the stop, and start quite quickly.
     }
     console.log("Creating call recorder...");
@@ -5643,7 +5704,7 @@ function StartRecording(lineNum){
                 if(mainVideo == null && talkingVideos.length >= 1){
                     // Nothing pinned use talking
                     mainVideo = talkingVideos[0];
-                    // console.log("Multiple Videos using first TALING frame");
+                    // console.log("Multiple Videos using first talking frame");
                 }
                 if(mainVideo == null && validVideos.length >= 1){
                     // Nothing pinned or talking use valid
@@ -5747,7 +5808,7 @@ function StartRecording(lineNum){
     var options = {
         mimeType : mediaType
     }
-    // Note: It appears that mimeType is optional, but... Safari is truly dreadfull at recording in mp4, and doesnt have webm yet
+    // Note: It appears that mimeType is optional, but... Safari is truly dreadful at recording in mp4, and doesn't have webm yet
     // You you can leave this as default, or force webm, however know that Safari will be no good at this either way.
     // session.data.mediaRecorder = new MediaRecorder(session.data.recordingMixedAudioVideoRecordStream, options);
     session.data.mediaRecorder = new MediaRecorder(session.data.recordingMixedAudioVideoRecordStream);
@@ -5762,7 +5823,7 @@ function StartRecording(lineNum){
     }
 
     console.log("Starting Call Recording", id);
-    session.data.mediaRecorder.start(); // Safari does not support timeslice
+    session.data.mediaRecorder.start(); // Safari does not support time slice
     session.data.recordings[session.data.recordings.length-1].startTime = utcDateNow();
 
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_recording_started);
@@ -5817,7 +5878,7 @@ function SaveCallRecording(blob, id, buddy, sessionid){
         var transaction = IDB.transaction(["Recordings"], "readwrite");
         var objectStoreAdd = transaction.objectStore("Recordings").add(data);
         objectStoreAdd.onsuccess = function(event) {
-            console.log("Call Recording Sucess: ", id, blob.size, blob.type, buddy, sessionid);
+            console.log("Call Recording Success: ", id, blob.size, blob.type, buddy, sessionid);
         }
     }
 }
@@ -5827,7 +5888,7 @@ function StopRecording(lineNum, noConfirm){
 
     var session = lineObj.SipSession;
     if(noConfirm == true){
-        // Called at the end of a caill
+        // Called at the end of a call
         $("#line-"+ lineObj.LineNumber +"-btn-start-recording").show();
         $("#line-"+ lineObj.LineNumber +"-btn-stop-recording").hide();
 
@@ -5843,7 +5904,7 @@ function StopRecording(lineNum, noConfirm){
                 updateLineScroll(lineNum);
             } 
             else{
-                console.warn("Recorder is in an unknow state");
+                console.warn("Recorder is in an unknown state");
             }
         }
         return;
@@ -6048,7 +6109,7 @@ function PlayVideoCallRecording(obj, cdrId, uID, buddy){
 // Stream Manipulations
 // ====================
 function MixAudioStreams(MultiAudioTackStream){
-    // Takes in a MediaStream with any mumber of audio tracks and mixes them together
+    // Takes in a MediaStream with any number of audio tracks and mixes them together
 
     var audioContext = null;
     try {
@@ -6193,7 +6254,7 @@ function CancelTransferSession(lineNum){
             session.data.childsession = null;
         }).catch(function(error){
             session.data.childsession = null;
-            // Supress message
+            // Suppress message
         });
     }
 
@@ -6241,7 +6302,7 @@ function BlindTransfer(lineNum) {
             disposition: ""
         }
     });
-    var transferid = session.data.transfer.length-1;
+    var transferId = session.data.transfer.length-1;
 
     var transferOptions  = { 
         requestDelegate: {
@@ -6252,12 +6313,12 @@ function BlindTransfer(lineNum) {
                 session.data.reasonCode = 202;
                 session.data.reasonText = "Transfer";
             
-                session.data.transfer[transferid].accept.complete = true;
-                session.data.transfer[transferid].accept.disposition = sip.message.reasonPhrase;
-                session.data.transfer[transferid].accept.eventTime = utcDateNow();
+                session.data.transfer[transferId].accept.complete = true;
+                session.data.transfer[transferId].accept.disposition = sip.message.reasonPhrase;
+                session.data.transfer[transferId].accept.eventTime = utcDateNow();
 
                 // TODO: use lang pack
-                $("#line-" + lineNum + "-msg").html("Call Blind Transfered (Accepted)");
+                $("#line-" + lineNum + "-msg").html("Call Blind Transferred (Accepted)");
 
                 updateLineScroll(lineNum);
 
@@ -6269,9 +6330,9 @@ function BlindTransfer(lineNum) {
             onReject:function(sip){
                 console.warn("REFER rejected:", sip);
 
-                session.data.transfer[transferid].accept.complete = false;
-                session.data.transfer[transferid].accept.disposition = sip.message.reasonPhrase;
-                session.data.transfer[transferid].accept.eventTime = utcDateNow();
+                session.data.transfer[transferId].accept.complete = false;
+                session.data.transfer[transferId].accept.disposition = sip.message.reasonPhrase;
+                session.data.transfer[transferId].accept.eventTime = utcDateNow();
 
                 $("#line-" + lineNum + "-msg").html("Call Blind Failed!");
 
@@ -6339,7 +6400,7 @@ function AttendedTransfer(lineNum){
             disposition: ""
         }
     });
-    var transferid = session.data.transfer.length-1;
+    var transferId = session.data.transfer.length-1;
 
     updateLineScroll(lineNum);
 
@@ -6395,8 +6456,8 @@ function AttendedTransfer(lineNum){
         onBye: function(sip){
             console.log("New call session ended with BYE");
             newCallStatus.html(lang.call_ended);
-            session.data.transfer[transferid].disposition = "bye";
-            session.data.transfer[transferid].dispositionTime = utcDateNow();
+            session.data.transfer[transferId].disposition = "bye";
+            session.data.transfer[transferId].dispositionTime = utcDateNow();
 
             $("#line-"+ lineNum +"-txt-FindTransferBuddy").parent().show();
             $("#line-"+ lineNum +"-btn-blind-transfer").show();
@@ -6457,15 +6518,15 @@ function AttendedTransfer(lineNum){
         requestDelegate: {
             onTrying: function(sip){
                 newCallStatus.html(lang.trying);
-                session.data.transfer[transferid].disposition = "trying";
-                session.data.transfer[transferid].dispositionTime = utcDateNow();
+                session.data.transfer[transferId].disposition = "trying";
+                session.data.transfer[transferId].dispositionTime = utcDateNow();
 
                 $("#line-" + lineNum + "-msg").html(lang.attended_transfer_call_started);
             },
             onProgress:function(sip){
                 newCallStatus.html(lang.ringing);
-                session.data.transfer[transferid].disposition = "progress";
-                session.data.transfer[transferid].dispositionTime = utcDateNow();
+                session.data.transfer[transferId].disposition = "progress";
+                session.data.transfer[transferId].dispositionTime = utcDateNow();
 
                 $("#line-" + lineNum + "-msg").html(lang.attended_transfer_call_started);
 
@@ -6478,9 +6539,9 @@ function AttendedTransfer(lineNum){
                     newCallStatus.html(lang.call_cancelled);
                     console.log("New call session canceled");
         
-                    session.data.transfer[transferid].accept.complete = false;
-                    session.data.transfer[transferid].accept.disposition = "cancel";
-                    session.data.transfer[transferid].accept.eventTime = utcDateNow();
+                    session.data.transfer[transferId].accept.complete = false;
+                    session.data.transfer[transferId].accept.disposition = "cancel";
+                    session.data.transfer[transferId].accept.eventTime = utcDateNow();
         
                     $("#line-" + lineNum + "-msg").html(lang.attended_transfer_call_cancelled);
         
@@ -6496,8 +6557,8 @@ function AttendedTransfer(lineNum){
             onAccept:function(sip){
                 newCallStatus.html(lang.call_in_progress);
                 $("#line-"+ lineNum +"-btn-cancel-attended-transfer").hide();
-                session.data.transfer[transferid].disposition = "accepted";
-                session.data.transfer[transferid].dispositionTime = utcDateNow();
+                session.data.transfer[transferId].disposition = "accepted";
+                session.data.transfer[transferId].dispositionTime = utcDateNow();
         
                 var CompleteTransferBtn = $("#line-"+ lineNum +"-btn-complete-attended-transfer");
                 CompleteTransferBtn.off('click');
@@ -6511,9 +6572,9 @@ function AttendedTransfer(lineNum){
                                 session.data.reasonCode = 202;
                                 session.data.reasonText = "Attended Transfer";
 
-                                session.data.transfer[transferid].accept.complete = true;
-                                session.data.transfer[transferid].accept.disposition = sip.message.reasonPhrase;
-                                session.data.transfer[transferid].accept.eventTime = utcDateNow();
+                                session.data.transfer[transferId].accept.complete = true;
+                                session.data.transfer[transferId].accept.disposition = sip.message.reasonPhrase;
+                                session.data.transfer[transferId].accept.eventTime = utcDateNow();
 
                                 $("#line-" + lineNum + "-msg").html(lang.attended_transfer_complete_accepted);
 
@@ -6529,9 +6590,9 @@ function AttendedTransfer(lineNum){
                             onReject: function(sip){
                                 console.warn("Attended transfer rejected:", sip);
 
-                                session.data.transfer[transferid].accept.complete = false;
-                                session.data.transfer[transferid].accept.disposition = sip.message.reasonPhrase;
-                                session.data.transfer[transferid].accept.eventTime = utcDateNow();
+                                session.data.transfer[transferId].accept.complete = false;
+                                session.data.transfer[transferId].accept.disposition = sip.message.reasonPhrase;
+                                session.data.transfer[transferId].accept.eventTime = utcDateNow();
 
                                 $("#line-" + lineNum + "-msg").html("Attended Transfer Failed!");
 
@@ -6562,9 +6623,9 @@ function AttendedTransfer(lineNum){
                     newCallStatus.html(lang.call_ended);
                     console.log("New call session end");
         
-                    session.data.transfer[transferid].accept.complete = false;
-                    session.data.transfer[transferid].accept.disposition = "bye";
-                    session.data.transfer[transferid].accept.eventTime = utcDateNow();
+                    session.data.transfer[transferId].accept.complete = false;
+                    session.data.transfer[transferId].accept.disposition = "bye";
+                    session.data.transfer[transferId].accept.eventTime = utcDateNow();
         
                     $("#line-"+ lineNum +"-btn-complete-attended-transfer").hide();
                     $("#line-"+ lineNum +"-btn-cancel-attended-transfer").hide();
@@ -6587,8 +6648,8 @@ function AttendedTransfer(lineNum){
             onReject:function(sip){
                 console.log("New call session rejected: ", sip.message.reasonPhrase);
                 newCallStatus.html(lang.call_rejected);
-                session.data.transfer[transferid].disposition = sip.message.reasonPhrase;
-                session.data.transfer[transferid].dispositionTime = utcDateNow();
+                session.data.transfer[transferId].disposition = sip.message.reasonPhrase;
+                session.data.transfer[transferId].dispositionTime = utcDateNow();
         
                 $("#line-"+ lineNum +"-txt-FindTransferBuddy").parent().show();
                 $("#line-"+ lineNum +"-btn-blind-transfer").show();
@@ -6657,7 +6718,7 @@ function CancelConference(lineNum){
             session.data.childsession = null;
         }).catch(function(error){
             session.data.childsession = null;
-            // Supress message
+            // Suppress message
         });
     }
 
@@ -6672,7 +6733,7 @@ function CancelConference(lineNum){
 
     updateLineScroll(lineNum);
 }
-function ConferenceDail(lineNum){
+function ConferenceDial(lineNum){
     var dstNo = $("#line-"+ lineNum +"-txt-FindConferenceBuddy").val();
     if(EnableAlphanumericDial){
         dstNo = dstNo.replace(telAlphanumericRegEx, "").substring(0,MaxDidLength);
@@ -6717,7 +6778,7 @@ function ConferenceDail(lineNum){
             disposition: ""
         }
     });
-    var confcallid = session.data.confcalls.length-1;
+    var confCallId = session.data.confcalls.length-1;
 
     updateLineScroll(lineNum);
 
@@ -6774,8 +6835,8 @@ function ConferenceDail(lineNum){
         onBye: function(sip){
             console.log("New call session ended with BYE");
             newCallStatus.html(lang.call_ended);
-            session.data.confcalls[confcallid].disposition = "bye";
-            session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+            session.data.confcalls[confCallId].disposition = "bye";
+            session.data.confcalls[confCallId].dispositionTime = utcDateNow();
     
             $("#line-"+ lineNum +"-txt-FindConferenceBuddy").parent().show();
             $("#line-"+ lineNum +"-btn-conference-dial").show();
@@ -6829,7 +6890,7 @@ function ConferenceDail(lineNum){
             }
         }
     }
-    // Make sure we always resore audio paths
+    // Make sure we always restore audio paths
     newSession.stateChange.addListener(function(newState){
         if (newState == SIP.SessionState.Terminated) {
             // Ends the mixed audio, and releases the mic
@@ -6862,15 +6923,15 @@ function ConferenceDail(lineNum){
         requestDelegate: {
             onTrying: function(sip){
                 newCallStatus.html(lang.ringing);
-                session.data.confcalls[confcallid].disposition = "trying";
-                session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+                session.data.confcalls[confCallId].disposition = "trying";
+                session.data.confcalls[confCallId].dispositionTime = utcDateNow();
 
                 $("#line-" + lineNum + "-msg").html(lang.conference_call_started);
             },
             onProgress:function(sip){
                 newCallStatus.html(lang.ringing);
-                session.data.confcalls[confcallid].disposition = "progress";
-                session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+                session.data.confcalls[confCallId].disposition = "progress";
+                session.data.confcalls[confCallId].dispositionTime = utcDateNow();
         
                 $("#line-" + lineNum + "-msg").html(lang.conference_call_started);
 
@@ -6883,11 +6944,11 @@ function ConferenceDail(lineNum){
                     newCallStatus.html(lang.call_cancelled);
                     console.log("New call session canceled");
         
-                    session.data.confcalls[confcallid].accept.complete = false;
-                    session.data.confcalls[confcallid].accept.disposition = "cancel";
-                    session.data.confcalls[confcallid].accept.eventTime = utcDateNow();
+                    session.data.confcalls[confCallId].accept.complete = false;
+                    session.data.confcalls[confCallId].accept.disposition = "cancel";
+                    session.data.confcalls[confCallId].accept.eventTime = utcDateNow();
         
-                    $("#line-" + lineNum + "-msg").html(lang.canference_call_cancelled);
+                    $("#line-" + lineNum + "-msg").html(lang.conference_call_cancelled);
         
                     updateLineScroll(lineNum);
                 });
@@ -6901,9 +6962,9 @@ function ConferenceDail(lineNum){
             onAccept:function(sip){
                 newCallStatus.html(lang.call_in_progress);
                 $("#line-"+ lineNum +"-btn-cancel-conference-dial").hide();
-                session.data.confcalls[confcallid].complete = true;
-                session.data.confcalls[confcallid].disposition = "accepted";
-                session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+                session.data.confcalls[confCallId].complete = true;
+                session.data.confcalls[confCallId].disposition = "accepted";
+                session.data.confcalls[confCallId].dispositionTime = utcDateNow();
 
                 // Join Call
                 var JoinCallBtn = $("#line-"+ lineNum +"-btn-join-conference-call");
@@ -6967,9 +7028,9 @@ function ConferenceDail(lineNum){
                     newCallStatus.html(lang.call_in_progress);
                     console.log("Conference Call In Progress");
         
-                    session.data.confcalls[confcallid].accept.complete = true;
-                    session.data.confcalls[confcallid].accept.disposition = "join";
-                    session.data.confcalls[confcallid].accept.eventTime = utcDateNow();
+                    session.data.confcalls[confCallId].accept.complete = true;
+                    session.data.confcalls[confCallId].accept.disposition = "join";
+                    session.data.confcalls[confCallId].accept.eventTime = utcDateNow();
         
                     $("#line-"+ lineNum +"-btn-terminate-conference-call").show();
         
@@ -6998,9 +7059,9 @@ function ConferenceDail(lineNum){
                     newCallStatus.html(lang.call_ended);
                     console.log("New call session end");
 
-                    // session.data.confcalls[confcallid].accept.complete = false;
-                    session.data.confcalls[confcallid].accept.disposition = "bye";
-                    session.data.confcalls[confcallid].accept.eventTime = utcDateNow();
+                    // session.data.confcalls[confCallId].accept.complete = false;
+                    session.data.confcalls[confCallId].accept.disposition = "bye";
+                    session.data.confcalls[confCallId].accept.eventTime = utcDateNow();
 
                     $("#line-" + lineNum + "-msg").html(lang.conference_call_ended);
 
@@ -7019,8 +7080,8 @@ function ConferenceDail(lineNum){
             onReject:function(sip){
                 console.log("New call session rejected: ", sip.message.reasonPhrase);
                 newCallStatus.html(lang.call_rejected);
-                session.data.confcalls[confcallid].disposition = sip.message.reasonPhrase;
-                session.data.confcalls[confcallid].dispositionTime = utcDateNow();
+                session.data.confcalls[confCallId].disposition = sip.message.reasonPhrase;
+                session.data.confcalls[confCallId].dispositionTime = utcDateNow();
         
                 $("#line-"+ lineNum +"-txt-FindConferenceBuddy").parent().show();
                 $("#line-"+ lineNum +"-btn-conference-dial").show();
@@ -7092,7 +7153,7 @@ function holdSession(lineNum) {
                     pc.getReceivers().forEach(function(RTCRtpReceiver){
                         if (RTCRtpReceiver.track) RTCRtpReceiver.track.enabled = false;
                     });
-                    // Stop all the outbound streams (especially usefull for Conference Calls!!)
+                    // Stop all the outbound streams (especially useful for Conference Calls!!)
                     pc.getSenders().forEach(function(RTCRtpSender){
                         // Mute Audio
                         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
@@ -7162,7 +7223,7 @@ function unholdSession(lineNum) {
                     pc.getReceivers().forEach(function(RTCRtpReceiver){
                         if (RTCRtpReceiver.track) RTCRtpReceiver.track.enabled = true;
                     });
-                    // Restorte all the outbound streams
+                    // Restore all the outbound streams
                     pc.getSenders().forEach(function(RTCRtpSender){
                         // Unmute Audio
                         if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
@@ -7581,7 +7642,7 @@ function SendVideo(lineNum, src){
             videoMediaStream = videoObj.captureStream();
         }
         else if('mozCaptureStream' in videoObj) {
-            // This doesnt really work?
+            // This doesn't really work?
             // see: https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/captureStream
             videoMediaStream = videoObj.mozCaptureStream();
         }
@@ -7646,14 +7707,14 @@ function ShareScreen(lineNum){
     }
     var session = lineObj.SipSession;
 
-    $("#line-" + lineNum + "-msg").html(lang.switching_to_shared_screeen);
+    $("#line-" + lineNum + "-msg").html(lang.switching_to_shared_screen);
 
     var localStream = new MediaStream();
     var pc = session.sessionDescriptionHandler.peerConnection;
 
-    // TODO: Remove legasy ones
+    // TODO: Remove legacy ones
     if (navigator.getDisplayMedia) {
-        // EDGE, legasy support
+        // EDGE, legacy support
         var screenShareConstraints = { video: true, audio: false }
         navigator.getDisplayMedia(screenShareConstraints).then(function(newStream) {
             console.log("navigator.getDisplayMedia")
@@ -7860,7 +7921,7 @@ function ShowCallTimeline(lineNum){
     RestoreCallControls(lineNum)
 
     if($("#line-"+ lineNum +"-AudioStats").is(":visible")){
-        // The AudioStats is open, they canot take the same space
+        // The AudioStats is open, they can't take the same space
         HideCallStats(lineNum)
     }
 
@@ -7886,7 +7947,7 @@ function ShowCallStats(lineNum){
     RestoreCallControls(lineNum)
 
     if($("#line-"+ lineNum +"-CallDetails").is(":visible")){
-        // The Timeline is open, they canot take the same space
+        // The Timeline is open, they can't take the same space
         HideCallTimeline(lineNum)
     }
 
@@ -8180,7 +8241,7 @@ function DialByLine(type, buddy, numToDial, CallerID, extraHeaders){
         // Assumption but anyway: If the number starts with a * or # then its probably not a subscribable did,  
         // and is probably a feature code.
         if(numDial.substring(0,1) == "*" || numDial.substring(0,1) == "#") buddyType = "contact";
-        buddyObj = MakeBuddy(buddyType, true, false, false, (CallerID)? CallerID : numDial, numDial, null, false, null, true);
+        buddyObj = MakeBuddy(buddyType, true, false, false, (CallerID)? CallerID : numDial, numDial, null, false, null, AutoDeleteDefault);
     }
 
     // Create a Line
@@ -8289,7 +8350,7 @@ function AddLineHtml(lineObj, direction){
     // Separator --------------------------------------------------------------------------
     html += "<div style=\"clear:both; height:0px\"></div>"
 
-    // Gneral Messages
+    // General Messages
     html += "<div id=\"line-"+ lineObj.LineNumber +"-timer\" class=CallTimer></div>";
     html += "<div id=\"line-"+ lineObj.LineNumber +"-msg\" class=callStatus style=\"display:none\">...</div>";
 
@@ -8363,9 +8424,9 @@ function AddLineHtml(lineObj, direction){
     html += "<br>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-blind-transfer\" onclick=\"BlindTransfer('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i> "+ lang.blind_transfer +"</button>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-attended-transfer\" onclick=\"AttendedTransfer('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> "+ lang.attended_transfer +"</button>";
-    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-complete-attended-transfer\" style=\"display:none\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> "+ lang.complete_transfer +"</buuton>";
-    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-cancel-attended-transfer\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel_transfer +"</buuton>";
-    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-terminate-attended-transfer\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.end_transfer_call +"</buuton>";
+    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-complete-attended-transfer\" style=\"display:none\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> "+ lang.complete_transfer +"</button>";
+    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-cancel-attended-transfer\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel_transfer +"</button>";
+    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-terminate-attended-transfer\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.end_transfer_call +"</button>";
     html += "</div>";
     html += "<div id=\"line-"+ lineObj.LineNumber +"-transfer-status\" class=callStatus style=\"margin-top:10px; display:none\">...</div>";
     html += "<audio id=\"line-"+ lineObj.LineNumber +"-transfer-remoteAudio\" style=\"display:none\"></audio>";
@@ -8376,10 +8437,10 @@ function AddLineHtml(lineObj, direction){
     html += "<div style=\"margin-top:10px\">";
     html += "<span class=searchClean><input id=\"line-"+ lineObj.LineNumber +"-txt-FindConferenceBuddy\" oninput=\"QuickFindBuddy(this,'"+ lineObj.LineNumber +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\""+ lang.search_or_enter_number +"\"></span>";
     html += "<br>"
-    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-conference-dial\" onclick=\"ConferenceDail('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-phone\"></i> "+ lang.call +"</button>";
-    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-cancel-conference-dial\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel_call +"</buuton>";
-    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-join-conference-call\" style=\"display:none\"><i class=\"fa fa-users\"></i> "+ lang.join_conference_call +"</buuton>";
-    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-terminate-conference-call\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.end_conference_call +"</buuton>";
+    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-conference-dial\" onclick=\"ConferenceDial('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-phone\"></i> "+ lang.call +"</button>";
+    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-cancel-conference-dial\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel_call +"</button>";
+    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-join-conference-call\" style=\"display:none\"><i class=\"fa fa-users\"></i> "+ lang.join_conference_call +"</button>";
+    html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-terminate-conference-call\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.end_conference_call +"</button>";
     html += "</div>";
     html += "<div id=\"line-"+ lineObj.LineNumber +"-conference-status\" class=callStatus style=\"margin-top:10px; display:none\">...</div>";
     html += "<audio id=\"line-"+ lineObj.LineNumber +"-conference-remoteAudio\" style=\"display:none\"></audio>";
@@ -8745,7 +8806,7 @@ var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactN
     this.EnableDuringDnd = dnd;
     this.EnableSubscribe = subscribe;
     this.SubscribeUser = (subscription)? subscription : ExtNo;
-    this.AllowAutoDelete = (autoDelete)? autoDelete : true;
+    this.AllowAutoDelete = (typeof autoDelete !== 'undefined')? autoDelete : AutoDeleteDefault;
 }
 function InitUserBuddies(){
     var template = { TotalRows:0, DataCollection:[] }
@@ -8865,7 +8926,7 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
     // Return new buddy
     return buddyObj;
 }
-function UpdateBuddyCalerID(buddyObj, callerID){
+function UpdateBuddyCallerID(buddyObj, callerID){
     buddyObj.CallerIDName = callerID;
 
     var buddy = buddyObj.identity;
@@ -9498,7 +9559,7 @@ function DeleteCallRecordings(buddy, stream){
 
         // Loop and Delete
         // Note: This database can only delete based on Primary Key
-        // The Primary Key is arbitary, but is saved in item.Recordings.uID
+        // The Primary Key is arbitrary, but is saved in item.Recordings.uID
         $.each(stream.DataCollection, function (i, item) {
             if (item.ItemType == "CDR" && item.Recordings && item.Recordings.length) {
                 $.each(item.Recordings, function (i, recording) {
@@ -9653,7 +9714,7 @@ function DoRemoveBuddy(buddy){
     }
 }
 function FindBuddyByDid(did){
-    // Used only in Inboud
+    // Used only in Inbound
     for(var b = 0; b < Buddies.length; b++){
         if(Buddies[b].ExtNo == did || Buddies[b].MobileNumber == did || Buddies[b].ContactNumber1 == did || Buddies[b].ContactNumber2 == did) {
             return Buddies[b];
@@ -9769,7 +9830,7 @@ function RefreshStream(buddyObj, filter) {
 
     // Create Buffer
     if(json.DataCollection.length > StreamBuffer){
-        console.log("Rows:", json.DataCollection.length, " (will be trimed to "+ StreamBuffer +")");
+        console.log("Rows:", json.DataCollection.length, " (will be trimmed to "+ StreamBuffer +")");
         // Always limit the Stream to {StreamBuffer}, users much search for messages further back
         json.DataCollection.splice(StreamBuffer);
     }
@@ -9811,7 +9872,7 @@ function RefreshStream(buddyObj, filter) {
                 // You are the source (sending)
                 var messageString = "<table class=ourChatMessage cellspacing=0 cellpadding=0><tr>"
                 messageString += "<td class=ourChatMessageText onmouseenter=\"ShowChatMenu(this)\" onmouseleave=\"HideChatMenu(this)\">"
-                messageString += "<span onclick=\"ShowMessgeMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
+                messageString += "<span onclick=\"ShowMessageMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
                 messageString += "<div id=msg-text-"+ item.ItemId +" class=messageText style=\""+ ((longMessage)? "max-height:190px; overflow:hidden" : "") +"\">" + formattedMessage + "</div>"
                 if(longMessage){
                     messageString += "<div id=msg-readmore-"+  item.ItemId +" class=messageReadMore><span onclick=\"ExpandMessage(this,'"+ item.ItemId +"', '"+ buddyObj.identity +"')\">"+ lang.read_more +"</span></div>"
@@ -9825,7 +9886,7 @@ function RefreshStream(buddyObj, filter) {
                 var ActualSender = ""; //TODO
                 var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr>"
                 messageString += "<td class=theirChatMessageText onmouseenter=\"ShowChatMenu(this)\" onmouseleave=\"HideChatMenu(this)\">";
-                messageString += "<span onclick=\"ShowMessgeMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
+                messageString += "<span onclick=\"ShowMessageMenu(this,'MSG','"+  item.ItemId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
                 if(buddyObj.type == "group"){
                     messageString += "<div class=messageDate>" + ActualSender + "</div>";
                 }
@@ -9946,7 +10007,7 @@ function RefreshStream(buddyObj, filter) {
                 var messageString = "<table class=ourChatMessage cellspacing=0 cellpadding=0><tr>"
                 messageString += "<td style=\"padding-right:4px;\">" + flag + "</td>"
                 messageString += "<td class=ourChatMessageText onmouseenter=\"ShowChatMenu(this)\" onmouseleave=\"HideChatMenu(this)\">";
-                messageString += "<span onClick=\"ShowMessgeMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
+                messageString += "<span onClick=\"ShowMessageMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
                 messageString += "<div>" + formattedMessage + "</div>";
                 messageString += "<div>" + CallTags + "</div>";
                 messageString += "<div id=cdr-comment-"+  item.CdrId +" class=cdrComment>" + callComment + "</div>";
@@ -9961,11 +10022,11 @@ function RefreshStream(buddyObj, filter) {
                     formattedMessage += " "+ lang.you_missed_a_call + " ("+ item.ReasonText +").";
                 } 
                 else {
-                    formattedMessage += " "+ lang.you_recieved + " "+ audioVideo +", "+ lang.and_spoke_for +" " + formatDuration(item.Billsec) + ".";
+                    formattedMessage += " "+ lang.you_received + " "+ audioVideo +", "+ lang.and_spoke_for +" " + formatDuration(item.Billsec) + ".";
                 }
                 var messageString = "<table class=theirChatMessage cellspacing=0 cellpadding=0><tr>";
                 messageString += "<td class=theirChatMessageText onmouseenter=\"ShowChatMenu(this)\" onmouseleave=\"HideChatMenu(this)\">";
-                messageString += "<span onClick=\"ShowMessgeMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
+                messageString += "<span onClick=\"ShowMessageMenu(this,'CDR','"+  item.CdrId +"', '"+ buddyObj.identity +"')\" class=chatMessageDropdown style=\"display:none\"><i class=\"fa fa-chevron-down\"></i></span>";
                 messageString += "<div style=\"text-align:left\">" + formattedMessage + "</div>";
                 messageString += "<div>" + CallTags + "</div>";
                 messageString += "<div id=cdr-comment-"+  item.CdrId +" class=cdrComment>" + callComment + "</div>";
@@ -9975,7 +10036,7 @@ function RefreshStream(buddyObj, filter) {
                 messageString += "<td style=\"padding-left:4px\">" + flag + "</td>";
                 messageString += "</tr></table>";
             }
-            // Messges are repended here, and appended when logging
+            // Messages are prepended here, and appended when logging
             $("#contact-" + buddyObj.identity + "-ChatHistory").prepend(messageString);
         } 
         else if(item.ItemType == "FILE"){
@@ -9986,7 +10047,7 @@ function RefreshStream(buddyObj, filter) {
         }
     });
 
-    // For some reason, the first time this fires, it doesnt always work
+    // For some reason, the first time this fires, it doesn't always work
     updateScroll(buddyObj.identity);
     window.setTimeout(function(){
         updateScroll(buddyObj.identity);
@@ -10109,7 +10170,7 @@ function RedrawStage(lineNum, videoChanged){
     if(!videoContainer.outerWidth() > 0) return;
     if(!videoContainer.outerHeight() > 0) return;
 
-    // videoAspectRatio (1|1.33|1.77) is for the peer video, so can tencianlly be used here
+    // videoAspectRatio (1|1.33|1.77) is for the peer video, so can technically be used here
     // default ia 4:3
     var Margin = 3;
     var videoRatio = 0.750; // 0.5625 = 9/16 (16:9) | 0.75   = 3/4 (4:3)
@@ -10203,7 +10264,7 @@ function RedrawStage(lineNum, videoChanged){
             }
         }
 
-        // Polulate Caller ID
+        // Populate Caller ID
         var adminMuteIndicator = "";
         var administratorIndicator = "";
         if(thisRemoteVideoStream.isAdminMuted == true){
@@ -10228,7 +10289,7 @@ function RedrawStage(lineNum, videoChanged){
 
 }
 function StageArea(Increment, Count, Width, Height, Margin, videoRatio) {
-    // Thnaks:  https://github.com/Alicunde/Videoconference-Dish-CSS-JS
+    // Thanks:  https://github.com/Alicunde/Videoconference-Dish-CSS-JS
     let i = w = 0;
     let h = Increment * videoRatio + (Margin * 2);
     while (i < (Count)) {
@@ -10264,7 +10325,7 @@ function UnPinVideo(lineNum, videoEl){
 
 // Stream Functionality
 // =====================
-function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
+function ShowMessageMenu(obj, typeStr, cdrId, buddy) {
 
     var items = [];
     if (typeStr == "CDR") {
@@ -10329,7 +10390,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                     // ReasonText: "Normal Call clearing"
                     // Recordings: [{…}]
                     // RingTime: 2.374
-                    // SessionId: "67sv8o86msa7df23bulpnjrca7fton"
+                    // SessionId: "67sv8o86msa7df23"
                     // Src: "<100> Conrad de Wet"
                     // SrcUserId: "17186D5983F"
                     // Tags: [{…}]
@@ -10648,7 +10709,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                 if(id == 10){
                     var msgtext = $("#msg-text-"+ cdrId).text();
                     navigator.clipboard.writeText(msgtext).then(function(){
-                        console.log("Text coppied to the clipboard:", msgtext);
+                        console.log("Text copied to the clipboard:", msgtext);
                     }).catch(function(){
                         console.error("Error writing to the clipboard:", e);
                     });
@@ -10667,7 +10728,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                 }
 
                 // Delete CDR
-                // TODO: This doesnt look for the cdr or the QOS, dont use this
+                // TODO: This doesn't look for the cdr or the QOS, don't use this
                 if(id == 20){
                     var currentStream = JSON.parse(localDB.getItem(buddy + "-stream"));
                     if(currentStream != null || currentStream.DataCollection != null){
@@ -10694,7 +10755,7 @@ function ShowMessgeMenu(obj, typeStr, cdrId, buddy) {
                                         recording.Poster = null;
                                     });
                                 }
-                                console.log("Poster Imagers Deleted");
+                                console.log("Poster Image Deleted");
                                 return false;
                             }
                         });
@@ -10752,7 +10813,7 @@ function TagClick(obj, cdrId, buddy){
     console.log("Removing Tag:", $(obj).text());
     $(obj).remove();
 
-    // Dpdate DB
+    // Update DB
     UpdateTags(cdrId, buddy);
 }
 function UpdateTags(cdrId, buddy){
@@ -10806,7 +10867,7 @@ function AddMenu(obj, buddy){
                 if(id == "1"){
                     ShowEmojiBar(buddy);
                 }
-                // Disctate Message
+                // Dictate Message
                 if(id == "2"){
                     ShowDictate(buddy);
                 }
@@ -10857,7 +10918,7 @@ function ShowDictate(buddy){
         buddyObj.recognition = null;
     }
     try {
-        // Limitation: This opbject can only be made once on the page
+        // Limitation: This object can only be made once on the page
         // Generally this is fine, as you can only really dictate one message at a time.
         // It will use the most recently created object.
         var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -11049,8 +11110,8 @@ function ShowMyProfile(){
     
     AudioVideoHtml += "<div class=UiText>"+ lang.image_orientation +":</div>";
     AudioVideoHtml += "<div class=pill-nav>";
-    AudioVideoHtml += "<input name=Settings_Oriteation id=r20 type=radio value=\"rotateY(0deg)\"><label class=radio_pill for=r20><i class=\"fa fa-address-card\" style=\"transform: rotateY(0deg)\"></i> "+ lang.image_orientation_normal +"</label>";
-    AudioVideoHtml += "<input name=Settings_Oriteation id=r21 type=radio value=\"rotateY(180deg)\"><label class=radio_pill for=r21><i class=\"fa fa-address-card\" style=\"transform: rotateY(180deg)\"></i> "+ lang.image_orientation_mirror +"</label>";
+    AudioVideoHtml += "<input name=Settings_Orientation id=r20 type=radio value=\"rotateY(0deg)\"><label class=radio_pill for=r20><i class=\"fa fa-address-card\" style=\"transform: rotateY(0deg)\"></i> "+ lang.image_orientation_normal +"</label>";
+    AudioVideoHtml += "<input name=Settings_Orientation id=r21 type=radio value=\"rotateY(180deg)\"><label class=radio_pill for=r21><i class=\"fa fa-address-card\" style=\"transform: rotateY(180deg)\"></i> "+ lang.image_orientation_mirror +"</label>";
     AudioVideoHtml += "</div>";
 
     AudioVideoHtml += "<div class=UiText>"+ lang.aspect_ratio +":</div>";
@@ -11194,7 +11255,7 @@ function ShowMyProfile(){
             localDB.setItem("VideoHeight", $("input[name=Settings_Quality]:checked").val());
             localDB.setItem("FrameRate", $("input[name=Settings_FrameRate]:checked").val());
             localDB.setItem("AspectRatio", $("input[name=Settings_AspectRatio]:checked").val());
-            localDB.setItem("VideoOrientation", $("input[name=Settings_Oriteation]:checked").val());
+            localDB.setItem("VideoOrientation", $("input[name=Settings_Orientation]:checked").val());
             localDB.setItem("AudioSrcId", $("#microphoneSrc").val());
             localDB.setItem("AutoGainControl", ($("#Settings_AutoGainControl").is(':checked'))? "1" : "0");
             localDB.setItem("EchoCancellation", ($("#Settings_EchoCancellation").is(':checked'))? "1" : "0");
@@ -11299,7 +11360,7 @@ function ShowMyProfile(){
         var selectVideoScr = $("#previewVideoSrc");
     
         // Orientation
-        var OriteationSel = $("input[name=Settings_Oriteation]");
+        var OriteationSel = $("input[name=Settings_Orientation]");
         OriteationSel.each(function(){
             if(this.value == MirrorVideo) $(this).prop("checked", true);
         });
@@ -12472,7 +12533,7 @@ function ReformatMessage(str) {
 }
 function getPicture(buddy, typestr, ignoreCache){
     var rndInt = Math.floor(Math.random() * avatars.length);
-    var defaultImg = hostingPrefex + "" + avatars[rndInt];
+    var defaultImg = hostingPrefix + "" + avatars[rndInt];
     if(buddy == "profilePicture"){
         // Special handling for profile image
         var dbImg = localDB.getItem("profilePicture");
@@ -13744,8 +13805,8 @@ function XmppGetBuddies(){
                 var displayName = buddyItem.getAttribute("name");
                 var node = Strophe.getNodeFromJid(jid);
                 var buddyDid = node;
-                if(XmppRealm != "" && XmppRealmSeperator !="") {
-                    buddyDid = node.split(XmppRealmSeperator,2)[1];
+                if(XmppRealm != "" && XmppRealmSeparator !="") {
+                    buddyDid = node.split(XmppRealmSeparator,2)[1];
                 }
                 var ask = (buddyItem.getAttribute("ask"))? buddyItem.getAttribute("ask") : "none";
                 var sub = (buddyItem.getAttribute("subscription"))? buddyItem.getAttribute("subscription") : "none";
@@ -14033,10 +14094,10 @@ function onMessage(message){
             DateTime = moment(elem.getAttribute("stamp")).utc().format("YYYY-MM-DD HH:mm:ss UTC");
         }
     });
-    var origionalMessage = "";
+    var originalMessage = "";
     Strophe.forEachChild(message, "body", function(elem) {
         // For simplicity, this code is assumed to take the last body
-        origionalMessage = elem.textContent;
+        originalMessage = elem.textContent;
     });
 
 
@@ -14078,7 +14139,7 @@ function onMessage(message){
     });
     if(isCorrection && targetCorrectionMsg != "") {
         console.log("Message "+ targetCorrectionMsg +" for "+ buddyObj.CallerIDName +" was corrected");
-        CorrectMessage(buddyObj, targetCorrectionMsg, origionalMessage);
+        CorrectMessage(buddyObj, targetCorrectionMsg, originalMessage);
     }
 
     // Delivery Events
@@ -14112,7 +14173,7 @@ function onMessage(message){
     }
 
     // Messages
-    if(origionalMessage == ""){
+    if(originalMessage == ""){
         // Not a full message
     }
     else {
@@ -14120,7 +14181,7 @@ function onMessage(message){
             // Although XMPP does not require message ID's, this application does
             XmppSendDeliveryReceipt(buddyObj, messageId);
 
-            AddMessageToStream(buddyObj, messageId, "MSG", origionalMessage, DateTime)
+            AddMessageToStream(buddyObj, messageId, "MSG", originalMessage, DateTime)
             UpdateBuddyActivity(buddyObj.identity);
             var streamVisible = $("#stream-"+ buddyObj.identity).is(":visible");
             if (streamVisible) {
@@ -14128,7 +14189,7 @@ function onMessage(message){
                 XmppSendDisplayReceipt(buddyObj, messageId);
             }
             RefreshStream(buddyObj);
-            ActivateStream(buddyObj, origionalMessage);
+            ActivateStream(buddyObj, originalMessage);
         }
         else {
             console.warn("Sorry, messages must have an id ", message)
@@ -14399,7 +14460,7 @@ var reconnectXmpp = function(){
 
     var xmpp_websocket_uri = "wss://"+ XmppServer +":"+ XmppWebsocketPort +""+ XmppWebsocketPath; 
     var xmpp_username = profileUser +"@"+ SipDomain;
-    if(XmppRealm != "" && XmppRealmSeperator) xmpp_username = XmppRealm + XmppRealmSeperator + xmpp_username;
+    if(XmppRealm != "" && XmppRealmSeparator) xmpp_username = XmppRealm + XmppRealmSeparator + xmpp_username;
     var xmpp_password = SipPassword;
 
     XMPP = null;
