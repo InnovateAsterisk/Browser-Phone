@@ -15,8 +15,9 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.13";
+const appversion = "0.3.14";
 const sipjsversion = "0.20.0";
+const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
 // Set the following to null to disable
 let welcomeScreen = "<div class=\"UiWindowField\"><pre style=\"font-size: 12px\">";
@@ -85,11 +86,12 @@ let TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout"
 let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 999));   // The number of times to attempt to reconnect to a WebSocket when the connection drops.
 let TransportReconnectionTimeout = parseInt(getDbItem("TransportReconnectionTimeout", 3));       // The time in seconds to wait between WebSocket reconnection attempts.
 
+let SubscribeToYourself = (getDbItem("SubscribeToYourself", "0") == "1");              // Enable Subscribe to your own uri. (Useful to understand how other buddies see you.)
 let VoiceMailSubscribe = (getDbItem("VoiceMailSubscribe", "1") == "1");                // Enable Subscribe to voicemail
 let VoicemailDid = getDbItem("VoicemailDid", "");                                      // Number to dial for VoicemialMain()
 let SubscribeVoicemailExpires = parseInt(getDbItem("SubscribeVoicemailExpires", 300)); // Voceimail Subscription expiry time (in seconds)
 let ContactUserName = getDbItem("ContactUserName", "");                                // Optional name for contact header uri
-let userAgentStr = getDbItem("UserAgentStr", "Browser Phone "+ appversion +" (SIPJS - "+ sipjsversion +")");   // Set this to whatever you want.
+let userAgentStr = getDbItem("UserAgentStr", "Browser Phone "+ appversion +" (SIPJS - "+ sipjsversion +") "+ navUserAgent);   // Set this to whatever you want.
 let hostingPrefix = getDbItem("HostingPrefix", "");                                    // Use if hosting off root directory. eg: "/phone/" or "/static/"
 let RegisterExpires = parseInt(getDbItem("RegisterExpires", 300));                     // Registration expiry time (in seconds)
 let RegisterExtraHeaders = getDbItem("RegisterExtraHeaders", "{}");                    // Parsable Json string of headers to include in register process. eg: '{"foo":"bar"}'
@@ -408,6 +410,7 @@ $(document).ready(function () {
     if(options.TransportConnectionTimeout !== undefined) TransportConnectionTimeout = options.TransportConnectionTimeout;
     if(options.TransportReconnectionAttempts !== undefined) TransportReconnectionAttempts = options.TransportReconnectionAttempts;
     if(options.TransportReconnectionTimeout !== undefined) TransportReconnectionTimeout = options.TransportReconnectionTimeout;
+    if(options.SubscribeToYourself !== undefined) SubscribeToYourself = options.SubscribeToYourself;
     if(options.VoiceMailSubscribe !== undefined) VoiceMailSubscribe = options.VoiceMailSubscribe;
     if(options.VoicemailDid !== undefined) VoicemailDid = options.VoicemailDid;
     if(options.SubscribeVoicemailExpires !== undefined) SubscribeVoicemailExpires = options.SubscribeVoicemailExpires;
@@ -1082,7 +1085,7 @@ function EditBuddyWindow(buddy){
 
     if(buddyJson.Type == "extension" || buddyJson.Type == "xmpp"){
         html += "<div class=UiText>"+ lang.extension_number +": </div>";
-        html += "<div><input id=AddSomeone_Exten class=UiInputText type=text disabled readonly value="+ buddyJson.ExtensionNumber +"></div>";
+        html += "<div><input id=AddSomeone_Exten class=UiInputText type=text value="+ buddyJson.ExtensionNumber +"></div>";
         html += "<div><input type=checkbox id=AddSomeone_Subscribe "+ ((buddyJson.Subscribe == true)? "checked" : "" ) +"><label for=AddSomeone_Subscribe>Subscribe to Device State Notifications</label></div>";
         html += "<div id=RowSubscribe style=\"display:"+ ((buddyJson.Subscribe == true)? "unset" : "none" ) +";\">";
         html += "<div class=UiText style=\"margin-left:30px\">"+ lang.internal_subscribe_extension +":</div>";
@@ -1146,6 +1149,12 @@ function EditBuddyWindow(buddy){
         buddyObj.AllowAutoDelete = buddyJson.AutoDelete;
 
         if(buddyJson.Type == "extension" || buddyJson.Type == "xmpp"){
+            // First Unsubscribe old information
+            UnsubscribeBuddy(buddyObj);
+
+            buddyJson.ExtensionNumber = $("#AddSomeone_Exten").val();
+            buddyObj.ExtNo = buddyJson.ExtNo;
+
             buddyJson.Subscribe = $("#AddSomeone_Subscribe").is(':checked');
             buddyObj.Subscribe = buddyJson.Subscribe;
             if(buddyJson.Subscribe == true){
@@ -1155,13 +1164,11 @@ function EditBuddyWindow(buddy){
             }
 
             // Subscribe Actions
-            UnsubscribeBuddy(buddyObj); // Just Unsubscribe anyway
-            UpdateBuddyList();
             if(buddyJson.Subscribe == true) {
                 SubscribeBuddy(buddyObj);
-                UpdateBuddyList();
             }
         }
+        UpdateBuddyList();
 
         // Update Image
         var constraints = { 
@@ -1276,7 +1283,7 @@ function SetStatusWindow(){
     HidePopup();
 
     var windowHtml = "<div class=UiWindowField>";
-    windowHtml += "<div><input type=text id=presence_text class=UiInputText></div>";
+    windowHtml += "<div><input type=text id=presence_text class=UiInputText maxlength=128></div>";
     windowHtml += "</div>";
     OpenWindow(windowHtml, lang.set_status, 180, 350, false, false, "OK", function(){
         // ["away", "chat", "dnd", "xa"] => ["Away", "Available", "Busy", "Gone"]
@@ -1687,6 +1694,7 @@ function CreateUserAgent() {
         register: false,
         noAnswerTimeout: NoAnswerTimeout,
         // sipExtension100rel: // UNSUPPORTED | SUPPORTED | REQUIRED NOTE: rel100 is not supported
+        contactParams: {},
         delegate: {
             onInvite: function (sip){
                 ReceiveCall(sip);
@@ -1696,18 +1704,19 @@ function CreateUserAgent() {
             }
         }
     }
-    if(WssInTransport){
-        options.contactParams = { 
-            transport : "wss" 
-        }
-    }
     if(IceStunServerJson != ""){
         options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration.iceServers = JSON.parse(IceStunServerJson);
     }
+
+    // Added to the contact BEFORE the '>' (permanent)
     if(RegisterContactParams && RegisterContactParams != "" && RegisterContactParams != "{}"){
         try{
-            var registerContactParams = JSON.parse(RegisterContactParams);
-            options.contactParams = registerContactParams;
+            options.contactParams = JSON.parse(RegisterContactParams);
+        } catch(e){}
+    }
+    if(WssInTransport){
+        try{
+            options.contactParams.transport = "wss";
         } catch(e){}
     }
 
@@ -1726,6 +1735,7 @@ function CreateUserAgent() {
     userAgent.registering = false;
     userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
     userAgent.transport.attemptingReconnection = false;
+    userAgent.BlfSubs = [];
 
     console.log("Creating User Agent... Done");
 
@@ -1742,12 +1752,15 @@ function CreateUserAgent() {
     }
 
     var RegistererOptions = { 
-        expires: RegisterExpires
+        expires: RegisterExpires,
+        extraHeaders: [],
+        extraContactHeaderParams: []
     }
+
+    // Added to the SIP Headers
     if(RegisterExtraHeaders && RegisterExtraHeaders != "" && RegisterExtraHeaders != "{}"){
         try{
             var registerExtraHeaders = JSON.parse(RegisterExtraHeaders);
-            RegistererOptions.extraHeaders = [];
             for (const [key, value] of Object.entries(registerExtraHeaders)) {
                 if(value != ""){
                     RegistererOptions.extraHeaders.push(key + ": "+  value);
@@ -1755,11 +1768,11 @@ function CreateUserAgent() {
             }
         } catch(e){}
     }
-    
+
+    // Added to the contact AFTER the '>' (not permanent)
     if(RegisterExtraContactParams && RegisterExtraContactParams != "" && RegisterExtraContactParams != "{}"){
         try{
             var registerExtraContactParams = JSON.parse(RegisterExtraContactParams);
-            RegistererOptions.extraContactHeaderParams = [];
             for (const [key, value] of Object.entries(registerExtraContactParams)) {
                 if(value == ""){
                     RegistererOptions.extraContactHeaderParams.push(key);
@@ -4063,8 +4076,12 @@ function SubscribeAll() {
     if(!userAgent.isRegistered()) return;
 
     if(VoiceMailSubscribe){
-        SubscribeVoicemail()
+        SubscribeVoicemail();
     }
+    if(SubscribeToYourself){
+        SelfSubscribe();
+    }
+
     // Start subscribe all
     if(userAgent.BlfSubs && userAgent.BlfSubs.length > 0){
         UnsubscribeAll();
@@ -4077,6 +4094,33 @@ function SubscribeAll() {
         }
     }
 }
+function SelfSubscribe(){
+    if(!userAgent.isRegistered()) return;
+
+    if(userAgent.selfSub){
+        console.log("Unsubscribe from old self subscribe...");
+        SelfUnsubscribe();
+    }
+
+    var targetURI = SIP.UserAgent.makeURI("sip:" + SipUsername + "@" + SipDomain);
+
+    var options = { 
+        expires: SubscribeBuddyExpires, 
+        extraHeaders: ['Accept: '+ SubscribeBuddyAccept]
+    }
+
+    userAgent.selfSub = new SIP.Subscriber(userAgent, targetURI, SubscribeBuddyEvent, options);
+    userAgent.selfSub.delegate = {
+        onNotify: function(sip) {
+            ReceiveNotify(sip, true);
+        }
+    }
+    console.log("SUBSCRIBE Self: "+ SipUsername +"@" + SipDomain);
+    userAgent.selfSub.subscribe().catch(function(error){
+        console.warn("Error subscribing to yourself:", error);
+    });
+}
+
 function SubscribeVoicemail(){
     if(!userAgent.isRegistered()) return;
 
@@ -4098,32 +4142,33 @@ function SubscribeVoicemail(){
         console.warn("Error subscribing to voicemail notifications:", error);
     });
 }
+
+
 function SubscribeBuddy(buddyObj) {
     if(!userAgent.isRegistered()) return;
 
     if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && buddyObj.EnableSubscribe == true && buddyObj.SubscribeUser != "") {
-        // PIDF Subscription TODO: make this an option.
-        // Dialog Subscription (This version isn't as nice as PIDF - Presence Information Data Format)
 
         var targetURI = SIP.UserAgent.makeURI("sip:" + buddyObj.SubscribeUser + "@" + SipDomain);
-        // var blfSubscribe = new SIP.Subscriber(userAgent, targetURI, "dialog", options);
+
         var options = { 
             expires: SubscribeBuddyExpires, 
             extraHeaders: ['Accept: '+ SubscribeBuddyAccept]
         }
         var blfSubscribe = new SIP.Subscriber(userAgent, targetURI, SubscribeBuddyEvent, options);
-
         blfSubscribe.data = {}
         blfSubscribe.data.buddyId = buddyObj.identity;
         blfSubscribe.delegate = {
             onNotify: function(sip) {
-                ReceiveBlf(sip);
+                ReceiveNotify(sip, false);
             }
         }
         console.log("SUBSCRIBE: "+ buddyObj.SubscribeUser +"@" + SipDomain);
         blfSubscribe.subscribe().catch(function(error){
             console.warn("Error subscribing to Buddy notifications:", error);
         });
+
+        if(!userAgent.BlfSubs) userAgent.BlfSubs = [];
         userAgent.BlfSubs.push(blfSubscribe);
     }
 }
@@ -4184,6 +4229,25 @@ function UnsubscribeVoicemail(){
     }
     userAgent.voicemailSub = null;
 }
+function SelfUnsubscribe(){
+    if(!userAgent.isRegistered()) return;
+
+    if(userAgent.selfSub){
+        console.log("Unsubscribe from yourself...", userAgent.selfSub.state);
+        if(userAgent.selfSub.state == SIP.SubscriptionState.Subscribed){
+            userAgent.selfSub.unsubscribe().catch(function(error){
+                console.warn("Error self subscription:", error);
+            });
+        }
+        userAgent.selfSub.dispose().catch(function(error){
+            console.warn("Error disposing self subscription:", error);
+        });
+    } else {
+        console.log("Not subscribed to Yourself");
+    }
+    userAgent.selfSub = null;
+}
+
 function UnsubscribeBuddy(buddyObj) {
     if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         if(userAgent && userAgent.BlfSubs && userAgent.BlfSubs.length > 0){
@@ -4250,7 +4314,7 @@ function VoicemailNotify(notification){
         notification.reject();
     }
 }
-function ReceiveBlf(notification) {
+function ReceiveNotify(notification, selfSubscribe) {
     if (userAgent == null || !userAgent.isRegistered()) return;
 
     notification.accept();
@@ -4482,11 +4546,23 @@ closed: In the context of INSTANT MESSAGES, this value means that
 
         // The dialog states only report devices states, and cant say online or offline.
     }
-    
-    // var buddyObj = FindBuddyByExtNo(buddy);
+
+    if(selfSubscribe){
+        if(buddy == SipUsername){
+            console.log("Self Notify:", Presence);
+
+            // Custom Handling of Notify/BLF
+            if(typeof web_hook_on_self_notify !== 'undefined')  web_hook_on_self_notify(ContentType, notification.request.body);
+        }
+        else {
+            console.warn("Self Subscribe Notify, but wrong user returned.", buddy, SipUsername);
+        }
+        return;
+    }
+
     var buddyObj = FindBuddyByObservedUser(buddy);
     if(buddyObj == null) {
-        console.warn("Buddy not found");
+        console.warn("Buddy not found:", buddy);
         return;
     }
 
@@ -7619,7 +7695,7 @@ function SendVideo(lineNum, src){
             }
         }
         else {
-            // Portrate... (phone turned on its side)
+            // Portrait... (phone turned on its side)
             if(videoWidth > ResampleSize){
                 var p = ResampleSize / videoWidth;
                 videoWidth = ResampleSize;
@@ -9074,7 +9150,7 @@ function PopulateBuddyList() {
                                     item.EnableDuringDnd, 
                                     item.Subscribe,
                                     item.SubscribeUser,
-                                    itme.AutoDelete);
+                                    item.AutoDelete);
             AddBuddy(buddy, false, false, false);
         }
     });
@@ -9189,6 +9265,8 @@ function UpdateBuddyList(){
             if(friendlyState == "On hold") friendlyState = lang.state_on_hold;
             if(friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
             if(buddyObj.EnableSubscribe != true) friendlyState = buddyObj.Desc;
+            var autDeleteStatus = "";
+            if(buddyObj.AllowAutoDelete == true) autDeleteStatus = "<i class=\"fa fa-clock-o\"></i> ";
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
             if(buddyObj.missed && buddyObj.missed > 0){
                 html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
@@ -9201,12 +9279,18 @@ function UpdateBuddyList(){
             html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
             html += " "+ buddyObj.CallerIDName
             html += "</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ autDeleteStatus + ""+ displayDateTime +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText>"+ friendlyState +"</div>";
             html += "</div>";
             $("#myContacts").append(html);
         } else if(buddyObj.type == "xmpp") { 
-            var friendlyState = buddyObj.presenceText;
+            var friendlyState = buddyObj.presenceText; 
+            // NOTE: Set by user could contain malicious code
+            friendlyState = friendlyState.replace(/[<>"'\r\n&]/g, function(chr){
+                let table = { '<': 'lt', '>': 'gt', '"': 'quot', '\'': 'apos', '&': 'amp', '\r': '#10', '\n': '#13' };
+                return '&' + table[chr] + ';';
+            });
+            
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
             if(buddyObj.missed && buddyObj.missed > 0){
                 html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
@@ -13817,11 +13901,11 @@ function XmppGetBuddies(){
                     // Create Cache
                     if(isGroup == true){
                         console.log("Adding roster (group):", buddyDid, "-", displayName);
-                        buddyObj = MakeBuddy("group", false, false, false, displayName, buddyDid, jid);
+                        buddyObj = MakeBuddy("group", false, false, false, displayName, buddyDid, jid, false, true, false);
                     }
                     else {
                         console.log("Adding roster (xmpp):", buddyDid, "-", displayName);
-                        buddyObj = MakeBuddy("xmpp", false, false, true, displayName, buddyDid, jid);
+                        buddyObj = MakeBuddy("xmpp", false, false, true, displayName, buddyDid, jid, false, true, false);
                     }
 
                     // RefreshBuddyData(buddyObj);
@@ -14465,6 +14549,7 @@ var reconnectXmpp = function(){
 
     XMPP = null;
     if(SipDomain == "" || XmppServer == "" || XmppWebsocketPort == "" || XmppWebsocketPath == ""){
+        console.log("Cannot connect to XMPP: ", SipDomain, XmppServer, XmppWebsocketPort, XmppWebsocketPath);
         return;
     }
     XMPP = new Strophe.Connection(xmpp_websocket_uri);
