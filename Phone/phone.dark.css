@@ -76,11 +76,15 @@ body {
 }
 
 .searchClean{
-    border: 1px solid #404040;
+    /* border: 1px solid #404040; */
     background-color: #222222;
 }
 .searchClean:before {
-    color: #393f47;
+    color: #888888;
+}
+.searchClean INPUT {
+    color: #888888 !important;
+    background-color: transparent;
 }
 
 .roundButtons {

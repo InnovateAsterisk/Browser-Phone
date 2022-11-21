@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.14";
+const appversion = "0.3.15";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -114,15 +114,16 @@ let RecordAllCalls = (getDbItem("RecordAllCalls", "0") == "1");             // S
 let StartVideoFullScreen = (getDbItem("StartVideoFullScreen", "1") == "1"); // Starts a video call in the full screen (browser screen, not desktop)
 let SelectRingingLine = (getDbItem("SelectRingingLine", "1") == "1");       // Selects the ringing line if you are not on another call ()
 
-let UiMaxWidth = parseInt(getDbItem("UiMaxWidth", 1240));                     // Sets the max-width for the UI elements (don't set this less than 920. Set to very high number for full screen eg: 999999)
-let UiThemeStyle = getDbItem("UiThemeStyle", "system");                       // Sets the color theme for the UI dark | light | system (set by your systems dark/light settings)
-let UiMessageLayout = getDbItem("UiMessageLayout", "middle");                 // Put the message Stream at the top or middle can be either: top | middle 
-let UiCustomConfigMenu = (getDbItem("UiCustomConfigMenu", "0") == "1");       // If set to true, will only call web_hook_on_config_menu
-let UiCustomDialButton = (getDbItem("UiCustomDialButton", "0") == "1");       // If set to true, will only call web_hook_dial_out
-let UiCustomAddBuddy = (getDbItem("UiCustomAddBuddy", "0") == "1");           // If set to true, will only call web_hook_on_add_buddy
-let UiCustomEditBuddy = (getDbItem("UiCustomEditBuddy", "0") == "1");         // If set to true, will only call web_hook_on_edit_buddy({})
-let UiCustomMediaSettings = (getDbItem("UiCustomMediaSettings", "0") == "1"); // If set to true, will only call web_hook_on_edit_media
-let UiCustomMessageAction = (getDbItem("UiCustomMessageAction", "0") == "1"); // If set to true, will only call web_hook_on_message_action
+let UiMaxWidth = parseInt(getDbItem("UiMaxWidth", 1240));                                   // Sets the max-width for the UI elements (don't set this less than 920. Set to very high number for full screen eg: 999999)
+let UiThemeStyle = getDbItem("UiThemeStyle", "system");                                     // Sets the color theme for the UI dark | light | system (set by your systems dark/light settings)
+let UiMessageLayout = getDbItem("UiMessageLayout", "middle");                               // Put the message Stream at the top or middle can be either: top | middle 
+let UiCustomConfigMenu = (getDbItem("UiCustomConfigMenu", "0") == "1");                     // If set to true, will only call web_hook_on_config_menu
+let UiCustomDialButton = (getDbItem("UiCustomDialButton", "0") == "1");                     // If set to true, will only call web_hook_dial_out
+let UiCustomSortAndFilterButton = (getDbItem("UiCustomSortAndFilterButton", "0") == "1");   // If set to true, will only call web_hook_sort_and_filter
+let UiCustomAddBuddy = (getDbItem("UiCustomAddBuddy", "0") == "1");                         // If set to true, will only call web_hook_on_add_buddy
+let UiCustomEditBuddy = (getDbItem("UiCustomEditBuddy", "0") == "1");                       // If set to true, will only call web_hook_on_edit_buddy({})
+let UiCustomMediaSettings = (getDbItem("UiCustomMediaSettings", "0") == "1");               // If set to true, will only call web_hook_on_edit_media
+let UiCustomMessageAction = (getDbItem("UiCustomMessageAction", "0") == "1");               // If set to true, will only call web_hook_on_message_action
 
 let AutoGainControl = (getDbItem("AutoGainControl", "1") == "1");        // Attempts to adjust the microphone volume to a good audio level. (OS may be better at this)
 let EchoCancellation = (getDbItem("EchoCancellation", "1") == "1");      // Attempts to remove echo over the line.
@@ -147,6 +148,12 @@ let MaxDidLength = parseInt(getDbItem("MaxDidLength", 16));          // Maximum 
 let DisplayDateFormat = getDbItem("DateFormat", "YYYY-MM-DD");       // The display format for all dates. https://momentjs.com/docs/#/displaying/
 let DisplayTimeFormat = getDbItem("TimeFormat", "h:mm:ss A");        // The display format for all times. https://momentjs.com/docs/#/displaying/
 let Language = getDbItem("Language", "auto");                        // Overrides the language selector or "automatic". Must be one of availableLang[]. If not defaults to en.
+
+// Buddy Sort and Filter
+let BuddySortBy = getDbItem("BuddySortBy", "activity");                      // Sorting for Buddy List display (type|extension|alphabetical|activity)
+let SortByTypeOrder = getDbItem("SortByTypeOrder", "e|x|c");                 // If the Sorting is set to type then describe the order of the types.
+let BuddyAutoDeleteAtEnd = (getDbItem("BuddyAutoDeleteAtEnd", "0") == "1");  // Always put the Auto Delete buddies at the bottom
+let BuddyShowExtenNum = (getDbItem("BuddyShowExtenNum", "0") == "1");        // Controls the Extension Number display
 
 // Permission Settings
 let EnableTextMessaging = (getDbItem("EnableTextMessaging", "1") == "1");               // Enables the Text Messaging
@@ -365,6 +372,7 @@ function MakeDataArray(defaultValue, count){
 // ==========================
 $(window).on("beforeunload", function() {
     Unregister(true);
+    if(XMPP) XMPP.disconnect("");
 });
 $(window).on("resize", function() {
     UpdateUI();
@@ -440,11 +448,12 @@ $(document).ready(function () {
     if(options.UiThemeStyle !== undefined) UiThemeStyle = options.UiThemeStyle;
     if(options.UiMessageLayout !== undefined) UiMessageLayout = options.UiMessageLayout;
     if(options.UiCustomConfigMenu !== undefined) UiCustomConfigMenu = options.UiCustomConfigMenu;
-    if(options.UiCustomDialButton !== undefined) UiCustomDialButton = options.UiCustomDialButton
-    if(options.UiCustomAddBuddy !== undefined) UiCustomAddBuddy = options.UiCustomAddBuddy
-    if(options.UiCustomEditBuddy !== undefined) UiCustomEditBuddy = options.UiCustomEditBuddy
-    if(options.UiCustomMediaSettings !== undefined) UiCustomMediaSettings = options.UiCustomMediaSettings
-    if(options.UiCustomMessageAction !== undefined) UiCustomMessageAction = options.UiCustomMessageAction
+    if(options.UiCustomDialButton !== undefined) UiCustomDialButton = options.UiCustomDialButton;
+    if(options.UiCustomSortAndFilterButton !== undefined) UiCustomSortAndFilterButton = options.UiCustomSortAndFilterButton;
+    if(options.UiCustomAddBuddy !== undefined) UiCustomAddBuddy = options.UiCustomAddBuddy;
+    if(options.UiCustomEditBuddy !== undefined) UiCustomEditBuddy = options.UiCustomEditBuddy;
+    if(options.UiCustomMediaSettings !== undefined) UiCustomMediaSettings = options.UiCustomMediaSettings;
+    if(options.UiCustomMessageAction !== undefined) UiCustomMessageAction = options.UiCustomMessageAction;
     if(options.AutoGainControl !== undefined) AutoGainControl = options.AutoGainControl;
     if(options.EchoCancellation !== undefined) EchoCancellation = options.EchoCancellation;
     if(options.NoiseSuppression !== undefined) NoiseSuppression = options.NoiseSuppression;
@@ -465,6 +474,10 @@ $(document).ready(function () {
     if(options.DisplayDateFormat !== undefined) DisplayDateFormat = options.DisplayDateFormat;
     if(options.DisplayTimeFormat !== undefined) DisplayTimeFormat = options.DisplayTimeFormat;
     if(options.Language !== undefined) Language = options.Language;
+    if(options.BuddySortBy !== undefined) BuddySortBy = options.BuddySortBy;
+    if(options.SortByTypeOrder !== undefined) SortByTypeOrder = options.SortByTypeOrder;
+    if(options.BuddyAutoDeleteAtEnd !== undefined) BuddyAutoDeleteAtEnd = options.BuddyAutoDeleteAtEnd;
+    if(options.BuddyShowExtenNum !== undefined) BuddyShowExtenNum = options.BuddyShowExtenNum;
     if(options.EnableTextMessaging !== undefined) EnableTextMessaging = options.EnableTextMessaging;
     if(options.DisableFreeDial !== undefined) DisableFreeDial = options.DisableFreeDial;
     if(options.DisableBuddies !== undefined) DisableBuddies = options.DisableBuddies;
@@ -711,6 +724,7 @@ function AddSomeoneWindow(numberStr){
     ShowContacts();
 
     $("#myContacts").hide();
+    $("#searchArea").hide();
     $("#actionArea").empty();
 
     var html = "<div style=\"text-align:right\"><button class=roundButtons onclick=\"ShowContacts()\"><i class=\"fa fa-close\"></i></button></div>"
@@ -1153,7 +1167,7 @@ function EditBuddyWindow(buddy){
             UnsubscribeBuddy(buddyObj);
 
             buddyJson.ExtensionNumber = $("#AddSomeone_Exten").val();
-            buddyObj.ExtNo = buddyJson.ExtNo;
+            buddyObj.ExtNo = buddyJson.ExtensionNumber;
 
             buddyJson.Subscribe = $("#AddSomeone_Subscribe").is(':checked');
             buddyObj.Subscribe = buddyJson.Subscribe;
@@ -1161,13 +1175,13 @@ function EditBuddyWindow(buddy){
                 var SubscribeUser = $("#AddSomeone_SubscribeUser").val();
                 buddyJson.SubscribeUser = SubscribeUser;
                 buddyObj.SubscribeUser = SubscribeUser;
-            }
 
-            // Subscribe Actions
-            if(buddyJson.Subscribe == true) {
+                // Subscribe Actions
                 SubscribeBuddy(buddyObj);
             }
         }
+
+        // Update Visible Elements
         UpdateBuddyList();
 
         // Update Image
@@ -1179,17 +1193,27 @@ function EditBuddyWindow(buddy){
             circle: false 
         }
         $("#ImageCanvas").croppie('result', constraints).then(function(base64) {
+            // Image processing done
             if(buddyJson.Type == "extension"){
+                console.log("Saving image for extension buddy:", buddyJson.uID)
                 localDB.setItem("img-"+ buddyJson.uID +"-extension", base64);
-                $("#contact-"+ buddyJson.uID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.uID, 'extension') +')');
+                // Update Images
+                $("#contact-"+ buddyJson.uID +"-picture").css("background-image", 'url('+ getPicture(buddyJson.uID, 'extension', true) +')');
+                $("#contact-"+ buddyJson.uID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.uID, 'extension', true) +')');
             }
             else if(buddyJson.Type == "contact") {
+                console.log("Saving image for contact buddy:", buddyJson.cID)
                 localDB.setItem("img-"+ buddyJson.cID +"-contact", base64);
-                $("#contact-"+ buddyJson.cID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.cID, 'contact') +')');
+                // Update Images
+                $("#contact-"+ buddyJson.cID +"-picture").css("background-image", 'url('+ getPicture(buddyJson.cID, 'contact', true) +')');
+                $("#contact-"+ buddyJson.cID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.cID, 'contact', true) +')');
             }
             else if(buddyJson.Type == "group") {
+                console.log("Saving image for group buddy:", buddyJson.gID)
                 localDB.setItem("img-"+ buddyJson.gID +"-group", base64);
-                $("#contact-"+ buddyJson.gID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.gID, 'group') +')');
+                // Update Images
+                $("#contact-"+ buddyJson.gID +"-picture").css("background-image", 'url('+ getPicture(buddyJson.gID, 'group', true) +')');
+                $("#contact-"+ buddyJson.gID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.gID, 'group', true) +')');
             }
             // Update
             UpdateBuddyList();
@@ -1308,6 +1332,9 @@ function SetStatusWindow(){
 // =======
 function InitUi(){
 
+    // Custom Web hook
+    if(typeof web_hook_on_before_init !== 'undefined') web_hook_on_before_init();
+
     ApplyThemeColor()
 
     var phone = $("#Phone");
@@ -1321,40 +1348,49 @@ function InitUi(){
     leftSection.attr("style", "float:left; height: 100%; width:320px");
 
     var leftHTML = "<table id=leftContentTable class=leftContentTable style=\"height:100%; width:100%\" cellspacing=0 cellpadding=0>";
-    leftHTML += "<tr><td class=streamSection style=\"height: 90px; box-sizing: border-box;\">";
+    leftHTML += "<tr><td class=streamSection style=\"height: 50px; box-sizing: border-box;\">";
     
     // Profile User
     leftHTML += "<div class=profileContainer>";
+
+    // Picture, Caller ID and settings Menu
     leftHTML += "<div class=contact id=UserProfile style=\"cursor: default; margin-bottom:5px;\">";
+    // Voicemail Count
+    leftHTML += "<span id=TxtVoiceMessages class=voiceMessageNotifyer>0</span>"
     leftHTML += "<div id=UserProfilePic class=buddyIcon></div>";
-    leftHTML += "<span class=settingsMenu><button class=roundButtons id=SettingsMenu><i class=\"fa fa-cogs\"></i></button></span>";
-    leftHTML += "<div class=contactNameText style=\"margin-right: 0px;\">"
-
-    // Status
-    leftHTML += "<span id=dereglink class=dotOnline style=\"display:none\"></span>";
-    leftHTML += "<span id=WebRtcFailed class=dotFailed style=\"display:none\"></span>";
-    leftHTML += "<span id=reglink class=dotOffline></span>";
-
-    // User
-    leftHTML += " <span id=UserCallID></span>"
-    leftHTML += "</div>";
-    leftHTML += "<div id=regStatus class=presenceText>&nbsp;</div>";
-    leftHTML += "</div>";
 
     // Action Buttons
-    leftHTML += "<div style=\"padding-left:5px; padding-right:5px; height: 35px; line-height: 35px;\">";
-    leftHTML += "<button class=roundButtons id=BtnFindBuddy><i class=\"fa fa-search\"></i></button>";
-    leftHTML += "<span id=divFindBuddy class=searchClean style=\"display:none\"><INPUT id=txtFindBuddy type=text autocomplete=none style=\"width:120px;\"></span>";
+    leftHTML += "<span class=settingsMenu>";
     leftHTML += "<button class=roundButtons id=BtnFreeDial><i class=\"fa fa-phone\"></i></button>";
     leftHTML += "<button class=roundButtons id=BtnAddSomeone><i class=\"fa fa-user-plus\"></i></button>";
-    leftHTML += "<button class=roundButtons id=BtnVoicemail style=\"position:relative\"><i class=\"fa fa-envelope-square\"></i><span id=TxtVoiceMessages class=voiceMessageNotifyer>0</span></button>";
     if(false){
          // TODO
         leftHTML += "<button id=BtnCreateGroup><i class=\"fa fa-users\"></i><i class=\"fa fa-plus\" style=\"font-size:9px\"></i></button>";
     }
-    leftHTML += "</div>";
+    leftHTML += "<button class=roundButtons id=SettingsMenu><i class=\"fa fa-cogs\"></i></button>";
+    leftHTML += "</span>";  // class=settingsMenu
 
-    leftHTML += "</div>";
+    // Display Name
+    leftHTML += "<div class=contactNameText style=\"margin-right: 0px;\">"
+    // Status
+    leftHTML += "<span id=dereglink class=dotOnline style=\"display:none\"></span>";
+    leftHTML += "<span id=WebRtcFailed class=dotFailed style=\"display:none\"></span>";
+    leftHTML += "<span id=reglink class=dotOffline></span>";
+    // User
+    leftHTML += " <span id=UserCallID></span>"
+    leftHTML += "</div>"; // class=contactNameText
+    leftHTML += "<div class=presenceText><span id=regStatus>&nbsp;</span> <span id=dndStatus></span></div>";
+    leftHTML += "</div>";  //id=UserProfile
+
+    leftHTML += "</div>"; //  class=profileContainer
+
+    leftHTML += "</td></tr>";
+    leftHTML += "<tr id=searchArea><td class=streamSection style=\"height: 35px; box-sizing: border-box; padding-top: 3px; padding-bottom: 0px;\">";
+
+    // Search
+    leftHTML += "<span id=divFindBuddy class=searchClean><INPUT id=txtFindBuddy type=text autocomplete=none style=\"width: calc(100% - 78px);\"></span>";
+    leftHTML += "<button class=roundButtons id=BtnFilter style=\"margin-left:5px\"><i class=\"fa fa-sliders\"></i></button>"
+
     leftHTML += "</td></tr>";
     leftHTML += "<tr><td class=streamSection>"
 
@@ -1376,11 +1412,12 @@ function InitUi(){
     phone.append(leftSection);
     phone.append(rightSection);
 
-    if(DisableFreeDial == true) $("#BtnFreeDial").hide();
+    if(DisableFreeDial == true) {
+        $("#BtnFreeDial").hide();
+    }
     if(DisableBuddies == true) {
-        $("#BtnFindBuddy").hide();
         $("#BtnAddSomeone").hide();
-        $("#BtnFreeDial").show();
+        $("#BtnFreeDial").show();   // You can't have no options
     }
     
     $("#BtnCreateGroup").hide(); // Not ready for this yet
@@ -1388,24 +1425,23 @@ function InitUi(){
     $("#UserCallID").html(profileName);
     $("#UserProfilePic").css("background-image", "url('"+ getPicture("profilePicture") +"')");
     
-    $("#BtnFindBuddy").attr("title", lang.find_someone)
-    $("#BtnFindBuddy").on('click', function(event){
-        $("#divFindBuddy").toggle();
-        if($("#divFindBuddy").is(":visible")){
-            // Search Text Box is now shown
-            $("#txtFindBuddy").focus();
-            UpdateBuddyList();
+    $("#BtnFilter").attr("title", "lang.filter_and_sort")
+    $("#BtnFilter").on('click', function(event){
+        if(UiCustomSortAndFilterButton == true){
+            if(typeof web_hook_sort_and_filter !== 'undefined') {
+                web_hook_sort_and_filter(event);
+            }
         } else {
-            // Hidden search box, should clear the text field and re-run UpdateBuddyList()
-            $("#txtFindBuddy").val("");
-            UpdateBuddyList();
+            ShowSortAnfFilter();
         }
     });
+    
     $("#txtFindBuddy").attr("placeholder", lang.find_someone)
     $("#txtFindBuddy").on('keyup', function(event){
         UpdateBuddyList();
         $("#txtFindBuddy").focus();
     });
+
     $("#BtnFreeDial").attr("title", lang.call)
     $("#BtnFreeDial").on('click', function(event){
         if(UiCustomDialButton == true){
@@ -1428,9 +1464,7 @@ function InitUi(){
         }
     });
 
-    $("#BtnVoicemail").hide()
-    $("#BtnVoicemail").attr("title", "lang.voicemessages")
-    $("#BtnVoicemail").on('click', function(event){
+    $("#TxtVoiceMessages").on('click', function(event){
         if(VoicemailDid != ""){
             DialByLine("audio", null, VoicemailDid, "VoiceMail");
         }
@@ -1440,6 +1474,7 @@ function InitUi(){
     $("#BtnCreateGroup").on('click', function(event){
         CreateGroupWindow();
     });
+
     $("#SettingsMenu").attr("title", lang.configure_extension)
     $("#SettingsMenu").on('click', function(event){
         if(UiCustomConfigMenu == true){
@@ -1496,6 +1531,9 @@ function InitUi(){
     }
 
     PreloadAudioFiles();
+
+    // Custom Web hook
+    if(typeof web_hook_on_init !== 'undefined') web_hook_on_init();
 
     CreateUserAgent();
 }
@@ -1736,6 +1774,7 @@ function CreateUserAgent() {
     userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
     userAgent.transport.attemptingReconnection = false;
     userAgent.BlfSubs = [];
+    userAgent.lastVoicemailCount = 0;
 
     console.log("Creating User Agent... Done");
 
@@ -1959,6 +1998,7 @@ function onRegistered(){
         $("#dereglink").show();
         if(DoNotDisturbEnabled || DoNotDisturbPolicy == "enabled") {
             $("#dereglink").attr("class", "dotDoNotDisturb");
+            $("#dndStatus").html("(DND)");
         }
 
         // Start Subscribe Loop
@@ -4272,10 +4312,10 @@ function VoicemailNotify(notification){
         notification.accept();
 
         var messagesWaiting = (notification.request.body.indexOf("Messages-Waiting: yes") > -1)
-        var newVoiceMessages = 0
-        var oldVoiceMessages = 0
-        var ugentNewVoiceMessage = 0
-        var ugentOldVoiceMessage = 0
+        var newVoiceMessages = 0;
+        var oldVoiceMessages = 0;
+        var ugentNewVoiceMessage = 0;
+        var ugentOldVoiceMessage = 0;
 
         if(messagesWaiting){
             console.log("Messages Waiting!");
@@ -4296,15 +4336,39 @@ function VoicemailNotify(notification){
                     }
                 }
             }
-
             console.log("Voicemail: ", newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
 
-            // Handle New Voicemail Message
+            // Show the messages waiting bubble
             $("#TxtVoiceMessages").html(""+ newVoiceMessages)
-            $("#BtnVoicemail").show()
+            $("#TxtVoiceMessages").show();
+
+            // Show a system notification
+            if(newVoiceMessages > userAgent.lastVoicemailCount){
+                userAgent.lastVoicemailCount = newVoiceMessages;
+
+                if ("Notification" in window) {
+                    if (Notification.permission === "granted") {
+
+                        var noticeOptions = { 
+                            body: newVoiceMessages + " New voicemail message"
+                        }
+
+                        var vmNotification = new Notification("New VoiceMail", noticeOptions);
+                        vmNotification.onclick = function (event) {
+                            if(VoicemailDid != ""){
+                                DialByLine("audio", null, VoicemailDid, "VoiceMail");
+                            }
+                        }
+                    }
+                }
+
+            }
+
+
         } else {
+            // Hide the messages waiting bubble
             $("#TxtVoiceMessages").html("0")
-            $("#BtnVoicemail").hide()
+            $("#TxtVoiceMessages").hide();
         }
 
         if(typeof web_hook_on_messages_waiting !== 'undefined')  web_hook_on_messages_waiting(newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
@@ -6228,12 +6292,12 @@ function QuickFindBuddy(obj){
 
         // Perform Filter Display
         var display = false;
-        if(buddyObj.CallerIDName.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
-        if(buddyObj.ExtNo.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
-        if(buddyObj.Desc.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
-        if(buddyObj.MobileNumber.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
-        if(buddyObj.ContactNumber1.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
-        if(buddyObj.ContactNumber2.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
+        if(buddyObj.CallerIDName && buddyObj.CallerIDName.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
+        if(buddyObj.ExtNo && buddyObj.ExtNo.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
+        if(buddyObj.Desc && buddyObj.Desc.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
+        if(buddyObj.MobileNumber && buddyObj.MobileNumber.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
+        if(buddyObj.ContactNumber1 && buddyObj.ContactNumber1.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
+        if(buddyObj.ContactNumber2 && buddyObj.ContactNumber2.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
         if(display) {
             // Filtered Results
             var iconClass = "dotOffline";
@@ -8065,6 +8129,8 @@ function ExpandVideoArea(lineNum){
     $("#line-" + lineNum + "-btn-restore").show();
     $("#line-" + lineNum + "-btn-expand").hide();
 
+    $("#line-" + lineNum + "-VideoCall").css("background-color", "#000000");
+
     RedrawStage(lineNum, false);
     if(typeof web_hook_on_expand_video_area !== 'undefined') {
         web_hook_on_expand_video_area(lineNum);
@@ -8075,7 +8141,9 @@ function RestoreVideoArea(lineNum){
 
     $("#line-" + lineNum + "-btn-restore").hide();
     $("#line-" + lineNum + "-btn-expand").show();
-    
+
+    $("#line-" + lineNum + "-VideoCall").css("background-color", "");
+
     RedrawStage(lineNum, false);
     if(typeof web_hook_on_restore_video_area !== 'undefined') {
         web_hook_on_restore_video_area(lineNum);
@@ -8098,6 +8166,7 @@ function ShowDial(){
     ShowContacts();
 
     $("#myContacts").hide();
+    $("#searchArea").hide();
     $("#actionArea").empty();
 
     var html = "<div style=\"text-align:right\"><button class=roundButtons onclick=\"ShowContacts()\"><i class=\"fa fa-close\"></i></button></div>"
@@ -8280,7 +8349,163 @@ function ShowContacts(){
     $("#actionArea").empty();
 
     $("#myContacts").show();
+    $("#searchArea").show();
 }
+function ShowSortAnfFilter(){
+    ShowContacts();
+
+    $("#myContacts").hide();
+    $("#searchArea").hide();
+    $("#actionArea").empty();
+
+    var html = "<div style=\"text-align:right\"><button class=roundButtons onclick=\"ShowContacts()\"><i class=\"fa fa-close\"></i></button></div>"
+    html += "<table cellspacing=10 cellpadding=0 style=\"margin-left:auto; margin-right: auto\">";
+    // By Type (and what order)
+    html += "<tr><td><div><input disabled type=radio name=sort_by id=sort_by_type><label for=sort_by_type>Type (then Last Activity)</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_cex><label for=sort_by_type_cex>Contacts, SIP then XMPP</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_cxe><label for=sort_by_type_cxe>Contacts, XMPP then SIP</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_xec><label for=sort_by_type_xec>XMPP, SIP then Contacts</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_xce><label for=sort_by_type_xce>XMPP, Contacts then SIP</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_exc><label for=sort_by_type_exc>SIP, XMPP then Contacts</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_ecx><label for=sort_by_type_ecx>SIP, Contacts then XMPP</label></div>";
+    html += "</td></tr>";
+    // By Extension
+    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_exten><label for=sort_by_exten>Extension or Number (then Last Activity)</label></div></td></tr>";
+    // By Alphabetical 
+    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_alpha><label for=sort_by_alpha>Alphabetically (then Last Activity)</label></div></td></tr>";
+    // Only Last Activity
+    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_activity><label for=sort_by_activity>Only Last Activity</label></div></td></tr>";
+
+    // Secondary Options
+    html += "<tr><td><div><input type=checkbox id=sort_auto_delete_at_end><label for=sort_auto_delete_at_end>Show Auto Delete at the bottom</label></div></td></tr>";
+    html += "<tr><td><div><input type=checkbox id=sort_show_exten_num><label for=sort_show_exten_num>Show Extension Numbers</label></div></td></tr>";
+
+    html += "</table>";
+    html += "</div>";
+    $("#actionArea").html(html);
+
+    $("#sort_by_type").prop("checked", BuddySortBy=="type");
+    $("#sort_by_type_cex").prop("checked", (BuddySortBy=="type" && SortByTypeOrder=="c|e|x"));
+    $("#sort_by_type_cxe").prop("checked", (BuddySortBy=="type" && SortByTypeOrder=="c|x|e"));
+    $("#sort_by_type_xec").prop("checked", (BuddySortBy=="type" && SortByTypeOrder=="x|e|c"));
+    $("#sort_by_type_xce").prop("checked", (BuddySortBy=="type" && SortByTypeOrder=="x|c|e"));
+    $("#sort_by_type_exc").prop("checked", (BuddySortBy=="type" && SortByTypeOrder=="e|x|c"));
+    $("#sort_by_type_ecx").prop("checked", (BuddySortBy=="type" && SortByTypeOrder=="e|c|x"));
+    $("#sort_by_exten").prop("checked", BuddySortBy=="extension");
+    $("#sort_by_alpha").prop("checked", BuddySortBy=="alphabetical");
+    $("#sort_by_activity").prop("checked", BuddySortBy=="activity");
+
+    $("#sort_auto_delete_at_end").prop("checked", BuddyAutoDeleteAtEnd==true);
+    $("#sort_show_exten_num").prop("checked", BuddyShowExtenNum==true);
+
+    $("#sort_by_type_cex").change(function(){
+        BuddySortBy = "type";
+        localDB.setItem("BuddySortBy", "type"); 
+        SortByTypeOrder = "c|e|x"
+        localDB.setItem("SortByTypeOrder", "c|e|x"); 
+        $("#sort_by_type").prop("checked", true);
+
+        UpdateBuddyList();
+    });
+    $("#sort_by_type_cxe").change(function(){
+        BuddySortBy = "type";
+        localDB.setItem("BuddySortBy", "type"); 
+        SortByTypeOrder = "c|x|e"
+        localDB.setItem("SortByTypeOrder", "c|x|e"); 
+        $("#sort_by_type").prop("checked", true);
+
+        UpdateBuddyList();
+    });
+    $("#sort_by_type_xec").change(function(){
+        BuddySortBy = "type";
+        localDB.setItem("BuddySortBy", "type"); 
+        SortByTypeOrder = "x|e|c"
+        localDB.setItem("SortByTypeOrder", "x|e|c"); 
+        $("#sort_by_type").prop("checked", true);
+
+        UpdateBuddyList();
+    });
+    $("#sort_by_type_xce").change(function(){
+        BuddySortBy = "type";
+        localDB.setItem("BuddySortBy", "type"); 
+        SortByTypeOrder = "x|e|c"
+        localDB.setItem("SortByTypeOrder", "x|c|e"); 
+        $("#sort_by_type").prop("checked", true);
+
+        UpdateBuddyList();
+    });
+    $("#sort_by_type_exc").change(function(){
+        BuddySortBy = "type";
+        localDB.setItem("BuddySortBy", "type"); 
+        SortByTypeOrder = "e|x|c"
+        localDB.setItem("SortByTypeOrder", "e|x|c"); 
+        $("#sort_by_type").prop("checked", true);
+
+        UpdateBuddyList();
+    });
+    $("#sort_by_type_ecx").change(function(){
+        BuddySortBy = "type";
+        localDB.setItem("BuddySortBy", "type"); 
+        SortByTypeOrder = "e|c|x"
+        localDB.setItem("SortByTypeOrder", "e|c|x"); 
+        $("#sort_by_type").prop("checked", true);
+
+        UpdateBuddyList();
+    });
+
+
+    $("#sort_by_exten").change(function(){
+        BuddySortBy = "extension";
+        localDB.setItem("BuddySortBy", "extension"); 
+        $("#sort_by_type_cex").prop("checked", false);
+        $("#sort_by_type_cxe").prop("checked", false);
+        $("#sort_by_type_xec").prop("checked", false);
+        $("#sort_by_type_xce").prop("checked", false);
+        $("#sort_by_type_exc").prop("checked", false);
+        $("#sort_by_type_ecx").prop("checked", false);
+
+        UpdateBuddyList();
+    });
+    $("#sort_by_alpha").change(function(){
+        BuddySortBy = "alphabetical";
+        localDB.setItem("BuddySortBy", "alphabetical");
+        $("#sort_by_type_cex").prop("checked", false);
+        $("#sort_by_type_cxe").prop("checked", false);
+        $("#sort_by_type_xec").prop("checked", false);
+        $("#sort_by_type_xce").prop("checked", false);
+        $("#sort_by_type_exc").prop("checked", false);
+        $("#sort_by_type_ecx").prop("checked", false);
+        UpdateBuddyList();
+    });
+    $("#sort_by_activity").change(function(){
+        BuddySortBy = "activity";
+        localDB.setItem("BuddySortBy", "activity");
+        $("#sort_by_type_cex").prop("checked", false);
+        $("#sort_by_type_cxe").prop("checked", false);
+        $("#sort_by_type_xec").prop("checked", false);
+        $("#sort_by_type_xce").prop("checked", false);
+        $("#sort_by_type_exc").prop("checked", false);
+        $("#sort_by_type_ecx").prop("checked", false);
+
+        UpdateBuddyList();
+    });
+
+    $("#sort_auto_delete_at_end").change(function(){
+        BuddyAutoDeleteAtEnd = this.checked;
+        localDB.setItem("BuddyAutoDeleteAtEnd", (this.checked)? "1" : "0");
+
+        UpdateBuddyList();
+    });
+    $("#sort_show_exten_num").change(function(){
+        BuddyShowExtenNum = this.checked;
+        localDB.setItem("BuddyShowExtenNum", (this.checked)? "1" : "0");
+
+        UpdateBuddyList();
+    });
+
+    $("#actionArea").show();
+}
+
 
 /**
  * Primary method for making a call. 
@@ -8862,7 +9087,7 @@ function RefreshLineActivity(lineNum){
 // Buddy & Contacts
 // ================
 var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactNumber1, ContactNumber2, lastActivity, desc, Email, jid, dnd, subscribe, subscription, autoDelete){
-    this.type = type; // extension | contact | group
+    this.type = type; // extension | xmpp | contact | group
     this.identity = identity;
     this.jid = jid;
     this.CallerIDName = (CallerIDName)? CallerIDName : "";
@@ -9073,10 +9298,11 @@ function PopulateBuddyList() {
     Buddies = new Array();
     console.log("Adding Buddies...");
     var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
-    if(json == null) return;
+    if(json == null) json = InitUserBuddies();
 
     console.log("Total Buddies: " + json.TotalRows);
     $.each(json.DataCollection, function (i, item) {
+        item.AutoDelete = (item.AutoDelete == true)? true : false;
         if(item.Type == "extension"){
             // extension
             var buddy = new Buddy("extension", 
@@ -9210,6 +9436,7 @@ function UpdateBuddyList(){
 
     // If there are no buddies, and no calls, then, show the dial pad
     if(Buddies.length == 0 && callCount == 0){
+        console.warn("You have no buddies, will show the Dial Screen rather");
         if(UiCustomDialButton == true){
             if(typeof web_hook_dial_out !== 'undefined') {
                 web_hook_dial_out(null);
@@ -9220,17 +9447,9 @@ function UpdateBuddyList(){
         return;
     }
 
-    // Sort and shuffle Buddy List
-    // ===========================
-    Buddies.sort(function(a, b){
-        var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
-        var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
-        if (aMo.isSameOrAfter(bMo, "second")) {
-            return -1;
-        } else return 1;
-        return 0;
-    });
-
+    // Sort and filter
+    // ===============
+    SortBuddies();
     for(var b = 0; b < Buddies.length; b++) {
         var buddyObj = Buddies[b];
 
@@ -9274,17 +9493,20 @@ function UpdateBuddyList(){
             else{
                 html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
             }
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-picture\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
             html += "<div class=contactNameText>";
             html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
-            html += " "+ buddyObj.CallerIDName
+            html += (BuddyShowExtenNum == true)? " "+ buddyObj.ExtNo + " - " : " ";
+            html += buddyObj.CallerIDName
             html += "</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ autDeleteStatus + ""+ displayDateTime +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText>"+ friendlyState +"</div>";
             html += "</div>";
             $("#myContacts").append(html);
         } else if(buddyObj.type == "xmpp") { 
-            var friendlyState = buddyObj.presenceText; 
+            var friendlyState = buddyObj.presenceText;
+            var autDeleteStatus = "";
+            if(buddyObj.AllowAutoDelete == true) autDeleteStatus = "<i class=\"fa fa-clock-o\"></i> ";
             // NOTE: Set by user could contain malicious code
             friendlyState = friendlyState.replace(/[<>"'\r\n&]/g, function(chr){
                 let table = { '<': 'lt', '>': 'gt', '"': 'quot', '\'': 'apos', '&': 'amp', '\r': '#10', '\n': '#13' };
@@ -9298,17 +9520,20 @@ function UpdateBuddyList(){
             else{
                 html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
             }
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-picture\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
             html += "<div class=contactNameText>";
             html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
-            html += " "+ buddyObj.CallerIDName;
+            html += (BuddyShowExtenNum == true)? " "+ buddyObj.ExtNo + " - " : " ";
+            html += buddyObj.CallerIDName;
             html += "</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ autDeleteStatus + ""+ displayDateTime +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-presence\" class=presenceText><i class=\"fa fa-comments\"></i> "+ friendlyState +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-chatstate-menu\" class=presenceText style=\"display:none\"><i class=\"fa fa-commenting-o\"></i> "+ buddyObj.CallerIDName +" "+ lang.is_typing +"...</div>";
             html += "</div>";
             $("#myContacts").append(html);
         } else if(buddyObj.type == "contact") { 
+            var autDeleteStatus = "";
+            if(buddyObj.AllowAutoDelete == true) autDeleteStatus = "<i class=\"fa fa-clock-o\"></i> ";
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'contact')\">";
             if(buddyObj.missed && buddyObj.missed > 0){
                 html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
@@ -9316,13 +9541,15 @@ function UpdateBuddyList(){
             else{
                 html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
             }
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-picture\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
             html += "<div class=contactNameText><i class=\"fa fa-address-card\"></i> "+ buddyObj.CallerIDName +"</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ autDeleteStatus + ""+ displayDateTime +"</div>";
             html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
             html += "</div>";
             $("#myContacts").append(html);
         } else if(buddyObj.type == "group"){ 
+            var autDeleteStatus = "";
+            if(buddyObj.AllowAutoDelete == true) autDeleteStatus = "<i class=\"fa fa-clock-o\"></i> ";
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'group')\">";
             if(buddyObj.missed && buddyObj.missed > 0){
                 html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
@@ -9330,9 +9557,9 @@ function UpdateBuddyList(){
             else{
                 html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
             }
-            html += "<div class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-picture\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
             html += "<div class=contactNameText><i class=\"fa fa-users\"></i> "+ buddyObj.CallerIDName +"</div>";
-            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ displayDateTime +"</div>";
+            html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ autDeleteStatus + ""+ displayDateTime +"</div>";
             html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
             html += "</div>";
             $("#myContacts").append(html);
@@ -9353,19 +9580,19 @@ function AddBuddyMessageStream(buddyObj) {
     // Profile Etc Row
     // ----------------------------------------------------------
     var profileRow = "";
-    profileRow += "<tr><td id=\"contact-"+ buddyObj.identity +"-ProfileCell\" class=\"streamSection highlightSection buddyProfileSection\" style=\"height: 48px;\">";
+    profileRow += "<tr><td id=\"contact-"+ buddyObj.identity +"-ProfileCell\" class=\"streamSection highlightSection buddyProfileSection\" style=\"height: 50px; box-sizing: border-box;\">";
 
     // Left Content - Profile
     profileRow += "<table cellpadding=0 cellspacing=0 border=0 style=\"width:100%; table-layout: fixed;\">"
     profileRow += "<tr>"
     // Close|Return|Back Button
-    profileRow += "<td style=\"width:48px; text-align: center;\">";
-    profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-back\" onclick=\"CloseBuddy('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.back +"\"><i class=\"fa fa-chevron-left\"></i></button> ";
+    profileRow += "<td style=\"width:38px; text-align: center;\">";
+    profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-back\" onclick=\"CloseBuddy('"+ buddyObj.identity +"')\" class=roundButtons style=\"margin-right:5px\" title=\""+ lang.back +"\"><i class=\"fa fa-chevron-left\"></i></button> ";
     profileRow += "</td>"
     
     // Profile UI
     profileRow += "<td style=\"width:100%\">";
-    profileRow += "<div class=contact style=\"cursor: unset\">";
+    profileRow += "<div class=contact style=\"cursor: unset; padding:0px\">";
     if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         profileRow += "<div id=\"contact-"+ buddyObj.identity +"-picture-main\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity) +"')\"></div>";
     }
@@ -9439,7 +9666,7 @@ function AddBuddyMessageStream(buddyObj) {
 
     // Search & Related Elements
     profileRow += "<div id=\"contact-"+ buddyObj.identity +"-search\" style=\"margin-top:6px; display:none\">";
-    profileRow += "<span class=searchClean style=\"width:100%\"><input type=text style=\"width:80%\" autocomplete=none oninput=SearchStream(this,'"+ buddyObj.identity +"') placeholder=\""+ lang.find_something_in_the_message_stream +"\"></span>";
+    profileRow += "<span class=searchClean style=\"width:100%\"><input type=text style=\"width: calc(100% - 40px);\" autocomplete=none oninput=SearchStream(this,'"+ buddyObj.identity +"') placeholder=\""+ lang.find_something_in_the_message_stream +"\"></span>";
     profileRow += "</div>";
 
     profileRow += "</td></tr>";
@@ -9674,6 +9901,119 @@ function ToggleExtraButtons(lineNum, normal, expanded){
         $("#contact-"+ lineNum +"-action-buttons").css("width", expanded+"px");
     }
 }
+function SortBuddies(){
+
+    // Firstly: Type - Second: Last Activity
+    if(BuddySortBy == "type"){
+        Buddies.sort(function(a, b){
+            var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
+            var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
+            // contact | extension | (group) | xmpp
+            var aType = a.type;
+            var bType = b.type;
+            // No groups for now
+            if(SortByTypeOrder == "c|e|x") {
+                if(a.type == "contact") aType = "A";
+                if(b.type == "contact") bType = "A";
+                if(a.type == "extension") aType = "B";
+                if(b.type == "extension") bType = "B";
+                if(a.type == "xmpp") aType = "C";
+                if(b.type == "xmpp") bType = "C";
+            }
+            if(SortByTypeOrder == "c|x|e") {
+                if(a.type == "contact") aType = "A";
+                if(b.type == "contact") bType = "A";
+                if(a.type == "extension") aType = "C";
+                if(b.type == "extension") bType = "C";
+                if(a.type == "xmpp") aType = "B";
+                if(b.type == "xmpp") bType = "B";
+            }
+            if(SortByTypeOrder == "x|e|c") {
+                if(a.type == "contact") aType = "C";
+                if(b.type == "contact") bType = "C";
+                if(a.type == "extension") aType = "B";
+                if(b.type == "extension") bType = "B";
+                if(a.type == "xmpp") aType = "A";
+                if(b.type == "xmpp") bType = "A";
+            }
+            if(SortByTypeOrder == "x|c|e") {
+                if(a.type == "contact") aType = "B";
+                if(b.type == "contact") bType = "B";
+                if(a.type == "extension") aType = "C";
+                if(b.type == "extension") bType = "C";
+                if(a.type == "xmpp") aType = "A";
+                if(b.type == "xmpp") bType = "A";
+            }
+            if(SortByTypeOrder == "e|x|c") {
+                if(a.type == "contact") aType = "C";
+                if(b.type == "contact") bType = "C";
+                if(a.type == "extension") aType = "A";
+                if(b.type == "extension") bType = "A";
+                if(a.type == "xmpp") aType = "B";
+                if(b.type == "xmpp") bType = "B";
+            }
+            if(SortByTypeOrder == "e|c|x") {
+                if(a.type == "contact") aType = "B";
+                if(b.type == "contact") bType = "A";
+                if(a.type == "extension") aType = "A";
+                if(b.type == "extension") bType = "A";
+                if(a.type == "xmpp") aType = "C";
+                if(b.type == "xmpp") bType = "C";
+            }
+
+            return (aType.localeCompare(bType) || (aMo.isSameOrAfter(bMo, "second")? -1 : 1));
+        });
+    }
+
+    // Extension Number (or Contact Number) - Second: Last Activity
+    if(BuddySortBy == "extension"){
+        Buddies.sort(function(a, b){
+            var aSortBy = (a.type == "extension" || a.type == "xmpp")? a.ExtNo : a.ContactNumber1;
+            var bSortBy = (b.type == "extension" || b.type == "xmpp")? b.ExtNo : a.ContactNumber1;
+            var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
+            var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
+            return (aSortBy.localeCompare(bSortBy) || (aMo.isSameOrAfter(bMo, "second")? -1 : 1));
+        });
+    }
+
+    // Name Alphabetically - Second: Last Activity
+    if(BuddySortBy == "alphabetical"){
+        Buddies.sort(function(a, b){
+            var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
+            var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
+            return (a.CallerIDName.localeCompare(b.CallerIDName) || (aMo.isSameOrAfter(bMo, "second")? -1 : 1));
+        });
+    }
+
+    // Last Activity Only
+    if(BuddySortBy == "activity"){
+        Buddies.sort(function(a, b){
+            var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
+            var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
+            return (aMo.isSameOrAfter(bMo, "second")? -1 : 1);
+        });
+    }
+
+    // Second Sots
+
+    // Sort Out Pinned
+    if(false){
+        Buddies.sort(function(a, b){
+            var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
+            var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
+            return (aMo.isSameOrAfter(bMo, "second"));
+        });
+    }
+
+    // Sort Auto Delete
+    if(BuddyAutoDeleteAtEnd == true){
+        Buddies.sort(function(a, b){
+            return (a.AllowAutoDelete === b.AllowAutoDelete)? 0 : a.AllowAutoDelete? 1 : -1;
+        });
+    }
+    
+}
+
 
 function SelectBuddy(buddy) {
     var buddyObj = FindBuddyByIdentity(buddy);
@@ -11079,6 +11419,7 @@ function ShowMyProfile(){
     ShowContacts();
 
     $("#myContacts").hide();
+    $("#searchArea").hide();
     $("#actionArea").empty();
 
     var html = "<div style=\"text-align:right\"><button class=roundButtons onclick=\"ShowContacts()\"><i class=\"fa fa-close\"></i></button></div>"
@@ -12140,7 +12481,7 @@ function ToggleDoNoDisturb(){
         DoNotDisturbEnabled = false
         localDB.setItem("DoNotDisturbEnabled", "0");
         $("#dereglink").attr("class", "dotOnline");
-
+        $("#dndStatus").html("");
         // Web Hook
         if(typeof web_hook_disable_dnd !== 'undefined') {
             web_hook_disable_dnd();
@@ -12151,6 +12492,7 @@ function ToggleDoNoDisturb(){
         DoNotDisturbEnabled = true
         localDB.setItem("DoNotDisturbEnabled", "1");
         $("#dereglink").attr("class", "dotDoNotDisturb");
+        $("#dndStatus").html("(DND)");
 
         // Web Hook
         if(typeof web_hook_enable_dnd !== 'undefined') {
