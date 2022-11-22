@@ -285,5 +285,17 @@
     "subscribe_to_dev_state" : "デバイス状態通知をサブスクライブする",
     "default_video_src" : "デフォルト",
     "subscribe_voicemail" : "ボイスメールを購読する (MWI)",
-    "voicemail_did" : "ボイスメール管理番号"
+    "voicemail_did" : "ボイスメール管理番号",
+    "sort_type" : "タイプ (次に最近のアクティビティ)",
+    "sort_type_cex" : "連絡先, SIP の次に XMPP",
+    "sort_type_cxe" : "連絡先, XMPP の次に SIP",
+    "sort_type_xec" : "XMPP, SIP の次に 連絡先",
+    "sort_type_xce" : "XMPP, 連絡先 の次に SIP",
+    "sort_type_exc" : "SIP, XMPP の次に 連絡先",
+    "sort_type_ecx" : "SIP, 連絡先 の次に XMPP",
+    "sort_exten" : "内線番号または番号 (その後の最近のアクティビティ)",
+    "sort_alpha" : "アルファベット順 (次に最近のアクティビティ)",
+    "sort_activity" : "最後のアクティビティのみ",
+    "sort_auto_delete_at_end" : "最後に自動削除を表示",
+    "sort_show_exten_num" : "内線番号を表示"
 }

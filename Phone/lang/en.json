@@ -285,5 +285,17 @@
     "subscribe_to_dev_state" : "Subscribe to Device State Notifications",
     "default_video_src" : "Default",
     "subscribe_voicemail" : "Subscribe to VoiceMail (MWI)",
-    "voicemail_did" : "VoiceMail Management Number"
+    "voicemail_did" : "VoiceMail Management Number",
+    "sort_type" : "Type (then Last Activity)",
+    "sort_type_cex" : "Contacts, SIP then XMPP",
+    "sort_type_cxe" : "Contacts, XMPP then SIP",
+    "sort_type_xec" : "XMPP, SIP then Contacts",
+    "sort_type_xce" : "XMPP, Contacts then SIP",
+    "sort_type_exc" : "SIP, XMPP then Contacts",
+    "sort_type_ecx" : "SIP, Contacts then XMPP",
+    "sort_exten" : "Extension or Number (then Last Activity)",
+    "sort_alpha" : "Alphabetically (then Last Activity)",
+    "sort_activity" : "Only Last Activity",
+    "sort_auto_delete_at_end" : "Show Auto Delete at the end",
+    "sort_show_exten_num" : "Show Extension Numbers"
 }

@@ -285,5 +285,17 @@
     "subscribe_to_dev_state" : "Подписаться на уведомления о состоянии устройства",
     "default_video_src" : "дефолт",
     "subscribe_voicemail" : "Подписаться на голосовую почту (MWI)",
-    "voicemail_did" : "Номер управления голосовой почтой"
+    "voicemail_did" : "Номер управления голосовой почтой",
+    "sort_type" : "Тип (затем Последнее действие)",
+    "sort_type_cex" : "Contacts, SIP then XMPP",
+    "sort_type_cxe" : "Contacts, XMPP then SIP",
+    "sort_type_xec" : "XMPP, SIP then Contacts",
+    "sort_type_xce" : "XMPP, Contacts then SIP",
+    "sort_type_exc" : "SIP, XMPP then Contacts",
+    "sort_type_ecx" : "SIP, Contacts then XMPP",
+    "sort_exten" : "Добавочный номер или номер (затем последнее действие)",
+    "sort_alpha" : "По алфавиту (затем последнее действие)",
+    "sort_activity" : "Только последняя активность",
+    "sort_auto_delete_at_end" : "Показать автоудаление в конце",
+    "sort_show_exten_num" : "Показать номер расширения"
 }

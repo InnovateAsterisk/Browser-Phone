@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.15";
+const appversion = "0.3.16";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -2032,8 +2032,8 @@ function onRegistered(){
 }
 /**
  * Called if UserAgent can connect, but not register.
- * @param {string} response = Incoming request message
- * @param {string} cause = cause message. Unused
+ * @param {string} response Incoming request message
+ * @param {string} cause Cause message. Unused
 **/
 function onRegisterFailed(response, cause){
     console.log("Registration Failed: " + response);
@@ -8361,24 +8361,24 @@ function ShowSortAnfFilter(){
     var html = "<div style=\"text-align:right\"><button class=roundButtons onclick=\"ShowContacts()\"><i class=\"fa fa-close\"></i></button></div>"
     html += "<table cellspacing=10 cellpadding=0 style=\"margin-left:auto; margin-right: auto\">";
     // By Type (and what order)
-    html += "<tr><td><div><input disabled type=radio name=sort_by id=sort_by_type><label for=sort_by_type>Type (then Last Activity)</label></div>";
-    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_cex><label for=sort_by_type_cex>Contacts, SIP then XMPP</label></div>";
-    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_cxe><label for=sort_by_type_cxe>Contacts, XMPP then SIP</label></div>";
-    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_xec><label for=sort_by_type_xec>XMPP, SIP then Contacts</label></div>";
-    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_xce><label for=sort_by_type_xce>XMPP, Contacts then SIP</label></div>";
-    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_exc><label for=sort_by_type_exc>SIP, XMPP then Contacts</label></div>";
-    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_ecx><label for=sort_by_type_ecx>SIP, Contacts then XMPP</label></div>";
+    html += "<tr><td><div><input disabled type=radio name=sort_by id=sort_by_type><label for=sort_by_type>"+ lang.sort_type +"</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_cex><label for=sort_by_type_cex>"+ lang.sort_type_cex +"</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_cxe><label for=sort_by_type_cxe>"+ lang.sort_type_cxe +"</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_xec><label for=sort_by_type_xec>"+ lang.sort_type_xec +"</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_xce><label for=sort_by_type_xce>"+ lang.sort_type_xce +"</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_exc><label for=sort_by_type_exc>"+ lang.sort_type_exc +"</label></div>";
+    html += "<div style=\"margin-left:20px\"><input type=radio name=sort_by_type id=sort_by_type_ecx><label for=sort_by_type_ecx>"+ lang.sort_type_ecx +"</label></div>";
     html += "</td></tr>";
     // By Extension
-    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_exten><label for=sort_by_exten>Extension or Number (then Last Activity)</label></div></td></tr>";
+    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_exten><label for=sort_by_exten>"+ lang.sort_exten +"</label></div></td></tr>";
     // By Alphabetical 
-    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_alpha><label for=sort_by_alpha>Alphabetically (then Last Activity)</label></div></td></tr>";
+    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_alpha><label for=sort_by_alpha>"+ lang.sort_alpha +"</label></div></td></tr>";
     // Only Last Activity
-    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_activity><label for=sort_by_activity>Only Last Activity</label></div></td></tr>";
+    html += "<tr><td><div><input type=radio name=sort_by id=sort_by_activity><label for=sort_by_activity>"+ lang.sort_activity +"</label></div></td></tr>";
 
     // Secondary Options
-    html += "<tr><td><div><input type=checkbox id=sort_auto_delete_at_end><label for=sort_auto_delete_at_end>Show Auto Delete at the bottom</label></div></td></tr>";
-    html += "<tr><td><div><input type=checkbox id=sort_show_exten_num><label for=sort_show_exten_num>Show Extension Numbers</label></div></td></tr>";
+    html += "<tr><td><div><input type=checkbox id=sort_auto_delete_at_end><label for=sort_auto_delete_at_end>"+ lang.sort_auto_delete_at_end +"</label></div></td></tr>";
+    html += "<tr><td><div><input type=checkbox id=sort_show_exten_num><label for=sort_show_exten_num>"+ lang.sort_show_exten_num +"</label></div></td></tr>";
 
     html += "</table>";
     html += "</div>";
@@ -8509,10 +8509,10 @@ function ShowSortAnfFilter(){
 
 /**
  * Primary method for making a call. 
- * @param {string} type = (required) Either "audio" or "video". Will setup UI according to this type.
- * @param {Buddy} buddy = (optional) The buddy to dial if provided.
- * @param {sting} numToDial = (required) The number to dial.
- * @param {string} CallerID = (optional) If no buddy provided, one is generated automatically using this callerID and the numToDial
+ * @param {string} type (required) Either "audio" or "video". Will setup UI according to this type.
+ * @param {Buddy} buddy (optional) The buddy to dial if provided.
+ * @param {sting} numToDial (required) The number to dial.
+ * @param {string} CallerID (optional) If no buddy provided, one is generated automatically using this callerID and the numToDial
  * @param {Array<string>} extraHeaders = (optional) Array of headers to include in the INVITE eg: ["foo: bar"] (Note the space after the :)
  */
 function DialByLine(type, buddy, numToDial, CallerID, extraHeaders){
@@ -9114,6 +9114,21 @@ function InitUserBuddies(){
     localDB.setItem(profileUserID + "-Buddies", JSON.stringify(template));
     return JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
 }
+
+/**
+ * Method used to create a permanent buddy (saved to the local store).
+ * Note: This method also makes the memory object for display it on the left hand side, using AddBuddy()
+ * @param {string} type One of extension | xmpp | contact | group
+ * @param {boolean} update Option to issue UpdateBuddyList() once done.
+ * @param {boolean} focus Option to focus/select the buddy once done.
+ * @param {boolean} subscribe Option to create a subscription to the user. (also see subscribeUser)
+ * @param {string} callerID The Display Name or Caller ID of the Buddy
+ * @param {string} did The Extension Number/DID/SipID of the Buddy
+ * @param {string} jid The Jabber Identifier of the XMPP buddy (only if type=xmpp)
+ * @param {boolean} AllowDuringDnd Option to allowing inbound calls when on DND
+ * @param {string} subscribeUser If subscribe=true, you can optionally specify a SipID to subscribe to.
+ * @param {boolean} autoDelete Option to have this buddy delete after MaxBuddyAge
+**/
 function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuringDnd, subscribeUser, autoDelete){
     var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
     if(json == null) json = InitUserBuddies();
@@ -13932,25 +13947,7 @@ window.setInterval(function(){
     DetectDevices();
 }, 10000);
 
-// STATUS_NULL: 0
-// STATUS_INVITE_SENT: 1
-// STATUS_1XX_RECEIVED: 2
-// STATUS_INVITE_RECEIVED: 3
-// STATUS_WAITING_FOR_ANSWER: 4
-// STATUS_ANSWERED: 5
-// STATUS_WAITING_FOR_PRACK: 6
-// STATUS_WAITING_FOR_ACK: 7
-// STATUS_CANCELED: 8
-// STATUS_TERMINATED: 9
-// STATUS_ANSWERED_WAITING_FOR_PRACK: 10
-// STATUS_EARLY_MEDIA: 11
-// STATUS_CONFIRMED: 12
-
 // =================================================================================
-// End Of File
-
-
-
 
 function onStatusChange(status) {
     // Strophe.ConnectionStatus = status;
@@ -14243,11 +14240,11 @@ function XmppGetBuddies(){
                     // Create Cache
                     if(isGroup == true){
                         console.log("Adding roster (group):", buddyDid, "-", displayName);
-                        buddyObj = MakeBuddy("group", false, false, false, displayName, buddyDid, jid, false, true, false);
+                        buddyObj = MakeBuddy("group", false, false, false, displayName, buddyDid, jid, false, buddyDid, false);
                     }
                     else {
                         console.log("Adding roster (xmpp):", buddyDid, "-", displayName);
-                        buddyObj = MakeBuddy("xmpp", false, false, true, displayName, buddyDid, jid, false, true, false);
+                        buddyObj = MakeBuddy("xmpp", false, false, true, displayName, buddyDid, jid, false, buddyDid, false);
                     }
 
                     // RefreshBuddyData(buddyObj);

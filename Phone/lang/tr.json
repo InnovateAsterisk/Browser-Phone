@@ -285,5 +285,17 @@
     "subscribe_to_dev_state" : "Cihaz Durumu Bildirimlerine Abone Olun",
     "default_video_src" : "Varsayılan",
     "subscribe_voicemail" : "VoiceMail'e abone olun (MWI)",
-    "voicemail_did" : "Sesli Posta Yönetim Numarası"
+    "voicemail_did" : "Sesli Posta Yönetim Numarası",
+    "sort_type" : "Yazın (sonra Son Etkinlik)",
+    "sort_type_cex" : "Kişiler, SIP ve ardından XMPP",
+    "sort_type_cxe" : "Kişiler, XMPP ve ardından SIP",
+    "sort_type_xec" : "XMPP, SIP ve ardından Kişiler",
+    "sort_type_xce" : "XMPP, Kişiler ve ardından SIP",
+    "sort_type_exc" : "SIP, XMPP ve ardından Kişiler",
+    "sort_type_ecx" : "SIP, Kişiler ve ardından XMPP",
+    "sort_exten" : "Uzantı veya Numara (sonra Son Etkinlik)",
+    "sort_alpha" : "Alfabetik olarak (sonra Son Etkinlik)",
+    "sort_activity" : "Sadece Son Etkinlik",
+    "sort_auto_delete_at_end" : "Otomatik Silmeyi sonunda göster",
+    "sort_show_exten_num" : "Dahili Numarayı Göster"
 }

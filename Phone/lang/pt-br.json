@@ -259,7 +259,7 @@
     "you_started_a_conference_call_to" : "Você iniciou uma conferência para",
     "show_call_detail_record" : "Exibir o detalhamento de chamadas",
     "call_detail_record" : "Detalhamento de Chamadas",
-    "call_direction" : "Call Direction",
+    "call_direction" : "Direção de chamada",
     "call_date_and_time" : "Data e hora da chamada",
     "ring_time" : "Duração do toque",
     "talk_time" : "Tempo de fala",
@@ -285,5 +285,17 @@
     "subscribe_to_dev_state" : "Receber notificações do status do contato",
     "default_video_src" : "Predefinição",
     "subscribe_voicemail" : "Assine o correio de voz (MWI)",
-    "voicemail_did" : "Número de gerenciamento do correio de voz"
+    "voicemail_did" : "Número de gerenciamento do correio de voz",
+    "sort_type" : "Tipo (seguido por Última Atividade)",
+    "sort_type_cex" : "Contatos, SIP e XMPP",
+    "sort_type_cxe" : "Contatos, XMPP e SIP",
+    "sort_type_xec" : "XMPP, SIP e Contatos",
+    "sort_type_xce" : "XMPP, Contatos e SIP",
+    "sort_type_exc" : "SIP, XMPP e Contatos",
+    "sort_type_ecx" : "SIP, Contatos e XMPP",
+    "sort_exten" : "Ramal ou Número (seguido por Última Atividade)",
+    "sort_alpha" : "Alfabeticamente (seguido por Última Atividade)",
+    "sort_activity" : "Apenas última atividade",
+    "sort_auto_delete_at_end" : "Mostrar a exclusão automática no final",
+    "sort_show_exten_num" : "Mostrar números de ramal"
 }

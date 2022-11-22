@@ -285,5 +285,17 @@
     "subscribe_to_dev_state" : "Abonneer je op Device State Meldingen",
     "default_video_src" : "Standaard",
     "subscribe_voicemail" : "Abonneren op VoiceMail (MWI)",
-    "voicemail_did" : "VoiceMail-beheernummer"
+    "voicemail_did" : "VoiceMail-beheernummer",
+    "sort_type" : "Type (dan Laatste activiteit)",
+    "sort_type_cex" : "Contacten, SIP dan XMPP",
+    "sort_type_cxe" : "Contacten, XMPP dan SIP",
+    "sort_type_xec" : "XMPP, SIP dan Contacten",
+    "sort_type_xce" : "XMPP, Contacten dan SIP",
+    "sort_type_exc" : "SIP, XMPP dan Contacten",
+    "sort_type_ecx" : "SIP, Contacten dan XMPP",
+    "sort_exten" : "Toestel of nummer (dan Laatste activiteit)",
+    "sort_alpha" : "Alfabetisch (dan Laatste activiteit)",
+    "sort_activity" : "Alleen laatste activiteit",
+    "sort_auto_delete_at_end" : "Toon automatisch verwijderen aan het einde",
+    "sort_show_exten_num" : "Toestelnummers tonen"
 }

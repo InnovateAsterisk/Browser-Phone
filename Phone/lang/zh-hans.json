@@ -285,5 +285,17 @@
     "subscribe_to_dev_state" : "訂閱設備狀態通知",
     "default_video_src" : "缺省",
     "subscribe_voicemail" : "訂閱語音郵件 (MWI)",
-    "voicemail_did" : "語音信箱管理號碼"
+    "voicemail_did" : "語音信箱管理號碼",
+    "sort_type" : "类型（然后是上次活动）",
+    "sort_type_cex" : "联系人, SIP 然后 XMPP",
+    "sort_type_cxe" : "联系人, XMPP 然后 SIP",
+    "sort_type_xec" : "XMPP, SIP 然后 联系人",
+    "sort_type_xce" : "XMPP, 联系人 然后 SIP",
+    "sort_type_exc" : "SIP, XMPP 然后 联系人",
+    "sort_type_ecx" : "SIP, 联系人 然后 XMPP",
+    "sort_exten" : "分机号或号码（然后是上次活动）",
+    "sort_alpha" : "按字母顺序（然后是最后一个活动）",
+    "sort_activity" : "仅最后一个活动",
+    "sort_auto_delete_at_end" : "最后显示自动删除",
+    "sort_show_exten_num" : "显示分机号码"
 }

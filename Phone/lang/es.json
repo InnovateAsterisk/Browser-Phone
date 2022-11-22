@@ -285,5 +285,17 @@
     "subscribe_to_dev_state" : "Suscribirse a las notificaciones del estado del dispositivo",
     "default_video_src" : "Defecto",
     "subscribe_voicemail" : "Suscríbete al correo de voz (MWI)",
-    "voicemail_did" : "Número de gestión de correo de voz"
+    "voicemail_did" : "Número de gestión de correo de voz",
+    "sort_type" : "Tipo (luego Última actividad)",
+    "sort_type_cex" : "Contactos, SIP luego XMPP",
+    "sort_type_cxe" : "Contactos, XMPP luego SIP",
+    "sort_type_xec" : "XMPP, SIP luego Contactos",
+    "sort_type_xce" : "XMPP, Contactos luego SIP",
+    "sort_type_exc" : "SIP, XMPP luego Contactos",
+    "sort_type_ecx" : "SIP, Contactos luego XMPP",
+    "sort_exten" : "Extensión o Número (luego Última Actividad)",
+    "sort_alpha" : "Alfabéticamente (luego Última actividad)",
+    "sort_activity" : "Solo última actividad",
+    "sort_auto_delete_at_end" : "Mostrar eliminación automática al final",
+    "sort_show_exten_num" : "Mostrar números de extensión"
 }
