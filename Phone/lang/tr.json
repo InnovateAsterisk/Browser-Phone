@@ -286,6 +286,7 @@
     "default_video_src" : "Varsayılan",
     "subscribe_voicemail" : "VoiceMail'e abone olun (MWI)",
     "voicemail_did" : "Sesli Posta Yönetim Numarası",
+    "filter_and_sort" : "Filtrele ve Sırala",
     "sort_type" : "Yazın (sonra Son Etkinlik)",
     "sort_type_cex" : "Kişiler, SIP ve ardından XMPP",
     "sort_type_cxe" : "Kişiler, XMPP ve ardından SIP",
@@ -297,5 +298,10 @@
     "sort_alpha" : "Alfabetik olarak (sonra Son Etkinlik)",
     "sort_activity" : "Sadece Son Etkinlik",
     "sort_auto_delete_at_end" : "Otomatik Silmeyi sonunda göster",
-    "sort_show_exten_num" : "Dahili Numarayı Göster"
+    "sort_auto_delete_hide" : "Otomatik Silinen Arkadaşları Gizle",
+    "sort_show_exten_num" : "Dahili Numarayı Göster",
+    "sort_no_showing" : "{0} Otomatik Silme arkadaşı gösterilmiyor",
+    "delete_buddy" : "Sil",
+    "delete_duddy_data" : "Geçmişi sil",
+    "pin_to_top" : "Sabitlendi"
 }

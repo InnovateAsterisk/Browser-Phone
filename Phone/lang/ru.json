@@ -286,6 +286,7 @@
     "default_video_src" : "дефолт",
     "subscribe_voicemail" : "Подписаться на голосовую почту (MWI)",
     "voicemail_did" : "Номер управления голосовой почтой",
+    "filter_and_sort" : "Фильтровать и сортировать",
     "sort_type" : "Тип (затем Последнее действие)",
     "sort_type_cex" : "Contacts, SIP then XMPP",
     "sort_type_cxe" : "Contacts, XMPP then SIP",
@@ -297,5 +298,10 @@
     "sort_alpha" : "По алфавиту (затем последнее действие)",
     "sort_activity" : "Только последняя активность",
     "sort_auto_delete_at_end" : "Показать автоудаление в конце",
-    "sort_show_exten_num" : "Показать номер расширения"
+    "sort_auto_delete_hide" : "Скрыть автоудаление друзей",
+    "sort_show_exten_num" : "Показать номер расширения",
+    "sort_no_showing" : "Не отображаются {0} автоматически удаляемые приятели",
+    "delete_buddy" : "Удалить",
+    "delete_duddy_data" : "Удалить историю",
+    "pin_to_top" : "Закреплено"
 }

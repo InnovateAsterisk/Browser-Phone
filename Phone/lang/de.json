@@ -286,6 +286,7 @@
     "default_video_src" : "Ursprünglich",
     "subscribe_voicemail" : "Abonnieren Sie VoiceMail (MWI)",
     "voicemail_did" : "VoiceMail-Verwaltungsnummer",
+    "filter_and_sort" : "Filtern und sortieren",
     "sort_type" : "Typ (dann Letzte Aktivität)",
     "sort_type_cex" : "Kontakte, SIP dann XMPP",
     "sort_type_cxe" : "Kontakte, XMPP dann SIP",
@@ -297,5 +298,10 @@
     "sort_alpha" : "Alphabetisch (dann Letzte Aktivität)",
     "sort_activity" : "Nur letzte Aktivität",
     "sort_auto_delete_at_end" : "Automatisches Löschen zuletzt anzeigen",
-    "sort_show_exten_num" : "Nebenstellennummern anzeigen"
+    "sort_auto_delete_hide" : "Automatisches Löschen von Freunden ausblenden",
+    "sort_show_exten_num" : "Nebenstellennummern anzeigen",
+    "sort_no_showing" : "{0} Freunde zum automatischen Löschen werden nicht angezeigt",
+    "delete_buddy" : "Löschen",
+    "delete_duddy_data" : "Verlauf löschen",
+    "pin_to_top" : "Gepinnt"
 }

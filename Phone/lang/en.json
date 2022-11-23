@@ -286,6 +286,7 @@
     "default_video_src" : "Default",
     "subscribe_voicemail" : "Subscribe to VoiceMail (MWI)",
     "voicemail_did" : "VoiceMail Management Number",
+    "filter_and_sort" : "Filter and Sort",
     "sort_type" : "Type (then Last Activity)",
     "sort_type_cex" : "Contacts, SIP then XMPP",
     "sort_type_cxe" : "Contacts, XMPP then SIP",
@@ -297,5 +298,10 @@
     "sort_alpha" : "Alphabetically (then Last Activity)",
     "sort_activity" : "Only Last Activity",
     "sort_auto_delete_at_end" : "Show Auto Delete at the end",
-    "sort_show_exten_num" : "Show Extension Numbers"
+    "sort_auto_delete_hide" : "Hide Auto Delete Buddies",
+    "sort_show_exten_num" : "Show Extension Numbers",
+    "sort_no_showing" : "Not showing {0} Auto Delete buddies",
+    "delete_buddy" : "Delete",
+    "delete_duddy_data" : "Delete History",
+    "pin_to_top" : "Pinned"
 }

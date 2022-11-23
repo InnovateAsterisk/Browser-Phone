@@ -286,6 +286,7 @@
     "default_video_src" : "缺省",
     "subscribe_voicemail" : "訂閱語音郵件 (MWI)",
     "voicemail_did" : "語音信箱管理號碼",
+    "filter_and_sort" : "過濾和排序",
     "sort_type" : "类型（然后是上次活动）",
     "sort_type_cex" : "联系人, SIP 然后 XMPP",
     "sort_type_cxe" : "联系人, XMPP 然后 SIP",
@@ -297,5 +298,10 @@
     "sort_alpha" : "按字母顺序（然后是最后一个活动）",
     "sort_activity" : "仅最后一个活动",
     "sort_auto_delete_at_end" : "最后显示自动删除",
-    "sort_show_exten_num" : "显示分机号码"
+    "sort_auto_delete_hide" : "隱藏自動刪除好友",
+    "sort_show_exten_num" : "显示分机号码",
+    "sort_no_showing" : "未顯示 {0} 個自動刪除好友",
+    "delete_buddy" : "刪除",
+    "delete_duddy_data" : "刪除歷史",
+    "pin_to_top" : "固定"
 }

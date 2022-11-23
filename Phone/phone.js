@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.16";
+const appversion = "0.3.17";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -153,6 +153,7 @@ let Language = getDbItem("Language", "auto");                        // Override
 let BuddySortBy = getDbItem("BuddySortBy", "activity");                      // Sorting for Buddy List display (type|extension|alphabetical|activity)
 let SortByTypeOrder = getDbItem("SortByTypeOrder", "e|x|c");                 // If the Sorting is set to type then describe the order of the types.
 let BuddyAutoDeleteAtEnd = (getDbItem("BuddyAutoDeleteAtEnd", "0") == "1");  // Always put the Auto Delete buddies at the bottom
+let HideAutoDeleteBuddies = (getDbItem("HideAutoDeleteBuddies", "0") == "1");    // Option to not display Auto Delete Buddies (May be confusing if newly created buddies are set to auto delete.)
 let BuddyShowExtenNum = (getDbItem("BuddyShowExtenNum", "0") == "1");        // Controls the Extension Number display
 
 // Permission Settings
@@ -477,6 +478,7 @@ $(document).ready(function () {
     if(options.BuddySortBy !== undefined) BuddySortBy = options.BuddySortBy;
     if(options.SortByTypeOrder !== undefined) SortByTypeOrder = options.SortByTypeOrder;
     if(options.BuddyAutoDeleteAtEnd !== undefined) BuddyAutoDeleteAtEnd = options.BuddyAutoDeleteAtEnd;
+    if(options.HideAutoDeleteBuddies !== undefined) HideAutoDeleteBuddies = options.HideAutoDeleteBuddies;
     if(options.BuddyShowExtenNum !== undefined) BuddyShowExtenNum = options.BuddyShowExtenNum;
     if(options.EnableTextMessaging !== undefined) EnableTextMessaging = options.EnableTextMessaging;
     if(options.DisableFreeDial !== undefined) DisableFreeDial = options.DisableFreeDial;
@@ -1076,7 +1078,7 @@ function EditBuddyWindow(buddy){
         return;
     }
     if(UiCustomEditBuddy == true){
-        if(typeof web_hook_on_add_buddy !== 'undefined') {
+        if(typeof web_hook_on_edit_buddy !== 'undefined') {
             web_hook_on_edit_buddy(buddyJson);
         }
         return;
@@ -1124,6 +1126,9 @@ function EditBuddyWindow(buddy){
     html += "<div class=UiText>Auto Delete:</div>";
     html += "<div><input type=checkbox id=AddSomeone_AutoDelete "+ ((buddyJson.AutoDelete == true)? "checked" : "" ) +"><label for=AddSomeone_AutoDelete>"+ lang.yes +"</label></div>";
 
+    // TODO, add option to delete data, etc, etc
+    html += "<div class=UiText><button onclick=\"RemoveBuddy('"+ buddyObj.identity +"')\" class=\"UiDeleteButton\"><i class=\"fa fa-trash\"></i> "+ lang.delete_buddy +"</button></div>";
+
     html += "</div>"
 
     OpenWindow(html, lang.edit, 480, 640, false, true, lang.save, function(){
@@ -1170,7 +1175,8 @@ function EditBuddyWindow(buddy){
             buddyObj.ExtNo = buddyJson.ExtensionNumber;
 
             buddyJson.Subscribe = $("#AddSomeone_Subscribe").is(':checked');
-            buddyObj.Subscribe = buddyJson.Subscribe;
+            buddyObj.EnableSubscribe = buddyJson.Subscribe;
+
             if(buddyJson.Subscribe == true){
                 var SubscribeUser = $("#AddSomeone_SubscribeUser").val();
                 buddyJson.SubscribeUser = SubscribeUser;
@@ -1425,7 +1431,7 @@ function InitUi(){
     $("#UserCallID").html(profileName);
     $("#UserProfilePic").css("background-image", "url('"+ getPicture("profilePicture") +"')");
     
-    $("#BtnFilter").attr("title", "lang.filter_and_sort")
+    $("#BtnFilter").attr("title", lang.filter_and_sort)
     $("#BtnFilter").on('click', function(event){
         if(UiCustomSortAndFilterButton == true){
             if(typeof web_hook_sort_and_filter !== 'undefined') {
@@ -4245,6 +4251,9 @@ function UnsubscribeBlf(blfSubscribe){
         blfSubscribe.unsubscribe().catch(function(error){
             console.warn("Error removing BLF notifications:", error);
         });
+    } 
+    else {
+        console.log("Incorrect buddy subscribe state", blfSubscribe.data.buddyId, blfSubscribe.state);
     }
     blfSubscribe.dispose().catch(function(error){
         console.warn("Error disposing BLF notifications:", error);
@@ -4289,11 +4298,13 @@ function SelfUnsubscribe(){
 }
 
 function UnsubscribeBuddy(buddyObj) {
+    console.log("Unsubscribe: ", buddyObj.identity);
     if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         if(userAgent && userAgent.BlfSubs && userAgent.BlfSubs.length > 0){
             for (var blf = 0; blf < userAgent.BlfSubs.length; blf++) {
                 var blfSubscribe = userAgent.BlfSubs[blf];
                 if(blfSubscribe.data.buddyId == buddyObj.identity){
+                    console.log("Subscription found, removing: ", buddyObj.identity);
                     UnsubscribeBlf(userAgent.BlfSubs[blf]);
                     userAgent.BlfSubs.splice(blf, 1);
                     break;
@@ -5489,7 +5500,6 @@ function VideoCall(lineObj, dialledNumber, extraHeaders) {
     $("#line-" + lineObj.LineNumber + "-btn-audioCall").prop('disabled','disabled');
     $("#line-" + lineObj.LineNumber + "-btn-videoCall").prop('disabled','disabled');
     $("#line-" + lineObj.LineNumber + "-btn-search").removeAttr('disabled');
-    $("#line-" + lineObj.LineNumber + "-btn-remove").prop('disabled','disabled');
 
     $("#line-" + lineObj.LineNumber + "-progress").show();
     $("#line-" + lineObj.LineNumber + "-msg").show();
@@ -5689,7 +5699,6 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
     $("#line-" + lineObj.LineNumber + "-btn-audioCall").prop('disabled','disabled');
     $("#line-" + lineObj.LineNumber + "-btn-videoCall").prop('disabled','disabled');
     $("#line-" + lineObj.LineNumber + "-btn-search").removeAttr('disabled');
-    $("#line-" + lineObj.LineNumber + "-btn-remove").prop('disabled','disabled');
 
     $("#line-" + lineObj.LineNumber + "-progress").show();
     $("#line-" + lineObj.LineNumber + "-msg").show();
@@ -8378,6 +8387,7 @@ function ShowSortAnfFilter(){
 
     // Secondary Options
     html += "<tr><td><div><input type=checkbox id=sort_auto_delete_at_end><label for=sort_auto_delete_at_end>"+ lang.sort_auto_delete_at_end +"</label></div></td></tr>";
+    html += "<tr><td><div><input type=checkbox id=sort_auto_delete_hide><label for=sort_auto_delete_hide>"+ lang.sort_auto_delete_hide +"</label></div></td></tr>";
     html += "<tr><td><div><input type=checkbox id=sort_show_exten_num><label for=sort_show_exten_num>"+ lang.sort_show_exten_num +"</label></div></td></tr>";
 
     html += "</table>";
@@ -8396,6 +8406,7 @@ function ShowSortAnfFilter(){
     $("#sort_by_activity").prop("checked", BuddySortBy=="activity");
 
     $("#sort_auto_delete_at_end").prop("checked", BuddyAutoDeleteAtEnd==true);
+    $("#sort_auto_delete_hide").prop("checked", HideAutoDeleteBuddies==true);
     $("#sort_show_exten_num").prop("checked", BuddyShowExtenNum==true);
 
     $("#sort_by_type_cex").change(function(){
@@ -8493,6 +8504,24 @@ function ShowSortAnfFilter(){
     $("#sort_auto_delete_at_end").change(function(){
         BuddyAutoDeleteAtEnd = this.checked;
         localDB.setItem("BuddyAutoDeleteAtEnd", (this.checked)? "1" : "0");
+        
+        if(this.checked){
+            $("#sort_auto_delete_hide").prop("checked", false);
+            HideAutoDeleteBuddies = false;
+            localDB.setItem("HideAutoDeleteBuddies", "0");
+        }
+
+        UpdateBuddyList();
+    });
+    $("#sort_auto_delete_hide").change(function(){
+        HideAutoDeleteBuddies = this.checked;
+        localDB.setItem("HideAutoDeleteBuddies", (this.checked)? "1" : "0");
+
+        if(this.checked){
+            $("#sort_auto_delete_at_end").prop("checked", false);
+            BuddyAutoDeleteAtEnd = false;
+            localDB.setItem("BuddyAutoDeleteAtEnd", "0");    
+        }
 
         UpdateBuddyList();
     });
@@ -9086,7 +9115,7 @@ function RefreshLineActivity(lineNum){
 
 // Buddy & Contacts
 // ================
-var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactNumber1, ContactNumber2, lastActivity, desc, Email, jid, dnd, subscribe, subscription, autoDelete){
+var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactNumber1, ContactNumber2, lastActivity, desc, Email, jid, dnd, subscribe, subscription, autoDelete, pinned){
     this.type = type; // extension | xmpp | contact | group
     this.identity = identity;
     this.jid = jid;
@@ -9108,6 +9137,7 @@ var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactN
     this.EnableSubscribe = subscribe;
     this.SubscribeUser = (subscription)? subscription : ExtNo;
     this.AllowAutoDelete = (typeof autoDelete !== 'undefined')? autoDelete : AutoDeleteDefault;
+    this.Pinned = (typeof pinned !== 'undefined')? pinned : false;
 }
 function InitUserBuddies(){
     var template = { TotalRows:0, DataCollection:[] }
@@ -9318,6 +9348,7 @@ function PopulateBuddyList() {
     console.log("Total Buddies: " + json.TotalRows);
     $.each(json.DataCollection, function (i, item) {
         item.AutoDelete = (item.AutoDelete == true)? true : false;
+        item.Pinned = (item.Pinned == true)? true : false;
         if(item.Type == "extension"){
             // extension
             var buddy = new Buddy("extension", 
@@ -9334,7 +9365,8 @@ function PopulateBuddyList() {
                                     item.EnableDuringDnd, 
                                     item.Subscribe,
                                     item.SubscribeUser,
-                                    item.AutoDelete);
+                                    item.AutoDelete,
+                                    item.Pinned);
             AddBuddy(buddy, false, false, false);
         }
         else if(item.Type == "xmpp"){
@@ -9353,7 +9385,8 @@ function PopulateBuddyList() {
                                     item.EnableDuringDnd, 
                                     item.Subscribe,
                                     item.SubscribeUser,
-                                    item.AutoDelete);
+                                    item.AutoDelete,
+                                    item.Pinned);
             AddBuddy(buddy, false, false, false);
         }
         else if(item.Type == "contact"){
@@ -9372,7 +9405,8 @@ function PopulateBuddyList() {
                                     item.EnableDuringDnd, 
                                     item.Subscribe,
                                     item.SubscribeUser,
-                                    item.AutoDelete);
+                                    item.AutoDelete,
+                                    item.Pinned);
             AddBuddy(buddy, false, false, false);
         }
         else if(item.Type == "group"){
@@ -9391,7 +9425,8 @@ function PopulateBuddyList() {
                                     item.EnableDuringDnd, 
                                     item.Subscribe,
                                     item.SubscribeUser,
-                                    item.AutoDelete);
+                                    item.AutoDelete,
+                                    item.Pinned);
             AddBuddy(buddy, false, false, false);
         }
     });
@@ -9463,8 +9498,11 @@ function UpdateBuddyList(){
     }
 
     // Sort and filter
-    // ===============
     SortBuddies();
+
+    var hiddenBuddies = 0;
+
+    // Display
     for(var b = 0; b < Buddies.length; b++) {
         var buddyObj = Buddies[b];
 
@@ -9488,6 +9526,13 @@ function UpdateBuddyList(){
             displayDateTime = lastActivity.local().format(DisplayDateFormat);
         }
 
+        if(HideAutoDeleteBuddies){
+            if(buddyObj.AllowAutoDelete) {
+                hiddenBuddies++;
+                continue;
+            }
+        }
+
         var classStr = (buddyObj.IsSelected)? "buddySelected" : "buddy";
         if(buddyObj.type == "extension") { 
             var friendlyState = buddyObj.presence;
@@ -9502,15 +9547,11 @@ function UpdateBuddyList(){
             var autDeleteStatus = "";
             if(buddyObj.AllowAutoDelete == true) autDeleteStatus = "<i class=\"fa fa-clock-o\"></i> ";
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
-            if(buddyObj.missed && buddyObj.missed > 0){
-                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
-            }
-            else{
-                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
-            }
+            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\""+ ((buddyObj.missed && buddyObj.missed > 0)? "" : "display:none") +"\">"+ buddyObj.missed +"</span>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-picture\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += (buddyObj.Pinned)? "<span class=pinnedBuddy><i class=\"fa fa-thumb-tack\"></i></span>" : "";
             html += "<div class=contactNameText>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
+            html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ ((buddyObj.EnableSubscribe)? buddyObj.devState : "dotDefault") +"\"></span>";
             html += (BuddyShowExtenNum == true)? " "+ buddyObj.ExtNo + " - " : " ";
             html += buddyObj.CallerIDName
             html += "</div>";
@@ -9529,15 +9570,11 @@ function UpdateBuddyList(){
             });
             
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
-            if(buddyObj.missed && buddyObj.missed > 0){
-                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
-            }
-            else{
-                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
-            }
+            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\""+ ((buddyObj.missed && buddyObj.missed > 0)? "" : "display:none") +"\">"+ buddyObj.missed +"</span>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-picture\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += (buddyObj.Pinned)? "<span class=pinnedBuddy><i class=\"fa fa-thumb-tack\"></i></span>" : "";
             html += "<div class=contactNameText>";
-            html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ buddyObj.devState +"\"></span>";
+            html += "<span id=\"contact-"+ buddyObj.identity +"-devstate\" class=\""+ ((buddyObj.EnableSubscribe)? buddyObj.devState : "dotDefault") +"\"></span>";
             html += (BuddyShowExtenNum == true)? " "+ buddyObj.ExtNo + " - " : " ";
             html += buddyObj.CallerIDName;
             html += "</div>";
@@ -9550,13 +9587,9 @@ function UpdateBuddyList(){
             var autDeleteStatus = "";
             if(buddyObj.AllowAutoDelete == true) autDeleteStatus = "<i class=\"fa fa-clock-o\"></i> ";
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'contact')\">";
-            if(buddyObj.missed && buddyObj.missed > 0){
-                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
-            }
-            else{
-                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
-            }
+            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\""+ ((buddyObj.missed && buddyObj.missed > 0)? "" : "display:none") +"\">"+ buddyObj.missed +"</span>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-picture\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += (buddyObj.Pinned)? "<span class=pinnedBuddy><i class=\"fa fa-thumb-tack\"></i></span>" : "";
             html += "<div class=contactNameText><i class=\"fa fa-address-card\"></i> "+ buddyObj.CallerIDName +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ autDeleteStatus + ""+ displayDateTime +"</div>";
             html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
@@ -9566,13 +9599,9 @@ function UpdateBuddyList(){
             var autDeleteStatus = "";
             if(buddyObj.AllowAutoDelete == true) autDeleteStatus = "<i class=\"fa fa-clock-o\"></i> ";
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'group')\">";
-            if(buddyObj.missed && buddyObj.missed > 0){
-                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer>"+ buddyObj.missed +"</span>";
-            }
-            else{
-                html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\"display:none\">"+ buddyObj.missed +"</span>";
-            }
+            html += "<span id=\"contact-"+ buddyObj.identity +"-missed\" class=missedNotifyer style=\""+ ((buddyObj.missed && buddyObj.missed > 0)? "" : "display:none") +"\">"+ buddyObj.missed +"</span>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-picture\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity, buddyObj.type) +"')\"></div>";
+            html += (buddyObj.Pinned)? "<span class=pinnedBuddy><i class=\"fa fa-thumb-tack\"></i></span>" : "";
             html += "<div class=contactNameText><i class=\"fa fa-users\"></i> "+ buddyObj.CallerIDName +"</div>";
             html += "<div id=\"contact-"+ buddyObj.identity +"-datetime\" class=contactDate>"+ autDeleteStatus + ""+ displayDateTime +"</div>";
             html += "<div class=presenceText>"+ buddyObj.Desc +"</div>";
@@ -9580,6 +9609,17 @@ function UpdateBuddyList(){
             $("#myContacts").append(html);
         }
     }
+    if(hiddenBuddies > 0){
+        console.warn("Auto Delete Buddies not shown", hiddenBuddies);
+        var html = "<div id=hiddenBuddies class=hiddenBuddiesText>("+ lang.sort_no_showing.replace("{0}", hiddenBuddies) +")</div>";
+        $("#myContacts").append(html);
+        $("#hiddenBuddies").on("click", function(){
+            HideAutoDeleteBuddies = false;
+            // Show now, but leave default set in storage
+            UpdateBuddyList();
+        });
+    }
+
 
     // Make Select
     // ===========
@@ -9617,19 +9657,26 @@ function AddBuddyMessageStream(buddyObj) {
     else if(buddyObj.type == "group") {
         profileRow += "<div id=\"contact-"+ buddyObj.identity +"-picture-main\" class=buddyIcon style=\"background-image: url('"+ getPicture(buddyObj.identity,"group") +"')\"></div>";
     }
-
+    // Caller ID
     if(buddyObj.type == "extension" || buddyObj.type == "xmpp") {
         profileRow += "<div class=contactNameText style=\"margin-right: 0px;\">";
         profileRow += "<span id=\"contact-"+ buddyObj.identity +"-devstate-main\" class=\""+ buddyObj.devState +"\"></span>";
-        profileRow += " "+ buddyObj.CallerIDName 
+        profileRow += " <span id=\"contact-"+ buddyObj.identity +"-name\">"+ buddyObj.CallerIDName +"</span>";
         profileRow += "</div>";
     }
     else if(buddyObj.type == "contact") {
-        profileRow += "<div class=contactNameText style=\"margin-right: 0px;\"><i class=\"fa fa-address-card\"></i> "+ buddyObj.CallerIDName +"</div>";
+        profileRow += "<div class=contactNameText style=\"margin-right: 0px;\">"
+        profileRow += "<i class=\"fa fa-address-card\"></i>";
+        profileRow += " <span id=\"contact-"+ buddyObj.identity +"-name\">"+ buddyObj.CallerIDName +"</span>";
+        profileRow += "</div>";
     } 
     else if(buddyObj.type == "group") {
-        profileRow += "<div class=contactNameText style=\"margin-right: 0px;\"><i class=\"fa fa-users\"></i> "+ buddyObj.CallerIDName +"</div>";
+        profileRow += "<div class=contactNameText style=\"margin-right: 0px;\">"
+        profileRow += "<i class=\"fa fa-users\"></i>";
+        profileRow += " <span id=\"contact-"+ buddyObj.identity +"-name\">"+ buddyObj.CallerIDName +"</span>";
+        profileRow += "</div>";
     }
+    // Presence
     if(buddyObj.type == "extension") {
         var friendlyState = buddyObj.presence;
         if (friendlyState == "Unknown") friendlyState = lang.state_unknown;
@@ -9668,7 +9715,7 @@ function AddBuddyMessageStream(buddyObj) {
     profileRow += "<span id=\"contact-"+ buddyObj.identity +"-extra-buttons\" style=\"display:none\">"
     profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-edit\" onclick=\"EditBuddyWindow('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.edit +"\"><i class=\"fa fa-pencil\"></i></button>";
     profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-search\" onclick=\"FindSomething('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.find_something +"\"><i class=\"fa fa-search\"></i></button>";
-    profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-remove\" onclick=\"RemoveBuddy('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.remove +"\"><i class=\"fa fa-trash\"></i></button>";
+    profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-pin\" onclick=\"TogglePinned('"+ buddyObj.identity +"')\" class=roundButtons title=\""+ lang.pin_to_top +"\"><i class=\"fa fa-thumb-tack\"></i></button>";
     profileRow += "</span>"
     profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-toggle-extra\" onclick=\"ToggleExtraButtons('"+ buddyObj.identity +"', "+ buttonsWidth +", "+ fullButtonsWidth +")\" class=roundButtons><i class=\"fa fa-ellipsis-h\"></i></button>";
     profileRow += "</td>";
@@ -10009,16 +10056,7 @@ function SortBuddies(){
         });
     }
 
-    // Second Sots
-
-    // Sort Out Pinned
-    if(false){
-        Buddies.sort(function(a, b){
-            var aMo = moment.utc(a.lastActivity.replace(" UTC", ""));
-            var bMo = moment.utc(b.lastActivity.replace(" UTC", ""));
-            return (aMo.isSameOrAfter(bMo, "second"));
-        });
-    }
+    // Second Sorts
 
     // Sort Auto Delete
     if(BuddyAutoDeleteAtEnd == true){
@@ -10026,6 +10064,10 @@ function SortBuddies(){
             return (a.AllowAutoDelete === b.AllowAutoDelete)? 0 : a.AllowAutoDelete? 1 : -1;
         });
     }
+    // Sort Out Pinned
+    Buddies.sort(function(a, b){
+        return (a.Pinned === b.Pinned)? 0 : a.Pinned? -1 : 1;
+    });
     
 }
 
@@ -10034,8 +10076,9 @@ function SelectBuddy(buddy) {
     var buddyObj = FindBuddyByIdentity(buddy);
     if(buddyObj == null) return;
 
+    var displayName = (BuddyShowExtenNum == true && (buddyObj.type == "extension" || buddyObj.type == "xmpp"))? " "+ buddyObj.ExtNo + " - " + buddyObj.CallerIDName : buddyObj.CallerIDName;
+    $("#contact-" + buddyObj.identity + "-name").html(displayName);
     var presence = "";
-
     if(buddyObj.type == "extension"){
         presence += buddyObj.presence;
         if(presence == "Unknown") presence = lang.state_unknown;
@@ -10136,6 +10179,9 @@ function CloseBuddy(buddy){
 }
 function RemoveBuddy(buddy){
     // Check if you are on the phone etc
+
+    CloseWindow();
+
     Confirm(lang.confirm_remove_buddy, lang.remove_buddy, function(){
         DoRemoveBuddy(buddy)
         UpdateBuddyList();
@@ -13464,6 +13510,37 @@ function FindSomething(buddy) {
         RefreshStream(FindBuddyByIdentity(buddy));
     }
     updateScroll(buddy);
+}
+function TogglePinned(buddy){
+    var buddyObj = FindBuddyByIdentity(buddy);
+    if(buddyObj == null) return;
+
+    if(buddyObj.Pinned){
+        // Disable
+        console.log("Disable Pinned for", buddy);
+        buddyObj.Pinned = false;
+    }
+    else {
+        // Enalbe
+        console.log("Enable Pinned for", buddy);
+        buddyObj.Pinned = true;
+    }
+
+    // Take Out
+    var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
+    if(json != null) {
+        $.each(json.DataCollection, function (i, item) {
+            if(item.uID == buddy || item.cID == buddy || item.gID == buddy){
+                item.Pinned = buddyObj.Pinned;
+                return false;
+            }
+        });
+        // Put Back
+        localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
+    }
+
+    // Update View
+    UpdateBuddyList();
 }
 
 // FileShare an Upload

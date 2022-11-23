@@ -286,6 +286,7 @@
     "default_video_src" : "Standaard",
     "subscribe_voicemail" : "Abonneren op VoiceMail (MWI)",
     "voicemail_did" : "VoiceMail-beheernummer",
+    "filter_and_sort" : "Filteren en sorteren",
     "sort_type" : "Type (dan Laatste activiteit)",
     "sort_type_cex" : "Contacten, SIP dan XMPP",
     "sort_type_cxe" : "Contacten, XMPP dan SIP",
@@ -297,5 +298,10 @@
     "sort_alpha" : "Alfabetisch (dan Laatste activiteit)",
     "sort_activity" : "Alleen laatste activiteit",
     "sort_auto_delete_at_end" : "Toon automatisch verwijderen aan het einde",
-    "sort_show_exten_num" : "Toestelnummers tonen"
+    "sort_auto_delete_hide" : "Vrienden automatisch verwijderen verbergen",
+    "sort_show_exten_num" : "Toestelnummers tonen",
+    "sort_no_showing" : "{0} Buddy's automatisch verwijderen niet weergegeven",
+    "delete_buddy" : "Verwijderen",
+    "delete_duddy_data" : "Verwijder geschiedenis",
+    "pin_to_top" : "Vastgezet"
 }

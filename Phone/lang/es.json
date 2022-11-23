@@ -286,6 +286,7 @@
     "default_video_src" : "Defecto",
     "subscribe_voicemail" : "Suscríbete al correo de voz (MWI)",
     "voicemail_did" : "Número de gestión de correo de voz",
+    "filter_and_sort" : "Filtrar y Ordenar",
     "sort_type" : "Tipo (luego Última actividad)",
     "sort_type_cex" : "Contactos, SIP luego XMPP",
     "sort_type_cxe" : "Contactos, XMPP luego SIP",
@@ -297,5 +298,10 @@
     "sort_alpha" : "Alfabéticamente (luego Última actividad)",
     "sort_activity" : "Solo última actividad",
     "sort_auto_delete_at_end" : "Mostrar eliminación automática al final",
-    "sort_show_exten_num" : "Mostrar números de extensión"
+    "sort_auto_delete_hide" : "Ocultar amigos eliminados automáticamente",
+    "sort_show_exten_num" : "Mostrar números de extensión",
+    "sort_no_showing" : "No se muestran {0} amigos de eliminación automática",
+    "delete_buddy" : "Eliminar",
+    "delete_duddy_data" : "Eliminar historia",
+    "pin_to_top" : "Fijado"
 }

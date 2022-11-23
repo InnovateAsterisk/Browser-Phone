@@ -286,6 +286,7 @@
     "default_video_src" : "Predefinição",
     "subscribe_voicemail" : "Assine o correio de voz (MWI)",
     "voicemail_did" : "Número de gerenciamento do correio de voz",
+    "filter_and_sort" : "Filtrar e Ordenar",
     "sort_type" : "Tipo (seguido por Última Atividade)",
     "sort_type_cex" : "Contatos, SIP e XMPP",
     "sort_type_cxe" : "Contatos, XMPP e SIP",
@@ -297,5 +298,10 @@
     "sort_alpha" : "Alfabeticamente (seguido por Última Atividade)",
     "sort_activity" : "Apenas última atividade",
     "sort_auto_delete_at_end" : "Mostrar a exclusão automática no final",
-    "sort_show_exten_num" : "Mostrar números de ramal"
+    "sort_auto_delete_hide" : "Ocultar amigos de exclusão automática",
+    "sort_show_exten_num" : "Mostrar números de ramal",
+    "sort_no_showing" : "Não mostrando {0} amigos de exclusão automática",
+    "delete_buddy" : "Excluir",
+    "delete_duddy_data" : "Apagar histórico",
+    "pin_to_top" : "Fixado"
 }

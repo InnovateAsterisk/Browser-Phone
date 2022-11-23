@@ -138,6 +138,12 @@
     cursor: default;
 }
 
+.UiDeleteButton{
+    color: #ac2121;
+    border: 1px solid #ac2121;
+    background-color: #ffeef1;
+}
+
 .UiInputText{
     margin-bottom: 5px !important;
     width: 100% !important;
@@ -861,6 +867,21 @@ input[type=range]{
     display: inline-block;
 }
 
+.pinnedBuddy{
+    position: absolute;
+    top: 5px;
+    left: 33px;
+    font-size: 10px;
+    background-color: #3478f3;
+    color: #FFFFFF;
+    width: 15px;
+    height: 15px;
+    border-radius: 100%;
+    text-align: center;
+    line-height: 15px;
+    box-shadow: 1px 1px 2px rgb(0 0 0 / 25%);
+}
+
 .profileContainer{
     position: absolute;
     top: 0;
@@ -903,6 +924,12 @@ input[type=range]{
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.hiddenBuddiesText{
+    padding: 10px;
+    font-size: 11px;
+    cursor: pointer;
 }
 
 .searchClean {
@@ -1465,6 +1492,14 @@ input[type=range]{
 .hangupButton {
     padding-left: 15px;
     padding-right: 15px;
+}
+
+.dotDefault {
+    display: inline-block;
+}
+.dotDefault:before {
+    content: "\f098";
+    font-family: FontAwesome;
 }
 
 .dotOnline {
