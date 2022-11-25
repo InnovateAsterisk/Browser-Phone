@@ -303,5 +303,8 @@
     "sort_no_showing" : "Nie wyświetla się {0} znajomych do automatycznego usuwania",
     "delete_buddy" : "Usuwać",
     "delete_duddy_data" : "Usuń historię",
-    "pin_to_top" : "Przypięte"
+    "pin_to_top" : "Przypięte",
+    "voice_mail" : "Poczta głosowa",
+    "you_have_new_voice_mail" : "Masz {0} nowych wiadomości poczty głosowej.",
+    "new_voice_mail" : "Nowa wiadomość na poczcie głosowej"
 }

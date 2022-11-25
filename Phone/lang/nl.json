@@ -303,5 +303,8 @@
     "sort_no_showing" : "{0} Buddy's automatisch verwijderen niet weergegeven",
     "delete_buddy" : "Verwijderen",
     "delete_duddy_data" : "Verwijder geschiedenis",
-    "pin_to_top" : "Vastgezet"
+    "pin_to_top" : "Vastgezet",
+    "voice_mail" : "VoiceMail",
+    "you_have_new_voice_mail" : "U heeft {0} nieuwe VoiceMail-berichten.",
+    "new_voice_mail" : "Nieuw voicemailbericht"
 }

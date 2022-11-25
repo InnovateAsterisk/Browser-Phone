@@ -303,5 +303,8 @@
     "sort_no_showing" : "未显示 {0} 个自动删除好友",
     "delete_buddy" : "删除",
     "delete_duddy_data" : "删除历史",
-    "pin_to_top" : "固定"
+    "pin_to_top" : "固定",
+    "voice_mail" : "语音信箱",
+    "you_have_new_voice_mail" : "您有 {0} 条新语音邮件消息。",
+    "new_voice_mail" : "新语音信箱留言"
 }

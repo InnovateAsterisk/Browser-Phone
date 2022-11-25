@@ -303,5 +303,8 @@
     "sort_no_showing" : "{0} Freunde zum automatischen Löschen werden nicht angezeigt",
     "delete_buddy" : "Löschen",
     "delete_duddy_data" : "Verlauf löschen",
-    "pin_to_top" : "Gepinnt"
+    "pin_to_top" : "Gepinnt",
+    "voice_mail" : "Voicemail",
+    "you_have_new_voice_mail" : "Sie haben {0} neue VoiceMail-Nachrichten.",
+    "new_voice_mail" : "Neue VoiceMail-Nachricht"
 }

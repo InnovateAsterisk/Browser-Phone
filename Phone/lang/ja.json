@@ -303,5 +303,8 @@
     "sort_no_showing" : "{0} 個の自動削除仲間が表示されていません",
     "delete_buddy" : "デリート",
     "delete_duddy_data" : "履歴を削除",
-    "pin_to_top" : "固定された"
+    "pin_to_top" : "固定された",
+    "voice_mail" : "ボイスメール",
+    "you_have_new_voice_mail" : "{0} 件の新しいボイスメール メッセージがあります。",
+    "new_voice_mail" : "新しいボイスメール メッセージ"
 }

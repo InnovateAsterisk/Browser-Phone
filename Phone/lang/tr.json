@@ -303,5 +303,8 @@
     "sort_no_showing" : "{0} Otomatik Silme arkadaşı gösterilmiyor",
     "delete_buddy" : "Sil",
     "delete_duddy_data" : "Geçmişi sil",
-    "pin_to_top" : "Sabitlendi"
+    "pin_to_top" : "Sabitlendi",
+    "voice_mail" : "Sesli Posta",
+    "you_have_new_voice_mail" : "{0} yeni Sesli Posta mesajınız var.",
+    "new_voice_mail" : "Yeni Sesli Posta Mesajı"
 }

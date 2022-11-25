@@ -303,5 +303,8 @@
     "sort_no_showing" : "Not showing {0} Auto Delete buddies",
     "delete_buddy" : "Delete",
     "delete_duddy_data" : "Delete History",
-    "pin_to_top" : "Pinned"
+    "pin_to_top" : "Pinned",
+    "voice_mail" : "VoiceMail",
+    "you_have_new_voice_mail" : "You have {0} new VoiceMail messages.",
+    "new_voice_mail" : "New VoiceMail Message"
 }

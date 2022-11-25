@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.17";
+const appversion = "0.3.18";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -1472,7 +1472,7 @@ function InitUi(){
 
     $("#TxtVoiceMessages").on('click', function(event){
         if(VoicemailDid != ""){
-            DialByLine("audio", null, VoicemailDid, "VoiceMail");
+            DialByLine("audio", null, VoicemailDid, lang.voice_mail);
         }
     });
 
@@ -4361,13 +4361,13 @@ function VoicemailNotify(notification){
                     if (Notification.permission === "granted") {
 
                         var noticeOptions = { 
-                            body: newVoiceMessages + " New voicemail message"
+                            body: lang.you_have_new_voice_mail.replace("{0}", newVoiceMessages)
                         }
 
-                        var vmNotification = new Notification("New VoiceMail", noticeOptions);
+                        var vmNotification = new Notification(lang.new_voice_mail, noticeOptions);
                         vmNotification.onclick = function (event) {
                             if(VoicemailDid != ""){
-                                DialByLine("audio", null, VoicemailDid, "VoiceMail");
+                                DialByLine("audio", null, VoicemailDid, lang.voice_mail);
                             }
                         }
                     }
@@ -4375,14 +4375,15 @@ function VoicemailNotify(notification){
 
             }
 
-
         } else {
             // Hide the messages waiting bubble
             $("#TxtVoiceMessages").html("0")
             $("#TxtVoiceMessages").hide();
         }
 
-        if(typeof web_hook_on_messages_waiting !== 'undefined')  web_hook_on_messages_waiting(newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
+        if(typeof web_hook_on_messages_waiting !== 'undefined') {
+            web_hook_on_messages_waiting(newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
+        }
     }
     else {
         // Doesn't seem to be an message notification https://datatracker.ietf.org/doc/html/rfc3842

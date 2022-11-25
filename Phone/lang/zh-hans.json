@@ -303,5 +303,8 @@
     "sort_no_showing" : "未顯示 {0} 個自動刪除好友",
     "delete_buddy" : "刪除",
     "delete_duddy_data" : "刪除歷史",
-    "pin_to_top" : "固定"
+    "pin_to_top" : "固定",
+    "voice_mail" : "語音信箱",
+    "you_have_new_voice_mail" : "您有 {0} 條新語音郵件消息。",
+    "new_voice_mail" : "新語音信箱留言"
 }

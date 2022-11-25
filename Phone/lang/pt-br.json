@@ -303,5 +303,8 @@
     "sort_no_showing" : "Não mostrando {0} amigos de exclusão automática",
     "delete_buddy" : "Excluir",
     "delete_duddy_data" : "Apagar histórico",
-    "pin_to_top" : "Fixado"
+    "pin_to_top" : "Fixado",
+    "voice_mail" : "Correio de voz",
+    "you_have_new_voice_mail" : "Você tem {0} novas mensagens de correio de voz.",
+    "new_voice_mail" : "Nova mensagem de correio de voz"
 }
