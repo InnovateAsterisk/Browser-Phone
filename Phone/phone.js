@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.18";
+const appversion = "0.3.19";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -371,7 +371,15 @@ function MakeDataArray(defaultValue, count){
 
 // Window and Document Events
 // ==========================
-$(window).on("beforeunload", function() {
+$(window).on("beforeunload", function(event) {
+    var CurrentCalls = countSessions("0");
+    if(CurrentCalls > 0){
+        console.warn("Warning, you have current calls open");
+        // The best we can do is throw up a system alert question.
+        return "";
+        // event.preventDefault(); // Useful for modern browsers.
+        // event.returnValue = ""; // Useful for modern browsers.
+    }
     Unregister(true);
     if(XMPP) XMPP.disconnect("");
 });
@@ -6285,7 +6293,10 @@ function MixAudioStreams(MultiAudioTackStream){
 // ============================
 function QuickFindBuddy(obj){
     var filter = obj.value;
-    if(filter == "") return;
+    if(filter == "") {
+        HidePopup();
+        return;
+    }
 
     console.log("Find Buddy: ", filter);
 
@@ -6310,13 +6321,12 @@ function QuickFindBuddy(obj){
         if(buddyObj.ContactNumber2 && buddyObj.ContactNumber2.toLowerCase().indexOf(filter.toLowerCase()) > -1) display = true;
         if(display) {
             // Filtered Results
-            var iconClass = "dotOffline";
-            if(buddyObj.presence == "Unknown" || buddyObj.presence == "Not online" || buddyObj.presence == "Unavailable") iconClass = "dotOffline";
-            if(buddyObj.presence == "Ready") iconClass = "dotOnline";
-            if(buddyObj.presence == "On the phone" || buddyObj.presence == "Proceeding") iconClass = "dotInUse";
-            if(buddyObj.presence == "Ringing") iconClass = "dotRinging";
-            if(buddyObj.presence == "On hold") iconClass = "dotOnHold";
-
+            var iconClass = "dotDefault";
+            if(buddyObj.type == "extension" && buddyObj.EnableSubscribe == true) {
+                iconClass = buddyObj.devState;
+            } else if(buddyObj.type == "xmpp" && buddyObj.EnableSubscribe == true) {
+                iconClass = buddyObj.devState;
+            }
             if(visibleItems > 0) items.push({ value: null, text: "-"});
             items.push({ value: null, text: buddyObj.CallerIDName, isHeader: true });
             if(buddyObj.ExtNo != "") {
@@ -9541,6 +9551,7 @@ function UpdateBuddyList(){
             if(friendlyState == "Not online") friendlyState = lang.state_not_online;
             if(friendlyState == "Ready") friendlyState = lang.state_ready;
             if(friendlyState == "On the phone") friendlyState = lang.state_on_the_phone;
+            if(friendlyState == "Proceeding") friendlyState = lang.state_on_the_phone;
             if(friendlyState == "Ringing") friendlyState = lang.state_ringing;
             if(friendlyState == "On hold") friendlyState = lang.state_on_hold;
             if(friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
