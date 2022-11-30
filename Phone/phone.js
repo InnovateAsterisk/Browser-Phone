@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.19";
+const appversion = "0.3.20";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -376,9 +376,8 @@ $(window).on("beforeunload", function(event) {
     if(CurrentCalls > 0){
         console.warn("Warning, you have current calls open");
         // The best we can do is throw up a system alert question.
-        return "";
-        // event.preventDefault(); // Useful for modern browsers.
-        // event.returnValue = ""; // Useful for modern browsers.
+        event.preventDefault();
+        return event.returnValue = "";
     }
     Unregister(true);
     if(XMPP) XMPP.disconnect("");
