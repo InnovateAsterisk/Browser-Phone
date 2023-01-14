@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.20";
+const appversion = "0.3.21";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -62,15 +62,21 @@ let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables
 const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) available in /lang/ folder
 
 /**
- * Assets
+ * Image Assets
  * Note: You can specify the assets to use below in array format
  */
-const avatars = ["avatars/default.0.png", "avatars/default.1.png", "avatars/default.2.png", "avatars/default.3.png", "avatars/default.4.png", "avatars/default.5.png", "avatars/default.6.png", "avatars/default.7.png", "avatars/default.8.png"]
-const wallpaperLight = "wallpaper.light.png"            // Wallpaper for Light Theme
-const wallpaperDark = "wallpaper.dark.png"              // Wallpaper for Dark Theme
+let imagesDirectory = getDbItem("imagesDirectory", "");     // Directory For Image Assets eg: images/ 
+let defaultAvatars = getDbItem("defaultAvatars", "avatars/default.0.webp,avatars/default.1.webp,avatars/default.2.webp,avatars/default.3.webp,avatars/default.4.webp,avatars/default.5.webp,avatars/default.6.webp,avatars/default.7.webp,avatars/default.8.webp"); 
+let wallpaperLight = getDbItem("wallpaperLight", "wallpaper.light.webp");  // Wallpaper for Light Theme
+let wallpaperDark = getDbItem("wallpaperDark", "wallpaper.dark.webp");     // Wallpaper for Dark Theme
 
-// User Settings & Defaults
-// ========================
+/**
+ * 
+ * User Settings & Defaults
+ * Note: Generally you don't really need to be changing these settings, the defaults should be fine
+ * If you want to  keep this library in its original form, but still provision settings, look at the
+ * index.html for some sample provisioning and web_hook options.
+ */
 let profileUserID = getDbItem("profileUserID", null);   // Internal reference ID. (DON'T CHANGE THIS!)
 let profileName = getDbItem("profileName", null);       // eg: Keyla James
 let wssServer = getDbItem("wssServer", null);           // eg: raspberrypi.local
@@ -105,6 +111,8 @@ let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));      
 let SubscribeBuddyAccept = getDbItem("SubscribeBuddyAccept", "application/pidf+xml");  // Normally only application/dialog-info+xml and application/pidf+xml
 let SubscribeBuddyEvent = getDbItem("SubscribeBuddyEvent", "presence");                // For application/pidf+xml use presence. For application/dialog-info+xml use dialog 
 let SubscribeBuddyExpires = parseInt(getDbItem("SubscribeBuddyExpires", 300));         // Buddy Subscription expiry time (in seconds)
+let profileDisplayPrefix = getDbItem("profileDisplayPrefix", "");                      // Can display an item from you vCard before you name. Options: Number1 | Number2
+let profileDisplayPrefixSeparator = getDbItem("profileDisplayPrefixSeparator", "");    // Used with profileDisplayPrefix, adds a separating character (string). eg: - ~ * or even 💥
 
 let NoAnswerTimeout = parseInt(getDbItem("NoAnswerTimeout", 120));          // Time in seconds before automatic Busy Here sent
 let AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
@@ -185,10 +193,11 @@ let ChatEngine = getDbItem("ChatEngine", "SIMPLE");    // Select the chat engine
 let XmppServer = getDbItem("XmppServer", "");                // FQDN of XMPP server HTTP service";
 let XmppWebsocketPort = getDbItem("XmppWebsocketPort", "");  // OpenFire Default : 7443
 let XmppWebsocketPath = getDbItem("XmppWebsocketPath", "");  // OpenFire Default : /ws
+let XmppDomain = getDbItem("XmppDomain", "");                // The domain of the XMPP server
 let profileUser = getDbItem("profileUser", null);            // Username for auth with XMPP Server eg: 100
 // XMPP Tenanting
 let XmppRealm = getDbItem("XmppRealm", "");                    // To create a tenant like partition in XMPP server all users and buddies will have this realm prepended to their details.
-let XmppRealmSeparator = getDbItem("XmppRealmSeparator", "-"); // Separates the realm from the profileUser eg: abc123-100@SipDomain
+let XmppRealmSeparator = getDbItem("XmppRealmSeparator", "-"); // Separates the realm from the profileUser eg: abc123-100@XmppDomain
 // TODO
 let XmppChatGroupService = getDbItem("XmppChatGroupService", "conference");
 
@@ -231,6 +240,13 @@ let audioBlobs = {}
 let newLineNumber = 1;
 let telNumericRegEx = /[^\d\*\#\+]/g
 let telAlphanumericRegEx = /[^\da-zA-Z\*\#\+\-\_\.\!\~\'\(\)]/g
+
+let settingsMicrophoneStream = null;
+let settingsMicrophoneStreamTrack = null;
+let settingsMicrophoneSoundMeter = null;
+
+let settingsVideoStream = null;
+let settingsVideoStreamTrack = null;
 
 // Utilities
 // =========
@@ -416,6 +432,10 @@ $(document).ready(function () {
     if(options.welcomeScreen !== undefined) welcomeScreen = options.welcomeScreen;
     if(options.loadAlternateLang !== undefined) loadAlternateLang = options.loadAlternateLang;
     if(options.profileName !== undefined) profileName = options.profileName;
+    if(options.imagesDirectory !== undefined) imagesDirectory = options.imagesDirectory;
+    if(options.defaultAvatars !== undefined) defaultAvatars = options.defaultAvatars;
+    if(options.wallpaperLight !== undefined) wallpaperLight = options.wallpaperLight;
+    if(options.wallpaperDark !== undefined) wallpaperDark = options.wallpaperDark;
     if(options.wssServer !== undefined) wssServer = options.wssServer;
     if(options.WebSocketPort !== undefined) WebSocketPort = options.WebSocketPort;
     if(options.ServerPath !== undefined) ServerPath = options.ServerPath;
@@ -511,6 +531,7 @@ $(document).ready(function () {
     if(options.XmppServer !== undefined) XmppServer = options.XmppServer;
     if(options.XmppWebsocketPort !== undefined) XmppWebsocketPort = options.XmppWebsocketPort;
     if(options.XmppWebsocketPath !== undefined) XmppWebsocketPath = options.XmppWebsocketPath;
+    if(options.XmppDomain !== undefined) XmppDomain = options.XmppDomain;
     if(options.profileUser !== undefined) profileUser = options.profileUser;
     if(options.XmppRealm !== undefined) XmppRealm = options.XmppRealm;
     if(options.XmppRealmSeparator !== undefined) XmppRealmSeparator = options.XmppRealmSeparator;
@@ -730,7 +751,7 @@ function UpdateUI(){
 // UI Windows
 // ==========
 function AddSomeoneWindow(numberStr){
-    ShowContacts();
+    CloseUpSettings();
 
     $("#myContacts").hide();
     $("#searchArea").hide();
@@ -1201,8 +1222,8 @@ function EditBuddyWindow(buddy){
         var constraints = { 
             type: 'base64', 
             size: 'viewport', 
-            format: 'png', 
-            quality: 1, 
+            format: 'webp',  // png
+            quality: 0.5, 
             circle: false 
         }
         $("#ImageCanvas").croppie('result', constraints).then(function(base64) {
@@ -1430,12 +1451,23 @@ function InitUi(){
     }
     if(DisableBuddies == true) {
         $("#BtnAddSomeone").hide();
-        $("#BtnFreeDial").show();   // You can't have no options
     }
     
+    // TODO: 
     $("#BtnCreateGroup").hide(); // Not ready for this yet
 
-    $("#UserCallID").html(profileName);
+    var profilePrepend = "";
+    var profileVcard = getDbItem("profileVcard", null);
+    if(profileVcard != null) {
+        profileVcard = JSON.parse(profileVcard);
+        var displayPrefix = getDbItem("profileDisplayPrefix", "");
+        var displayPrefixSep = getDbItem("profileDisplayPrefixSeparator", "-");
+        if(displayPrefix != ""){
+            var vCardValue = profileVcard[displayPrefix];
+            profilePrepend  =  vCardValue + " "+ displayPrefixSep +" "
+        }
+    }
+    $("#UserCallID").html(profilePrepend +""+ profileName);
     $("#UserProfilePic").css("background-image", "url('"+ getPicture("profilePicture") +"')");
     
     $("#BtnFilter").attr("title", lang.filter_and_sort)
@@ -1457,6 +1489,8 @@ function InitUi(){
 
     $("#BtnFreeDial").attr("title", lang.call)
     $("#BtnFreeDial").on('click', function(event){
+        if(DisableFreeDial == true) return;
+
         if(UiCustomDialButton == true){
             if(typeof web_hook_dial_out !== 'undefined') {
                 web_hook_dial_out(event);
@@ -1632,31 +1666,31 @@ function ShowMyProfileMenu(obj){
 function ApplyThemeColor(){
     //UiThemeStyle = light | dark | system (can change at any time)
     var cssUrl = hostingPrefix +"phone.light.css";
-    var wallpaperUrl = hostingPrefix +""+ wallpaperLight;
+    var wallpaperUrl = hostingPrefix +""+ imagesDirectory +""+ wallpaperLight;
 
     // Overall Theme
     if(UiThemeStyle == "system"){
         if(window.matchMedia){
             if(window.matchMedia('(prefers-color-scheme: dark)').matches){
                 cssUrl = hostingPrefix +"phone.dark.css";
-                wallpaperUrl = hostingPrefix +""+ wallpaperDark;
+                wallpaperUrl = hostingPrefix +""+ imagesDirectory +""+ wallpaperDark;
             } else {
                 cssUrl = hostingPrefix +"phone.light.css";
-                wallpaperUrl = hostingPrefix +""+ wallpaperLight;
+                wallpaperUrl = hostingPrefix +""+ imagesDirectory +""+ wallpaperLight;
             }
         } else {
             cssUrl = hostingPrefix +"phone.dark.css";
         }
     } else if(UiThemeStyle == "light"){
         cssUrl = hostingPrefix +"phone.light.css";
-        wallpaperUrl = hostingPrefix +""+ wallpaperLight;
+        wallpaperUrl = hostingPrefix +""+ imagesDirectory +""+ wallpaperLight;
     } else if(UiThemeStyle == "dark") {
         cssUrl = hostingPrefix +"phone.dark.css";
-        wallpaperUrl = hostingPrefix +""+ wallpaperDark;
+        wallpaperUrl = hostingPrefix +""+ imagesDirectory +""+ wallpaperDark;
     } else {
         // Defaults to light
         cssUrl = hostingPrefix +"phone.light.css";
-        wallpaperUrl = hostingPrefix +""+ wallpaperLight;
+        wallpaperUrl = hostingPrefix +""+ imagesDirectory +""+ wallpaperLight;
     }
     if($("#colorSchemeMode").length){
         // Style Sheet Added
@@ -2038,7 +2072,7 @@ function onRegistered(){
     }
     else {
         userAgent.registering = false;
-        
+
         console.log("ReRegistered!");
     }
     userAgent.isReRegister = true;
@@ -2614,11 +2648,32 @@ function RejectCall(lineNumber) {
 // Incoming INVITE
 function onInviteCancel(lineObj, response){
         // Remote Party Canceled while ringing...
-        console.log("Call canceled by remote party before answer");
+
+        // Check to see if this call has been completed elsewhere
+        // https://github.com/InnovateAsterisk/Browser-Phone/issues/405
+        var temp_cause = 0;
+        var reason = response.headers["Reason"];
+        if (reason !== undefined && reason.length > 0){
+            for (var i = 0; i < reason.length; i++){
+                var cause = reason[i].raw.toLowerCase().trim(); // Reason: Q.850 ;cause=16 ;text="Terminated"
+                var items = cause.split(';');
+                if (items.length >= 2 && (items[0].trim() == "sip" || items[0].trim() == "q.850") && items[1].includes("cause") && cause.includes("call completed elsewhere")){
+                    temp_cause = parseInt(items[1].substring(items[1].indexOf("=")+1).trim());
+                    // No sample provided for "token"
+                    break;
+                }
+            }
+        }
 
         lineObj.SipSession.data.terminateby = "them";
-        lineObj.SipSession.data.reasonCode = 0;
-        lineObj.SipSession.data.reasonText = "Call Cancelled";
+        lineObj.SipSession.data.reasonCode = temp_cause;
+        if(temp_cause == 0){
+            lineObj.SipSession.data.reasonText = "Call Cancelled";
+            console.log("Call canceled by remote party before answer");
+        } else {
+            lineObj.SipSession.data.reasonText = "Call completed elsewhere";
+            console.log("Call completed elsewhere before answer");
+        }
 
         lineObj.SipSession.dispose().catch(function(error){
             console.log("Failed to dispose the cancel dialog", error);
@@ -3207,10 +3262,17 @@ function teardownSession(lineObj) {
     AddCallMessage(lineObj.BuddyObj.identity, session);
 
     // Check if this call was missed
-    if(lineObj.SipSession.data.earlyReject){
-        IncreaseMissedBadge(session.data.buddyId);
-    } else if (session.data.calldirection == "inbound" && session.data.terminateby == "them" && lineObj.SipSession.data.startTime == null){
-        IncreaseMissedBadge(session.data.buddyId);
+    if (session.data.calldirection == "inbound"){
+        if(session.data.earlyReject){
+            // Call was rejected without even ringing
+            IncreaseMissedBadge(session.data.buddyId);
+        } else if (session.data.terminateby == "them" && session.data.startTime == null){
+            // Call Terminated by them during ringing
+            if(session.data.reasonCode == 0){
+                // Call was canceled, and not answered elsewhere 
+                IncreaseMissedBadge(session.data.buddyId);
+            }
+        }
     }
     
     // Close up the UI
@@ -5249,8 +5311,10 @@ function updateLineScroll(lineNum) {
 }
 function updateScroll(buddy) {
     var history = $("#contact-"+ buddy +"-ChatHistory");
-    if(history.children().length > 0) history.children().last().get(0).scrollIntoView(false);
-    history.get(0).scrollTop = history.get(0).scrollHeight;
+    try{
+        if(history.children().length > 0) history.children().last().get(0).scrollIntoView(false);
+        history.get(0).scrollTop = history.get(0).scrollHeight;
+    } catch(e){}
 }
 function PreviewImage(obj){
     OpenWindow(obj.src, "Preview Image", 600, 800, false, true); //no close, no resize
@@ -8182,7 +8246,7 @@ var Line = function(lineNumber, displayName, displayNumber, buddyObj){
     this.RemoteSoundMeter = null;
 }
 function ShowDial(){
-    ShowContacts();
+    CloseUpSettings();
 
     $("#myContacts").hide();
     $("#searchArea").hide();
@@ -8206,7 +8270,7 @@ function ShowDial(){
     html += "</table>";
     html += "<div style=\"text-align: center; margin-bottom:15px\">";
     html += "<button class=\"dialButtons dialButtonsDial\" id=dialAudio title=\""+ lang.audio_call  +"\" onclick=\"DialByLine('audio')\"><i class=\"fa fa-phone\"></i></button>";
-    if(EnableVideoCalling){
+    if(EnableVideoCalling == true){
         html += "<button class=\"dialButtons dialButtonsDial\" id=dialVideo style=\"margin-left:20px\" title=\""+ lang.video_call +"\" onclick=\"DialByLine('video')\"><i class=\"fa fa-video-camera\"></i></button>";
     }
     html += "</div>";
@@ -8288,36 +8352,35 @@ function KeyPress(num){
         $("#dialDeleteKey").hide();
     }
 }
-
-function ShowContacts(){
-
-    var localVideo = $("#local-video-preview").get(0);
+function CloseUpSettings(){
+    // Video Preview
     try{
-        var tracks = localVideo.srcObject.getTracks();
-        tracks.forEach(function(track) {
-            track.stop();
-        });
-        localVideo.srcObject = null;
+        settingsVideoStreamTrack.stop();
+        console.log("settingsVideoStreamTrack... stopped");
     }
     catch(e){}
+    try{
+        var localVideo = $("#local-video-preview").get(0);
+        localVideo.srcObject = null;
+    }
+    catch{}
+    settingsVideoStream = null;
 
     // Microphone Preview
     try{
-        var tracks = window.SettingsMicrophoneStream.getTracks();
-        tracks.forEach(function(track) {
-            track.stop();
-        });
+        settingsMicrophoneStreamTrack.stop();
+        console.log("settingsMicrophoneStreamTrack... stopped");
     }
     catch(e){}
-    window.SettingsMicrophoneStream = null;
+    settingsMicrophoneStream = null;
 
+    // Microphone Meter
     try{
-        var soundMeter = window.SettingsMicrophoneSoundMeter;
-        soundMeter.stop();
+        settingsMicrophoneSoundMeter.stop();
     }
-    catch(e){}   
-    window.SettingsMicrophoneSoundMeter = null;
-    
+    catch(e){}
+    settingsMicrophoneSoundMeter = null;
+
     // Speaker Preview
     try{
         window.SettingsOutputAudio.pause();
@@ -8363,6 +8426,10 @@ function ShowContacts(){
     }
     catch(e){}
     window.SettingsRingerStreamMeter = null;
+}
+function ShowContacts(){
+
+    CloseUpSettings()
 
     $("#actionArea").hide();
     $("#actionArea").empty();
@@ -8714,7 +8781,7 @@ function AddLineHtml(lineObj, direction){
     html += "<div id=\"line-"+ lineObj.LineNumber +"-in-avatar\" class=\"inCallAvatar\" style=\"background-image: url('"+ avatar +"')\"></div>";
     html += "<div class=answerCall>";
     html += "<button onclick=\"AnswerAudioCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-phone\"></i> "+ lang.answer_call +"</button> ";
-    if(EnableVideoCalling) {
+    if(EnableVideoCalling == true) {
         html += " <button id=\"line-"+ lineObj.LineNumber +"-answer-video\" onclick=\"AnswerVideoCall('"+ lineObj.LineNumber +"')\" class=answerButton><i class=\"fa fa-video-camera\"></i> "+ lang.answer_call_with_video +"</button> ";
     }
     html += " <button onclick=\"RejectCall('"+ lineObj.LineNumber +"')\" class=rejectButton><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.reject_call +"</button> ";
@@ -9130,8 +9197,8 @@ var Buddy = function(type, identity, CallerIDName, ExtNo, MobileNumber, ContactN
     this.identity = identity;
     this.jid = jid;
     this.CallerIDName = (CallerIDName)? CallerIDName : "";
-    this.Email = Email;
-    this.Desc = desc;
+    this.Email = (Email)? Email : "" ;
+    this.Desc = (desc)? desc : "" ;
     this.ExtNo = ExtNo;
     this.MobileNumber = MobileNumber;
     this.ContactNumber1 = ContactNumber1;
@@ -9476,8 +9543,8 @@ function UpdateBuddyList(){
 
     // End here if they are not using the buddy system
     if(DisableBuddies == true){
-        // If there are no calls, show the dial pad
-        if(callCount == 0){
+        // If there are no calls, show the dial pad (if you are allowed)
+        if(callCount == 0 && DisableFreeDial != true){
             if(UiCustomDialButton == true){
                 if(typeof web_hook_dial_out !== 'undefined') {
                     web_hook_dial_out(null);
@@ -9494,8 +9561,8 @@ function UpdateBuddyList(){
         $("#myContacts").append("<hr class=hrline>");
     }
 
-    // If there are no buddies, and no calls, then, show the dial pad
-    if(Buddies.length == 0 && callCount == 0){
+    // If there are no buddies, and no calls, then, show the dial pad (if you are allowed)
+    if(Buddies.length == 0 && callCount == 0 && DisableFreeDial != true){
         console.warn("You have no buddies, will show the Dial Screen rather");
         if(UiCustomDialButton == true){
             if(typeof web_hook_dial_out !== 'undefined') {
@@ -9519,9 +9586,9 @@ function UpdateBuddyList(){
         if(filter && filter.length >= 1){
             // Perform Filter Display
             var display = false;
-            if(buddyObj.CallerIDName.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
-            if(buddyObj.ExtNo.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
-            if(buddyObj.Desc.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
+            if(buddyObj.CallerIDName && buddyObj.CallerIDName.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
+            if(buddyObj.ExtNo && buddyObj.ExtNo.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
+            if(buddyObj.Desc && buddyObj.Desc.toLowerCase().indexOf(filter.toLowerCase()) > -1 ) display = true;
             if(!display) continue;
         }
 
@@ -9554,7 +9621,7 @@ function UpdateBuddyList(){
             if(friendlyState == "Ringing") friendlyState = lang.state_ringing;
             if(friendlyState == "On hold") friendlyState = lang.state_on_hold;
             if(friendlyState == "Unavailable") friendlyState = lang.state_unavailable;
-            if(buddyObj.EnableSubscribe != true) friendlyState = buddyObj.Desc;
+            if(buddyObj.EnableSubscribe != true) friendlyState = (buddyObj.Desc)? buddyObj.Desc : "";
             var autDeleteStatus = "";
             if(buddyObj.AllowAutoDelete == true) autDeleteStatus = "<i class=\"fa fa-clock-o\"></i> ";
             var html = "<div id=\"contact-"+ buddyObj.identity +"\" class="+ classStr +" onclick=\"SelectBuddy('"+ buddyObj.identity +"', 'extension')\">";
@@ -9710,17 +9777,17 @@ function AddBuddyMessageStream(buddyObj) {
     profileRow += "</td>";
 
     // Right Content - Action Buttons
-    var buttonsWidth = 80 // 1 button = 34px ~40px
-    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
-        buttonsWidth = 120
+    var buttonsWidth = 80; // 1 button = 34px ~40px
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling == true) {
+        buttonsWidth = 120;
     }
-    var fullButtonsWidth = 200
-    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
-        fullButtonsWidth = 240
+    var fullButtonsWidth = 200;
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling == true) {
+        fullButtonsWidth = 240;
     }
     profileRow += "<td id=\"contact-"+ buddyObj.identity +"-action-buttons\" style=\"width: "+ buttonsWidth +"px; text-align: right\">";
     profileRow += "<button id=\"contact-"+ buddyObj.identity +"-btn-audioCall\" onclick=\"AudioCallMenu('"+ buddyObj.identity +"', this)\" class=roundButtons title=\""+ lang.audio_call +"\"><i class=\"fa fa-phone\"></i></button>";
-    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling) {
+    if((buddyObj.type == "extension" || buddyObj.type == "xmpp") && EnableVideoCalling == true) {
         profileRow += " <button id=\"contact-"+ buddyObj.identity +"-btn-videoCall\" onclick=\"DialByLine('video', '"+ buddyObj.identity +"', '"+ buddyObj.ExtNo +"');\" class=roundButtons title=\""+ lang.video_call +"\"><i class=\"fa fa-video-camera\"></i></button>";
     }
     profileRow += "<span id=\"contact-"+ buddyObj.identity +"-extra-buttons\" style=\"display:none\">"
@@ -11484,11 +11551,10 @@ function ShowDictate(buddy){
     buddyObj.recognition.start();
 }
 
-
 // My Profile
 // ==========
 function ShowMyProfile(){
-    ShowContacts();
+    CloseUpSettings();
 
     $("#myContacts").hide();
     $("#searchArea").hide();
@@ -11550,6 +11616,9 @@ function ShowMyProfile(){
     AccountHtml += "<div class=UiText>XMPP "+ lang.websocket_path +":</div>";
     AccountHtml += "<div><input id=Configure_Account_xmpp_path class=UiInputText type=text placeholder='"+ lang.eg_websocket_path +"' value='"+ getDbItem("XmppWebsocketPath", "") +"'></div>";
 
+    AccountHtml += "<div class=UiText>XMPP "+ lang.sip_domain +":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_domain class=UiInputText type=text placeholder='"+ lang.eg_sip_domain +"' value='"+ getDbItem("XmppDomain", "") +"'></div>";
+
     AccountHtml += "<div class=UiText>"+ lang.extension_number +":</div>";
     AccountHtml += "<div><input id=Configure_Account_profileUser class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ getDbItem("profileUser", "") +"'></div>";
     AccountHtml += "</div>";
@@ -11581,46 +11650,48 @@ function ShowMyProfile(){
     AudioVideoHtml += "<div><input type=checkbox id=Settings_EchoCancellation><label for=Settings_EchoCancellation> "+ lang.echo_cancellation +"<label></div>";
     AudioVideoHtml += "<div><input type=checkbox id=Settings_NoiseSuppression><label for=Settings_NoiseSuppression> "+ lang.noise_suppression +"<label></div>";
 
-    AudioVideoHtml += "<div class=UiText>"+ lang.camera +":</div>";
-    AudioVideoHtml += "<div style=\"text-align:center\"><select id=previewVideoSrc style=\"width:100%\"></select></div>";
+    if(EnableVideoCalling == true){
+        AudioVideoHtml += "<div class=UiText>"+ lang.camera +":</div>";
+        AudioVideoHtml += "<div style=\"text-align:center\"><select id=previewVideoSrc style=\"width:100%\"></select></div>";
 
-    AudioVideoHtml += "<div class=UiText>"+ lang.frame_rate +":</div>"
-    AudioVideoHtml += "<div class=pill-nav>";
-    AudioVideoHtml += "<input name=Settings_FrameRate id=r40 type=radio value=\"2\"><label class=radio_pill for=r40>2</label>";
-    AudioVideoHtml += "<input name=Settings_FrameRate id=r41 type=radio value=\"5\"><label class=radio_pill for=r41>5</label>";
-    AudioVideoHtml += "<input name=Settings_FrameRate id=r42 type=radio value=\"10\"><label class=radio_pill for=r42>10</label>";
-    AudioVideoHtml += "<input name=Settings_FrameRate id=r43 type=radio value=\"15\"><label class=radio_pill for=r43>15</label>";
-    AudioVideoHtml += "<input name=Settings_FrameRate id=r44 type=radio value=\"20\"><label class=radio_pill for=r44>20</label>";
-    AudioVideoHtml += "<input name=Settings_FrameRate id=r45 type=radio value=\"25\"><label class=radio_pill for=r45>25</label>";
-    AudioVideoHtml += "<input name=Settings_FrameRate id=r46 type=radio value=\"30\"><label class=radio_pill for=r46>30</label>";
-    AudioVideoHtml += "<input name=Settings_FrameRate id=r47 type=radio value=\"\"><label class=radio_pill for=r47><i class=\"fa fa-trash\"></i></label>";
-    AudioVideoHtml += "</div>";
+        AudioVideoHtml += "<div class=UiText>"+ lang.frame_rate +":</div>"
+        AudioVideoHtml += "<div class=pill-nav>";
+        AudioVideoHtml += "<input name=Settings_FrameRate id=r40 type=radio value=\"2\"><label class=radio_pill for=r40>2</label>";
+        AudioVideoHtml += "<input name=Settings_FrameRate id=r41 type=radio value=\"5\"><label class=radio_pill for=r41>5</label>";
+        AudioVideoHtml += "<input name=Settings_FrameRate id=r42 type=radio value=\"10\"><label class=radio_pill for=r42>10</label>";
+        AudioVideoHtml += "<input name=Settings_FrameRate id=r43 type=radio value=\"15\"><label class=radio_pill for=r43>15</label>";
+        AudioVideoHtml += "<input name=Settings_FrameRate id=r44 type=radio value=\"20\"><label class=radio_pill for=r44>20</label>";
+        AudioVideoHtml += "<input name=Settings_FrameRate id=r45 type=radio value=\"25\"><label class=radio_pill for=r45>25</label>";
+        AudioVideoHtml += "<input name=Settings_FrameRate id=r46 type=radio value=\"30\"><label class=radio_pill for=r46>30</label>";
+        AudioVideoHtml += "<input name=Settings_FrameRate id=r47 type=radio value=\"\"><label class=radio_pill for=r47><i class=\"fa fa-trash\"></i></label>";
+        AudioVideoHtml += "</div>";
 
-    AudioVideoHtml += "<div class=UiText>"+ lang.quality +":</div>";
-    AudioVideoHtml += "<div class=pill-nav>";
-    AudioVideoHtml += "<input name=Settings_Quality id=r30 type=radio value=\"160\"><label class=radio_pill for=r30><i class=\"fa fa-video-camera\" style=\"transform: scale(0.4)\"></i> HQVGA</label>";
-    AudioVideoHtml += "<input name=Settings_Quality id=r31 type=radio value=\"240\"><label class=radio_pill for=r31><i class=\"fa fa-video-camera\" style=\"transform: scale(0.6)\"></i> QVGA</label>";
-    AudioVideoHtml += "<input name=Settings_Quality id=r32 type=radio value=\"480\"><label class=radio_pill for=r32><i class=\"fa fa-video-camera\" style=\"transform: scale(0.8)\"></i> VGA</label>";
-    AudioVideoHtml += "<input name=Settings_Quality id=r33 type=radio value=\"720\"><label class=radio_pill for=r33><i class=\"fa fa-video-camera\" style=\"transform: scale(1)\"></i> HD</label>";
-    AudioVideoHtml += "<input name=Settings_Quality id=r34 type=radio value=\"\"><label class=radio_pill for=r34><i class=\"fa fa-trash\"></i></label>";
-    AudioVideoHtml += "</div>";
-    
-    AudioVideoHtml += "<div class=UiText>"+ lang.image_orientation +":</div>";
-    AudioVideoHtml += "<div class=pill-nav>";
-    AudioVideoHtml += "<input name=Settings_Orientation id=r20 type=radio value=\"rotateY(0deg)\"><label class=radio_pill for=r20><i class=\"fa fa-address-card\" style=\"transform: rotateY(0deg)\"></i> "+ lang.image_orientation_normal +"</label>";
-    AudioVideoHtml += "<input name=Settings_Orientation id=r21 type=radio value=\"rotateY(180deg)\"><label class=radio_pill for=r21><i class=\"fa fa-address-card\" style=\"transform: rotateY(180deg)\"></i> "+ lang.image_orientation_mirror +"</label>";
-    AudioVideoHtml += "</div>";
+        AudioVideoHtml += "<div class=UiText>"+ lang.quality +":</div>";
+        AudioVideoHtml += "<div class=pill-nav>";
+        AudioVideoHtml += "<input name=Settings_Quality id=r30 type=radio value=\"160\"><label class=radio_pill for=r30><i class=\"fa fa-video-camera\" style=\"transform: scale(0.4)\"></i> HQVGA</label>";
+        AudioVideoHtml += "<input name=Settings_Quality id=r31 type=radio value=\"240\"><label class=radio_pill for=r31><i class=\"fa fa-video-camera\" style=\"transform: scale(0.6)\"></i> QVGA</label>";
+        AudioVideoHtml += "<input name=Settings_Quality id=r32 type=radio value=\"480\"><label class=radio_pill for=r32><i class=\"fa fa-video-camera\" style=\"transform: scale(0.8)\"></i> VGA</label>";
+        AudioVideoHtml += "<input name=Settings_Quality id=r33 type=radio value=\"720\"><label class=radio_pill for=r33><i class=\"fa fa-video-camera\" style=\"transform: scale(1)\"></i> HD</label>";
+        AudioVideoHtml += "<input name=Settings_Quality id=r34 type=radio value=\"\"><label class=radio_pill for=r34><i class=\"fa fa-trash\"></i></label>";
+        AudioVideoHtml += "</div>";
+        
+        AudioVideoHtml += "<div class=UiText>"+ lang.image_orientation +":</div>";
+        AudioVideoHtml += "<div class=pill-nav>";
+        AudioVideoHtml += "<input name=Settings_Orientation id=r20 type=radio value=\"rotateY(0deg)\"><label class=radio_pill for=r20><i class=\"fa fa-address-card\" style=\"transform: rotateY(0deg)\"></i> "+ lang.image_orientation_normal +"</label>";
+        AudioVideoHtml += "<input name=Settings_Orientation id=r21 type=radio value=\"rotateY(180deg)\"><label class=radio_pill for=r21><i class=\"fa fa-address-card\" style=\"transform: rotateY(180deg)\"></i> "+ lang.image_orientation_mirror +"</label>";
+        AudioVideoHtml += "</div>";
 
-    AudioVideoHtml += "<div class=UiText>"+ lang.aspect_ratio +":</div>";
-    AudioVideoHtml += "<div class=pill-nav>";
-    AudioVideoHtml += "<input name=Settings_AspectRatio id=r10 type=radio value=\"1\"><label class=radio_pill for=r10><i class=\"fa fa-square-o\" style=\"transform: scaleX(1); margin-left: 7px; margin-right: 7px\"></i> 1:1</label>";
-    AudioVideoHtml += "<input name=Settings_AspectRatio id=r11 type=radio value=\"1.33\"><label class=radio_pill for=r11><i class=\"fa fa-square-o\" style=\"transform: scaleX(1.33); margin-left: 5px; margin-right: 5px;\"></i> 4:3</label>";
-    AudioVideoHtml += "<input name=Settings_AspectRatio id=r12 type=radio value=\"1.77\"><label class=radio_pill for=r12><i class=\"fa fa-square-o\" style=\"transform: scaleX(1.77); margin-right: 3px;\"></i> 16:9</label>";
-    AudioVideoHtml += "<input name=Settings_AspectRatio id=r13 type=radio value=\"\"><label class=radio_pill for=r13><i class=\"fa fa-trash\"></i></label>";
-    AudioVideoHtml += "</div>";
-    
-    AudioVideoHtml += "<div class=UiText>"+ lang.preview +":</div>";
-    AudioVideoHtml += "<div style=\"text-align:center; margin-top:10px\"><video id=local-video-preview class=previewVideo muted playsinline></video></div>";
+        AudioVideoHtml += "<div class=UiText>"+ lang.aspect_ratio +":</div>";
+        AudioVideoHtml += "<div class=pill-nav>";
+        AudioVideoHtml += "<input name=Settings_AspectRatio id=r10 type=radio value=\"1\"><label class=radio_pill for=r10><i class=\"fa fa-square-o\" style=\"transform: scaleX(1); margin-left: 7px; margin-right: 7px\"></i> 1:1</label>";
+        AudioVideoHtml += "<input name=Settings_AspectRatio id=r11 type=radio value=\"1.33\"><label class=radio_pill for=r11><i class=\"fa fa-square-o\" style=\"transform: scaleX(1.33); margin-left: 5px; margin-right: 5px;\"></i> 4:3</label>";
+        AudioVideoHtml += "<input name=Settings_AspectRatio id=r12 type=radio value=\"1.77\"><label class=radio_pill for=r12><i class=\"fa fa-square-o\" style=\"transform: scaleX(1.77); margin-right: 3px;\"></i> 16:9</label>";
+        AudioVideoHtml += "<input name=Settings_AspectRatio id=r13 type=radio value=\"\"><label class=radio_pill for=r13><i class=\"fa fa-trash\"></i></label>";
+        AudioVideoHtml += "</div>";
+
+        AudioVideoHtml += "<div class=UiText>"+ lang.preview +":</div>";
+        AudioVideoHtml += "<div style=\"text-align:center; margin-top:10px\"><video id=local-video-preview class=previewVideo muted playsinline></video></div>";
+    }
 
     AudioVideoHtml += "</div>";
 
@@ -11716,6 +11787,10 @@ function ShowMyProfile(){
                         console.warn("Validation Failed");
                         return;
                     }
+                    if($("#Configure_Account_xmpp_domain").val() == "") {
+                        console.warn("Validation Failed");
+                        return;
+                    }
                     if($("#Configure_Account_profileUser").val() == "") {
                         console.warn("Validation Failed");
                         return;
@@ -11740,25 +11815,28 @@ function ShowMyProfile(){
 
                 localDB.setItem("ChatEngine", chatEng);
 
-                localDB.setItem("profileUser", $("#Configure_Account_profileUser").val());
                 localDB.setItem("XmppServer", $("#Configure_Account_xmpp_address").val());
                 localDB.setItem("XmppWebsocketPort", $("#Configure_Account_xmpp_port").val());
                 localDB.setItem("XmppWebsocketPath", $("#Configure_Account_xmpp_path").val());
+                localDB.setItem("XmppDomain", $("#Configure_Account_xmpp_domain").val());
+                localDB.setItem("profileUser", $("#Configure_Account_profileUser").val());
             }
     
             // 2 Audio & Video
             localDB.setItem("AudioOutputId", $("#playbackSrc").val());
-            localDB.setItem("VideoSrcId", $("#previewVideoSrc").val());
-            localDB.setItem("VideoHeight", $("input[name=Settings_Quality]:checked").val());
-            localDB.setItem("FrameRate", $("input[name=Settings_FrameRate]:checked").val());
-            localDB.setItem("AspectRatio", $("input[name=Settings_AspectRatio]:checked").val());
-            localDB.setItem("VideoOrientation", $("input[name=Settings_Orientation]:checked").val());
             localDB.setItem("AudioSrcId", $("#microphoneSrc").val());
             localDB.setItem("AutoGainControl", ($("#Settings_AutoGainControl").is(':checked'))? "1" : "0");
             localDB.setItem("EchoCancellation", ($("#Settings_EchoCancellation").is(':checked'))? "1" : "0");
             localDB.setItem("NoiseSuppression", ($("#Settings_NoiseSuppression").is(':checked'))? "1" : "0");
             localDB.setItem("RingOutputId", $("#ringDevice").val());
-    
+
+            if(EnableVideoCalling == true){
+                localDB.setItem("VideoSrcId", $("#previewVideoSrc").val());
+                localDB.setItem("VideoHeight", $("input[name=Settings_Quality]:checked").val());
+                localDB.setItem("FrameRate", $("input[name=Settings_FrameRate]:checked").val());
+                localDB.setItem("AspectRatio", $("input[name=Settings_AspectRatio]:checked").val());
+                localDB.setItem("VideoOrientation", $("input[name=Settings_Orientation]:checked").val());
+            }
             // 3 Appearance
             if(EnableAppearanceSettings){
                 var vCard = { 
@@ -11773,8 +11851,8 @@ function ShowMyProfile(){
                 var options =  { 
                     type: 'base64', 
                     size: 'viewport', 
-                    format: 'png', 
-                    quality: 1, 
+                    format: 'webp', // png
+                    quality: 0.5, 
                     circle: false 
                 }
                 $("#Appearance_Html").show(); // Bug, only works if visible
@@ -11840,251 +11918,9 @@ function ShowMyProfile(){
             });
         }
 
-        // Audio Video
-        var selectAudioScr = $("#playbackSrc");
-
+        // Audio Preview
         var playButton = $("#preview_output_play");
-    
-        var playRingButton = $("#preview_ringer_play");
-    
-        // Microphone
-        var selectMicScr = $("#microphoneSrc");
-        $("#Settings_AutoGainControl").prop("checked", AutoGainControl);
-        $("#Settings_EchoCancellation").prop("checked", EchoCancellation);
-        $("#Settings_NoiseSuppression").prop("checked", NoiseSuppression);
-    
-        // Webcam
-        var selectVideoScr = $("#previewVideoSrc");
-    
-        // Orientation
-        var OriteationSel = $("input[name=Settings_Orientation]");
-        OriteationSel.each(function(){
-            if(this.value == MirrorVideo) $(this).prop("checked", true);
-        });
-        $("#local-video-preview").css("transform", MirrorVideo);
-    
-        // Frame Rate
-        var frameRateSel = $("input[name=Settings_FrameRate]");
-        frameRateSel.each(function(){
-            if(this.value == maxFrameRate) $(this).prop("checked", true);
-        });
-    
-        // Quality
-        var QualitySel = $("input[name=Settings_Quality]");
-        QualitySel.each(function(){
-            if(this.value == videoHeight) $(this).prop("checked", true);
-        });    
-    
-        // Aspect Ratio
-        var AspectRatioSel = $("input[name=Settings_AspectRatio]");
-        AspectRatioSel.each(function(){
-            if(this.value == videoAspectRatio) $(this).prop("checked", true);
-        });    
-    
-        // Ring Tone
-        var selectRingTone = $("#ringTone");
-        // TODO
-    
-        // Ring Device
-        var selectRingDevice = $("#ringDevice");
-    
-        // Handle Aspect Ratio Change
-        AspectRatioSel.change(function(){    
-            console.log("Call to change Aspect Ratio ("+ this.value +")");
-    
-            var localVideo = $("#local-video-preview").get(0);
-            localVideo.muted = true;
-            localVideo.playsinline = true;
-            localVideo.autoplay = true;
-    
-            var tracks = localVideo.srcObject.getTracks();
-            tracks.forEach(function(track) {
-                track.stop();
-            });
-    
-            var constraints = {
-                audio: false,
-                video: {
-                    deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default"
-                }
-            }
-            if($("input[name=Settings_FrameRate]:checked").val() != ""){
-                constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
-            }
-            if($("input[name=Settings_Quality]:checked").val() != ""){
-                constraints.video.height = $("input[name=Settings_Quality]:checked").val();
-            }
-            if(this.value != ""){
-                constraints.video.aspectRatio = this.value;
-            }        
-            console.log("Constraints:", constraints);
-            var localStream = new MediaStream();
-            if(navigator.mediaDevices){
-                navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
-                    var videoTrack = newStream.getVideoTracks()[0];
-                    localStream.addTrack(videoTrack);
-                    localVideo.srcObject = localStream;
-                    localVideo.onloadedmetadata = function(e) {
-                        localVideo.play();
-                    }
-                }).catch(function(e){
-                    console.error(e);
-                    Alert(lang.alert_error_user_media, lang.error);
-                });
-            }
-        });
-    
-        // Handle Video Height Change
-        QualitySel.change(function(){    
-            console.log("Call to change Video Height ("+ this.value +")");
-    
-            var localVideo = $("#local-video-preview").get(0);
-            localVideo.muted = true;
-            localVideo.playsinline = true;
-            localVideo.autoplay = true;
-    
-            var tracks = localVideo.srcObject.getTracks();
-            tracks.forEach(function(track) {
-                track.stop();
-            });
-    
-            var constraints = {
-                audio: false,
-                video: {
-                    deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default" ,
-                }
-            }
-            if($("input[name=Settings_FrameRate]:checked").val() != ""){
-                constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
-            }
-            if(this.value){
-                constraints.video.height = this.value;
-            }
-            if($("input[name=Settings_AspectRatio]:checked").val() != ""){
-                constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
-            } 
-            console.log("Constraints:", constraints);
-            var localStream = new MediaStream();
-            if(navigator.mediaDevices){
-                navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
-                    var videoTrack = newStream.getVideoTracks()[0];
-                    localStream.addTrack(videoTrack);
-                    localVideo.srcObject = localStream;
-                    localVideo.onloadedmetadata = function(e) {
-                        localVideo.play();
-                    }
-                }).catch(function(e){
-                    console.error(e);
-                    Alert(lang.alert_error_user_media, lang.error);
-                });
-            }
-        });    
-    
-        // Handle Frame Rate Change 
-        frameRateSel.change(function(){
-            console.log("Call to change Frame Rate ("+ this.value +")");
-    
-            var localVideo = $("#local-video-preview").get(0);
-            localVideo.muted = true;
-            localVideo.playsinline = true;
-            localVideo.autoplay = true;
-    
-            var tracks = localVideo.srcObject.getTracks();
-            tracks.forEach(function(track) {
-                track.stop();
-            });
-    
-            var constraints = {
-                audio: false,
-                video: {
-                    deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default" ,
-                }
-            }
-            if(this.value != ""){
-                constraints.video.frameRate = this.value;
-            }
-            if($("input[name=Settings_Quality]:checked").val() != ""){
-                constraints.video.height = $("input[name=Settings_Quality]:checked").val();
-            }
-            if($("input[name=Settings_AspectRatio]:checked").val() != ""){
-                constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
-            } 
-            console.log("Constraints:", constraints);
-            var localStream = new MediaStream();
-            if(navigator.mediaDevices){
-                navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
-                    var videoTrack = newStream.getVideoTracks()[0];
-                    localStream.addTrack(videoTrack);
-                    localVideo.srcObject = localStream;
-                    localVideo.onloadedmetadata = function(e) {
-                        localVideo.play();
-                    }
-                }).catch(function(e){
-                    console.error(e);
-                    Alert(lang.alert_error_user_media, lang.error);
-                });
-            }
-        });
-    
-        // Handle Audio Source changes (Microphone)
-        selectMicScr.change(function(){
-            console.log("Call to change Microphone ("+ this.value +")");
-    
-            // Change and update visual preview
-            try{
-                var tracks = window.SettingsMicrophoneStream.getTracks();
-                tracks.forEach(function(track) {
-                    track.stop();
-                });
-                window.SettingsMicrophoneStream = null;
-            }
-            catch(e){}
-    
-            try{
-                soundMeter = window.SettingsMicrophoneSoundMeter;
-                soundMeter.stop();
-                window.SettingsMicrophoneSoundMeter = null;
-            }
-            catch(e){}
-    
-            // Get Microphone
-            var constraints = { 
-                audio: {
-                    deviceId: { exact: this.value }
-                }, 
-                video: false 
-            }
-            var localMicrophoneStream = new MediaStream();
-            navigator.mediaDevices.getUserMedia(constraints).then(function(mediaStream){
-                var audioTrack = mediaStream.getAudioTracks()[0];
-                if(audioTrack != null){
-                    // Display Micrphone Levels
-                    localMicrophoneStream.addTrack(audioTrack);
-                    window.SettingsMicrophoneStream = localMicrophoneStream;
-                    window.SettingsMicrophoneSoundMeter = MeterSettingsOutput(localMicrophoneStream, "Settings_MicrophoneOutput", "width", 50);
-                }
-            }).catch(function(e){
-                console.log("Failed to getUserMedia", e);
-            });
-        });
-    
-        // Handle output change (speaker)
-        selectAudioScr.change(function(){
-            console.log("Call to change Speaker ("+ this.value +")");
-    
-            var audioObj = window.SettingsOutputAudio;
-            if(audioObj != null) {
-                if (typeof audioObj.sinkId !== 'undefined') {
-                    audioObj.setSinkId(this.value).then(function() {
-                        console.log("sinkId applied to audioObj:", this.value);
-                    }).catch(function(e){
-                        console.warn("Failed not apply setSinkId.", e);
-                    });
-                }
-            }
-        });
-    
-        // play button press
+        // Audio Preview Button press
         playButton.click(function(){
     
             try{
@@ -12155,7 +11991,9 @@ function ShowMyProfile(){
     
             window.SettingsOutputAudio = audioObj;
         });
-    
+
+        var playRingButton = $("#preview_ringer_play");
+        // Ringtone Button Press
         playRingButton.click(function(){
     
             try{
@@ -12226,68 +12064,301 @@ function ShowMyProfile(){
     
             window.SettingsRingerAudio = audioObj;
         });
+
+        // Audio Playback Source
+        var selectAudioScr = $("#playbackSrc");
+        // Handle output change (speaker)
+        selectAudioScr.change(function(){
+            console.log("Call to change Speaker ("+ this.value +")");
     
-        // Change Video Image
-        OriteationSel.change(function(){
-            console.log("Call to change Orientation ("+ this.value +")");
-            $("#local-video-preview").css("transform", this.value);
+            var audioObj = window.SettingsOutputAudio;
+            if(audioObj != null) {
+                if (typeof audioObj.sinkId !== 'undefined') {
+                    audioObj.setSinkId(this.value).then(function() {
+                        console.log("sinkId applied to audioObj:", this.value);
+                    }).catch(function(e){
+                        console.warn("Failed not apply setSinkId.", e);
+                    });
+                }
+            }
         });
+
+        // Microphone
+        var selectMicScr = $("#microphoneSrc");
+        $("#Settings_AutoGainControl").prop("checked", AutoGainControl);
+        $("#Settings_EchoCancellation").prop("checked", EchoCancellation);
+        $("#Settings_NoiseSuppression").prop("checked", NoiseSuppression);
+        // Handle Audio Source changes (Microphone)
+        selectMicScr.change(function(){
+            console.log("Call to change Microphone ("+ this.value +")");
     
-        // Handle video input change (WebCam)
-        selectVideoScr.change(function(){
-            console.log("Call to change WebCam ("+ this.value +")");
+            // Change and update visual preview
+            try{
+                var tracks = window.SettingsMicrophoneStream.getTracks();
+                tracks.forEach(function(track) {
+                    track.stop();
+                });
+                window.SettingsMicrophoneStream = null;
+            }
+            catch(e){}
     
+            try{
+                soundMeter = window.SettingsMicrophoneSoundMeter;
+                soundMeter.stop();
+                window.SettingsMicrophoneSoundMeter = null;
+            }
+            catch(e){}
+    
+            // Get Microphone
+            var constraints = { 
+                audio: {
+                    deviceId: { exact: this.value }
+                }, 
+                video: false 
+            }
+            var localMicrophoneStream = new MediaStream();
+            navigator.mediaDevices.getUserMedia(constraints).then(function(mediaStream){
+                var audioTrack = mediaStream.getAudioTracks()[0];
+                if(audioTrack != null){
+                    // Display Micrphone Levels
+                    localMicrophoneStream.addTrack(audioTrack);
+                    window.SettingsMicrophoneStream = localMicrophoneStream;
+                    window.SettingsMicrophoneSoundMeter = MeterSettingsOutput(localMicrophoneStream, "Settings_MicrophoneOutput", "width", 50);
+                }
+            }).catch(function(e){
+                console.log("Failed to getUserMedia", e);
+            });
+        });
+
+        // Ring Tone
+        var selectRingTone = $("#ringTone");
+        // TODO
+    
+        // Ring Device
+        var selectRingDevice = $("#ringDevice");
+
+        if(EnableVideoCalling == true){
+
+            // Webcam
+            var selectVideoScr = $("#previewVideoSrc");
+            // Handle video input change (WebCam)
+            selectVideoScr.change(function(){
+                console.log("Call to change WebCam ("+ this.value +")");
+        
+                var localVideo = $("#local-video-preview").get(0);
+                localVideo.muted = true;
+                localVideo.playsinline = true;
+                localVideo.autoplay = true;
+        
+                var tracks = localVideo.srcObject.getTracks();
+                tracks.forEach(function(track) {
+                    track.stop();
+                });
+        
+                var constraints = {
+                    audio: false,
+                    video: {
+                        deviceId: (this.value != "default")? { exact: this.value } : "default"
+                    }
+                }
+                if($("input[name=Settings_FrameRate]:checked").val() != ""){
+                    constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
+                }
+                if($("input[name=Settings_Quality]:checked").val() != ""){
+                    constraints.video.height = $("input[name=Settings_Quality]:checked").val();
+                }
+                if($("input[name=Settings_AspectRatio]:checked").val() != ""){
+                    constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
+                } 
+                console.log("Constraints:", constraints);
+                var localStream = new MediaStream();
+                if(navigator.mediaDevices){
+                    navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+                        var videoTrack = newStream.getVideoTracks()[0];
+                        localStream.addTrack(videoTrack);
+                        localVideo.srcObject = localStream;
+                        localVideo.onloadedmetadata = function(e) {
+                            localVideo.play();
+                        }
+                    }).catch(function(e){
+                        console.error(e);
+                        Alert(lang.alert_error_user_media, lang.error);
+                    });
+                }
+            });
+
+            // Orientation
+            var OriteationSel = $("input[name=Settings_Orientation]");
+            OriteationSel.each(function(){
+                if(this.value == MirrorVideo) $(this).prop("checked", true);
+            });
+            $("#local-video-preview").css("transform", MirrorVideo);
+            // Change Video Image
+            OriteationSel.change(function(){
+                console.log("Call to change Orientation ("+ this.value +")");
+                $("#local-video-preview").css("transform", this.value);
+            });
+        
+            // Frame Rate
+            var frameRateSel = $("input[name=Settings_FrameRate]");
+            frameRateSel.each(function(){
+                if(this.value == maxFrameRate) $(this).prop("checked", true);
+            });
+            // Handle Frame Rate Change 
+            frameRateSel.change(function(){
+                console.log("Call to change Frame Rate ("+ this.value +")");
+        
+                var localVideo = $("#local-video-preview").get(0);
+                localVideo.muted = true;
+                localVideo.playsinline = true;
+                localVideo.autoplay = true;
+        
+                var tracks = localVideo.srcObject.getTracks();
+                tracks.forEach(function(track) {
+                    track.stop();
+                });
+        
+                var constraints = {
+                    audio: false,
+                    video: {
+                        deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default" ,
+                    }
+                }
+                if(this.value != ""){
+                    constraints.video.frameRate = this.value;
+                }
+                if($("input[name=Settings_Quality]:checked").val() != ""){
+                    constraints.video.height = $("input[name=Settings_Quality]:checked").val();
+                }
+                if($("input[name=Settings_AspectRatio]:checked").val() != ""){
+                    constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
+                } 
+                console.log("Constraints:", constraints);
+                var localStream = new MediaStream();
+                if(navigator.mediaDevices){
+                    navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+                        var videoTrack = newStream.getVideoTracks()[0];
+                        localStream.addTrack(videoTrack);
+                        localVideo.srcObject = localStream;
+                        localVideo.onloadedmetadata = function(e) {
+                            localVideo.play();
+                        }
+                    }).catch(function(e){
+                        console.error(e);
+                        Alert(lang.alert_error_user_media, lang.error);
+                    });
+                }
+            });
+        
+            // Quality
+            var QualitySel = $("input[name=Settings_Quality]");
+            QualitySel.each(function(){
+                if(this.value == videoHeight) $(this).prop("checked", true);
+            });    
+            // Handle Video Height Change
+            QualitySel.change(function(){    
+                console.log("Call to change Video Height ("+ this.value +")");
+        
+                var localVideo = $("#local-video-preview").get(0);
+                localVideo.muted = true;
+                localVideo.playsinline = true;
+                localVideo.autoplay = true;
+        
+                var tracks = localVideo.srcObject.getTracks();
+                tracks.forEach(function(track) {
+                    track.stop();
+                });
+        
+                var constraints = {
+                    audio: false,
+                    video: {
+                        deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default" ,
+                    }
+                }
+                if($("input[name=Settings_FrameRate]:checked").val() != ""){
+                    constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
+                }
+                if(this.value){
+                    constraints.video.height = this.value;
+                }
+                if($("input[name=Settings_AspectRatio]:checked").val() != ""){
+                    constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
+                } 
+                console.log("Constraints:", constraints);
+                var localStream = new MediaStream();
+                if(navigator.mediaDevices){
+                    navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+                        var videoTrack = newStream.getVideoTracks()[0];
+                        localStream.addTrack(videoTrack);
+                        localVideo.srcObject = localStream;
+                        localVideo.onloadedmetadata = function(e) {
+                            localVideo.play();
+                        }
+                    }).catch(function(e){
+                        console.error(e);
+                        Alert(lang.alert_error_user_media, lang.error);
+                    });
+                }
+            });    
+        
+            // Aspect Ratio
+            var AspectRatioSel = $("input[name=Settings_AspectRatio]");
+            AspectRatioSel.each(function(){
+                if(this.value == videoAspectRatio) $(this).prop("checked", true);
+            });    
+            // Handle Aspect Ratio Change
+            AspectRatioSel.change(function(){    
+                console.log("Call to change Aspect Ratio ("+ this.value +")");
+        
+                var localVideo = $("#local-video-preview").get(0);
+                localVideo.muted = true;
+                localVideo.playsinline = true;
+                localVideo.autoplay = true;
+        
+                var tracks = localVideo.srcObject.getTracks();
+                tracks.forEach(function(track) {
+                    track.stop();
+                });
+        
+                var constraints = {
+                    audio: false,
+                    video: {
+                        deviceId: (selectVideoScr.val() != "default")? { exact: selectVideoScr.val() } : "default"
+                    }
+                }
+                if($("input[name=Settings_FrameRate]:checked").val() != ""){
+                    constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
+                }
+                if($("input[name=Settings_Quality]:checked").val() != ""){
+                    constraints.video.height = $("input[name=Settings_Quality]:checked").val();
+                }
+                if(this.value != ""){
+                    constraints.video.aspectRatio = this.value;
+                }        
+                console.log("Constraints:", constraints);
+                var localStream = new MediaStream();
+                if(navigator.mediaDevices){
+                    navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
+                        var videoTrack = newStream.getVideoTracks()[0];
+                        localStream.addTrack(videoTrack);
+                        localVideo.srcObject = localStream;
+                        localVideo.onloadedmetadata = function(e) {
+                            localVideo.play();
+                        }
+                    }).catch(function(e){
+                        console.error(e);
+                        Alert(lang.alert_error_user_media, lang.error);
+                    });
+                }
+            });
+        
+            // Note: Only works over HTTPS or via localhost!!
             var localVideo = $("#local-video-preview").get(0);
             localVideo.muted = true;
             localVideo.playsinline = true;
             localVideo.autoplay = true;
-    
-            var tracks = localVideo.srcObject.getTracks();
-            tracks.forEach(function(track) {
-                track.stop();
-            });
-    
-            var constraints = {
-                audio: false,
-                video: {
-                    deviceId: (this.value != "default")? { exact: this.value } : "default"
-                }
-            }
-            if($("input[name=Settings_FrameRate]:checked").val() != ""){
-                constraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
-            }
-            if($("input[name=Settings_Quality]:checked").val() != ""){
-                constraints.video.height = $("input[name=Settings_Quality]:checked").val();
-            }
-            if($("input[name=Settings_AspectRatio]:checked").val() != ""){
-                constraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
-            } 
-            console.log("Constraints:", constraints);
-            var localStream = new MediaStream();
-            if(navigator.mediaDevices){
-                navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
-                    var videoTrack = newStream.getVideoTracks()[0];
-                    localStream.addTrack(videoTrack);
-                    localVideo.srcObject = localStream;
-                    localVideo.onloadedmetadata = function(e) {
-                        localVideo.play();
-                    }
-                }).catch(function(e){
-                    console.error(e);
-                    Alert(lang.alert_error_user_media, lang.error);
-                });
-            }
-        });
-    
-        // Note: Only works over HTTPS or via localhost!!
-        var localVideo = $("#local-video-preview").get(0);
-        localVideo.muted = true;
-        localVideo.playsinline = true;
-        localVideo.autoplay = true;
-    
-        var localVideoStream = new MediaStream();
-        var localMicrophoneStream = new MediaStream();
-        
+        }
+
         if(navigator.mediaDevices){
             navigator.mediaDevices.enumerateDevices().then(function(deviceInfos){
                 var savedVideoDevice = getVideoSrcID();
@@ -12308,15 +12379,17 @@ function ShowMyProfile(){
                         MicrophoneFound = true;
                         if(savedAudioDevice != "default" && deviceInfos[i].deviceId == savedAudioDevice) {
                             audioDeviceFound = true;
-                        }                   
+                        }
                     }
                     else if (deviceInfos[i].kind === "audiooutput") {
                         SpeakerFound = true;
                     }
                     else if (deviceInfos[i].kind === "videoinput") {
-                        VideoFound = true;
-                        if(savedVideoDevice != "default" && deviceInfos[i].deviceId == savedVideoDevice) {
-                            videoDeviceFound = true;
+                        if(EnableVideoCalling == true){
+                            VideoFound = true;
+                            if(savedVideoDevice != "default" && deviceInfos[i].deviceId == savedVideoDevice) {
+                                videoDeviceFound = true;
+                            }
                         }
                     }
                 }
@@ -12330,49 +12403,42 @@ function ShowMyProfile(){
                     contraints.audio = { deviceId: "default" }
                     if(audioDeviceFound) contraints.audio.deviceId = { exact: savedAudioDevice }
                 }
-                if(VideoFound){
-                    contraints.video = { deviceId: "default" }
-                    if(videoDeviceFound) contraints.video.deviceId = { exact: savedVideoDevice }
+
+                if(EnableVideoCalling == true){
+                    if(VideoFound){
+                        contraints.video = { deviceId: "default" }
+                        if(videoDeviceFound) contraints.video.deviceId = { exact: savedVideoDevice }
+                    }
+                    // Additional
+                    if($("input[name=Settings_FrameRate]:checked").val() != ""){
+                        contraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
+                    }
+                    if($("input[name=Settings_Quality]:checked").val() != ""){
+                        contraints.video.height = $("input[name=Settings_Quality]:checked").val();
+                    }
+                    if($("input[name=Settings_AspectRatio]:checked").val() != ""){
+                        contraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
+                    } 
                 }
-                // Additional
-                if($("input[name=Settings_FrameRate]:checked").val() != ""){
-                    contraints.video.frameRate = $("input[name=Settings_FrameRate]:checked").val();
-                }
-                if($("input[name=Settings_Quality]:checked").val() != ""){
-                    contraints.video.height = $("input[name=Settings_Quality]:checked").val();
-                }
-                if($("input[name=Settings_AspectRatio]:checked").val() != ""){
-                    contraints.video.aspectRatio = $("input[name=Settings_AspectRatio]:checked").val();
-                } 
                 console.log("Get User Media", contraints);
+
                 // Get User Media
                 navigator.mediaDevices.getUserMedia(contraints).then(function(mediaStream){
-                    // Handle Video
-                    var videoTrack = (mediaStream.getVideoTracks().length >= 1)? mediaStream.getVideoTracks()[0] : null;
-                    if(VideoFound && videoTrack != null){
-                        localVideoStream.addTrack(videoTrack);
-                        // Display Preview Video
-                        localVideo.srcObject = localVideoStream;
-                        localVideo.onloadedmetadata = function(e) {
-                            localVideo.play();
-                        }
-                    }
-                    else {
-                        console.warn("No video / webcam devices found. Video Calling will not be possible.")
-                    }
-    
+                    // Note: This code may fire after the close button
+
                     // Handle Audio
-                    var audioTrack = (mediaStream.getAudioTracks().length >= 1)? mediaStream.getAudioTracks()[0] : null ;
-                    if(MicrophoneFound && audioTrack != null){
-                        localMicrophoneStream.addTrack(audioTrack);
+                    settingsMicrophoneStreamTrack = (mediaStream.getAudioTracks().length >= 1)? mediaStream.getAudioTracks()[0] : null ;
+                    if(MicrophoneFound && settingsMicrophoneStreamTrack != null){
+                        settingsMicrophoneStream = new MediaStream();
+                        settingsMicrophoneStream.addTrack(settingsMicrophoneStreamTrack);
                         // Display Micrphone Levels
-                        window.SettingsMicrophoneStream = localMicrophoneStream;
-                        window.SettingsMicrophoneSoundMeter = MeterSettingsOutput(localMicrophoneStream, "Settings_MicrophoneOutput", "width", 50);
+                        // window.SettingsMicrophoneStream = settingsMicrophoneStream;
+                        settingsMicrophoneSoundMeter = MeterSettingsOutput(settingsMicrophoneStream, "Settings_MicrophoneOutput", "width", 50);
                     }
                     else {
                         console.warn("No microphone devices found. Calling will not be possible.")
                     }
-    
+
                     // Display Output Levels
                     $("#Settings_SpeakerOutput").css("width", "0%");
                     $("#Settings_RingerOutput").css("width", "0%");
@@ -12382,6 +12448,23 @@ function ShowMyProfile(){
                         $("#RingDeviceSection").hide();
                     }
     
+                    if(EnableVideoCalling == true){
+                        // Handle Video
+                        settingsVideoStreamTrack = (mediaStream.getVideoTracks().length >= 1)? mediaStream.getVideoTracks()[0] : null;
+                        if(VideoFound && settingsVideoStreamTrack != null){
+                            settingsVideoStream = new MediaStream();
+                            settingsVideoStream.addTrack(settingsVideoStreamTrack);
+                            // Display Preview Video
+                            localVideo.srcObject = settingsVideoStream;
+                            localVideo.onloadedmetadata = function(e) {
+                                localVideo.play();
+                            }
+                        }
+                        else {
+                            console.warn("No video / webcam devices found. Video Calling will not be possible.")
+                        }
+                    }
+
                     // Return .then()
                     return navigator.mediaDevices.enumerateDevices();
                 }).then(function(deviceInfos){
@@ -12410,18 +12493,22 @@ function ShowMyProfile(){
                             selectRingDevice.append(ringOption);
                         }
                         else if (deviceInfo.kind === "videoinput") {
-                            if(getVideoSrcID() == devideId) option.prop("selected", true);
-                            option.text((DisplayName != "")? DisplayName : "Webcam");
-                            selectVideoScr.append(option);
+                            if(EnableVideoCalling == true){
+                                if(getVideoSrcID() == devideId) option.prop("selected", true);
+                                option.text((DisplayName != "")? DisplayName : "Webcam");
+                                selectVideoScr.append(option);
+                            }
                         }
                     }
-                    // Add "Default" option
-                    if(selectVideoScr.children('option').length > 0){
-                        var option = $('<option/>');
-                        option.prop("value", "default");
-                        if(getVideoSrcID() == "default" || getVideoSrcID() == "" || getVideoSrcID() == "null") option.prop("selected", true);
-                        option.text("("+ lang.default_video_src +")");
-                        selectVideoScr.append(option);
+                    if(EnableVideoCalling == true){
+                        // Add "Default" option
+                        if(selectVideoScr.children('option').length > 0){
+                            var option = $('<option/>');
+                            option.prop("value", "default");
+                            if(getVideoSrcID() == "default" || getVideoSrcID() == "" || getVideoSrcID() == "null") option.prop("selected", true);
+                            option.text("("+ lang.default_video_src +")");
+                            selectVideoScr.append(option);
+                        }
                     }
                 }).catch(function(e){
                     console.error(e);
@@ -13030,8 +13117,9 @@ function ReformatMessage(str) {
     return msg;
 }
 function getPicture(buddy, typestr, ignoreCache){
+    var avatars = defaultAvatars.split(",");
     var rndInt = Math.floor(Math.random() * avatars.length);
-    var defaultImg = hostingPrefix + "" + avatars[rndInt];
+    var defaultImg = hostingPrefix + "" + imagesDirectory + "" + avatars[rndInt].trim();
     if(buddy == "profilePicture"){
         // Special handling for profile image
         var dbImg = localDB.getItem("profilePicture");
@@ -13059,7 +13147,7 @@ function getPicture(buddy, typestr, ignoreCache){
         return buddyObj.imageObjectURL
     }
     else {
-        buddyObj.imageObjectURL = URL.createObjectURL(base64toBlob(dbImg, 'image/png'));
+        buddyObj.imageObjectURL = URL.createObjectURL(base64toBlob(dbImg, 'image/webp')); // image/png
         return buddyObj.imageObjectURL;
     }
 }
@@ -13506,7 +13594,7 @@ var ImageEditor_Send = function (buddy){
     var canvas = GetCanvas("contact-" + buddy + "-imageCanvas");
     if(canvas != null)
     {
-        var imgData = canvas.toDataURL({ format: 'png' });
+        var imgData = canvas.toDataURL({ format: 'webp' });  //png
         SendImageDataMessage(buddy, imgData);
         return true;
     }
@@ -14021,8 +14109,10 @@ function DetectDevices(){
                 SpeakerDevices.push(deviceInfos[i]);
             }
             else if (deviceInfos[i].kind === "videoinput") {
-                HasVideoDevice = true;
-                VideoinputDevices.push(deviceInfos[i]);
+                if(EnableVideoCalling == true){
+                    HasVideoDevice = true;
+                    VideoinputDevices.push(deviceInfos[i]);
+                }
             }
         }
         // console.log(AudioinputDevices, VideoinputDevices);
@@ -14079,7 +14169,7 @@ function XmppSendPing(){
 
     if(!XMPP || XMPP.connected == false) reconnectXmpp();
 
-    var iq_request = $iq({"type":"get", "id":XMPP.getUniqueId(), "to":SipDomain, "from":XMPP.jid});
+    var iq_request = $iq({"type":"get", "id":XMPP.getUniqueId(), "to":XmppDomain, "from":XMPP.jid});
     iq_request.c("ping", {"xmlns":"urn:xmpp:ping"});
 
     XMPP.sendIQ(iq_request, function (result){
@@ -14091,6 +14181,7 @@ function XmppSendPing(){
     XMPP.ping = window.setTimeout(function(){
         XmppSendPing();
     }, 45 * 1000);
+    // TODO: Make this is a setting
 }
 
 // XMPP Presence
@@ -14455,7 +14546,7 @@ function XmppSetMyVcard(){
     iq_request.c("USERID", {}, profileVcard.Email);
     iq_request.up();
     iq_request.c("PHOTO");
-    iq_request.c("TYPE", {}, "image/png");
+    iq_request.c("TYPE", {}, "image/webp"); // image/png
     iq_request.c("BINVAL", {}, imgBase64);
     iq_request.up();
     iq_request.c("JABBERID", {}, Strophe.getBareJidFromJid(XMPP.jid));
@@ -14531,7 +14622,7 @@ function XmppGetBuddyVcard(buddyObj){
                 }
                 if(element.tagName == "PHOTO"){
                     Strophe.forEachChild(element, "BINVAL", function(base64) {
-                        imgBase64 = "data:image/png;base64,"+ base64.textContent;
+                        imgBase64 = "data:image/webp;base64,"+ base64.textContent;  // data:image/png;base64,
                     });
                 }
             });
@@ -14921,7 +15012,7 @@ function onInfoQueryCommand(iq){
     return true;
 }
 function XMPP_GetGroups(){
-    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : XmppChatGroupService +"."+ SipDomain, "from" : XMPP.jid});
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : XmppChatGroupService +"."+ XmppDomain, "from" : XMPP.jid});
     iq_request.c("query", {"xmlns" : "http://jabber.org/protocol/disco#items", "node" : "http://jabber.org/protocol/muc#rooms"});
 
     XMPP.sendIQ(iq_request, function (result){
@@ -14931,7 +15022,7 @@ function XMPP_GetGroups(){
     }, 30 * 1000);
 }
 function XMPP_GetGroupMembers(){
-    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : "directors@"+ XmppChatGroupService +"."+ SipDomain, "from" : XMPP.jid});
+    var iq_request = $iq({"type" : "get", "id" : XMPP.getUniqueId(), "to" : "directors@"+ XmppChatGroupService +"."+ XmppDomain, "from" : XMPP.jid});
     iq_request.c("query", {"xmlns":"http://jabber.org/protocol/disco#items"});
 
     XMPP.sendIQ(iq_request, function (result){
@@ -14941,7 +15032,7 @@ function XMPP_GetGroupMembers(){
     }, 30 * 1000);
 }
 function XMPP_JoinGroup(){
-    var pres_request = $pres({"id" : XMPP.getUniqueId(), "from" : XMPP.jid, "to" : "directors@"+ XmppChatGroupService +"."+ SipDomain +"/nickname" });
+    var pres_request = $pres({"id" : XMPP.getUniqueId(), "from" : XMPP.jid, "to" : "directors@"+ XmppChatGroupService +"."+ XmppDomain +"/nickname" });
     pres_request.c("x", {"xmlns" : "http://jabber.org/protocol/muc" });
 
     XMPP.sendPresence(pres_request, function (result){
@@ -14961,7 +15052,6 @@ function XMPP_QueryMix(){
     }, 30 * 1000);
 }
 
-
 var XMPP = null;
 var reconnectXmpp = function(){
     console.log("Connect/Reconnect XMPP connection...");
@@ -14970,13 +15060,13 @@ var reconnectXmpp = function(){
     if(XMPP) XMPP.reset();
 
     var xmpp_websocket_uri = "wss://"+ XmppServer +":"+ XmppWebsocketPort +""+ XmppWebsocketPath; 
-    var xmpp_username = profileUser +"@"+ SipDomain;
+    var xmpp_username = profileUser +"@"+ XmppDomain;
     if(XmppRealm != "" && XmppRealmSeparator) xmpp_username = XmppRealm + XmppRealmSeparator + xmpp_username;
     var xmpp_password = SipPassword;
 
     XMPP = null;
-    if(SipDomain == "" || XmppServer == "" || XmppWebsocketPort == "" || XmppWebsocketPath == ""){
-        console.log("Cannot connect to XMPP: ", SipDomain, XmppServer, XmppWebsocketPort, XmppWebsocketPath);
+    if(XmppDomain == "" || XmppServer == "" || XmppWebsocketPort == "" || XmppWebsocketPath == ""){
+        console.log("Cannot connect to XMPP: ", XmppDomain, XmppServer, XmppWebsocketPort, XmppWebsocketPath);
         return;
     }
     XMPP = new Strophe.Connection(xmpp_websocket_uri);
