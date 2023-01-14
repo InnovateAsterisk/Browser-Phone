@@ -8,14 +8,27 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
         
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"/>
+
+        <!-- Progressive Web App (PWA) -->
         <meta name="HandheldFriendly" content="true">
-
         <meta name="format-detection" content="telephone=no"/>
-        <meta name="SKYPE_TOOLBAR" content="SKYPE_TOOLBAR_PARSER_COMPATIBLE"/>
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes"/>
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f6f6">
+        <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#292929">
+        <link rel="apple-touch-icon" href="icons/512.png">
+        <link rel="manifest" href="manifest.json">
+        <script type="text/javascript">
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register("sw.js").catch(function(error) {
+                    console.error('Service Worker Error', error);
+                });
+            } else {
+                console.warn("Cannot make use of ServiceWorker");
+            }
+        </script>
 
-        <meta name="apple-mobile-web-app-capable" content="no"/>
-        <meta name="mobile-web-app-capable" content="no">
-
+        <!-- Cache -->
         <meta http-equiv="Pragma" content="no-cache"/>
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
         <meta http-equiv="Expires" content="0"/>

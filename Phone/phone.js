@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.21";
+const appversion = "0.3.22";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -1463,8 +1463,13 @@ function InitUi(){
         var displayPrefix = getDbItem("profileDisplayPrefix", "");
         var displayPrefixSep = getDbItem("profileDisplayPrefixSeparator", "-");
         if(displayPrefix != ""){
-            var vCardValue = profileVcard[displayPrefix];
-            profilePrepend  =  vCardValue + " "+ displayPrefixSep +" "
+            try{
+                var vCardValue = profileVcard[displayPrefix];
+                if(vCardValue && vCardValue != ""){
+                    profilePrepend  =  vCardValue + " "+ displayPrefixSep +" "
+                }
+            }
+            catch(e){}
         }
     }
     $("#UserCallID").html(profilePrepend +""+ profileName);

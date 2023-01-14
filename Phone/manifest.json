@@ -1,0 +1,40 @@
+{
+    "name": "Browser Phone",
+    "short_name": "Browser Phone",
+    "id": "com.innovateasterisk.browserphone",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#fff",
+    "theme_color": "#f6f6f6",
+    "description": "Browser Phone is a fully featured browser based WebRTC SIP phone for Asterisk. Designed to work with Asterisk PBX. It will connect to Asterisk PBX via web socket, and register an extension.  Calls are made between contacts, and a full call detail is saved. Audio and Video Calls can be recorded locally.",
+    "screenshots": [
+        {
+          "src": "/icons/screenshot1.webp",
+          "type": "image/webp",
+          "sizes": "2542x1860"
+        },
+        {
+          "src": "/icons/screenshot2.webp",
+          "type": "image/webp",
+          "sizes": "2542x1860"
+        }
+    ],
+    "icons": [
+        {
+            "src": "icons/maskable_192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/any_192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
