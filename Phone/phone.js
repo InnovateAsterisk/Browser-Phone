@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.22";
+const appversion = "0.3.23";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 
@@ -420,6 +420,59 @@ $(window).on("offline", function(){
 $(window).on("online", function(){
     console.log('Online!');
     ReconnectTransport();
+});
+$(window).on("keypress", function(event) {
+    // TODO: Add Shortcuts
+
+    // console.log(event);
+    if(event.ctrlKey){
+        // You have the Ctrl Key pressed, this could be a Call Function
+        // Blind Transfer the current Call
+        if(event.key == "b"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: Start Blind Transfer");
+        }
+        // Attended Transfer the current Call
+        if(event.key == "a"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: Start Attended Transfer");
+        }
+        // Audio Call current selected buddy
+        if(event.key == "c"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: Start Audio Call");
+        }
+        // Video Call current selected buddy
+        if(event.key == "v"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: Start Video Call");
+        }
+        // Hold (Toggle)
+        if(event.key == "h"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: Hold Toggle");
+        }
+        // Mute (Toggle)
+        if(event.key == "m"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: Mute Toggle");
+        }
+        // End current call
+        if(event.key == "e"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: End current call");
+        }
+        // Recording (Start/Stop)
+        if(event.key == "r"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: Recording Toggle");
+        }
+        // Select line 1-9
+        if(event.key == "1" || event.key == "2" | event.key == "3" || event.key == "4" || event.key == "5" || event.key == "6" || event.key == "7" || event.key == "8" || event.key == "9"){
+            event.preventDefault();
+            console.log("Keyboard Shortcut for: Select Line", event.key);
+        }
+    }
 });
 $(document).ready(function () {
     // Load phoneOptions
@@ -1472,7 +1525,7 @@ function InitUi(){
             catch(e){}
         }
     }
-    $("#UserCallID").html(profilePrepend +""+ profileName);
+    if(profileName) $("#UserCallID").html(profilePrepend +""+ profileName);
     $("#UserProfilePic").css("background-image", "url('"+ getPicture("profilePicture") +"')");
     
     $("#BtnFilter").attr("title", lang.filter_and_sort)
@@ -6497,6 +6550,20 @@ function CancelTransferSession(lineNum){
 
     updateLineScroll(lineNum);
 }
+function transferOnkeydown(event, obj, lineNum) {
+    var keycode = (event.keyCode ? event.keyCode : event.which);
+    if (keycode == '13'){
+        event.preventDefault();
+        if(event.ctrlKey){
+            AttendedTransfer(lineNum);
+        }
+        else {
+            BlindTransfer(lineNum);
+        }
+
+        return false;
+    }
+}
 function BlindTransfer(lineNum) {
     var dstNo = $("#line-"+ lineNum +"-txt-FindTransferBuddy").val();
     if(EnableAlphanumericDial){
@@ -6960,6 +7027,15 @@ function CancelConference(lineNum){
     $("#line-"+ lineNum +"-Conference").hide();
 
     updateLineScroll(lineNum);
+}
+function conferenceOnkeydown(event, obj, lineNum) {
+    var keycode = (event.keyCode ? event.keyCode : event.which);
+    if (keycode == '13'){
+        event.preventDefault();
+
+        ConferenceDial(lineNum);
+        return false;
+    }
 }
 function ConferenceDial(lineNum){
     var dstNo = $("#line-"+ lineNum +"-txt-FindConferenceBuddy").val();
@@ -8303,11 +8379,16 @@ function handleDialInput(obj, event){
 function dialOnkeydown(event, obj, buddy) {
     var keycode = (event.keyCode ? event.keyCode : event.which);
     if (keycode == '13'){
-        // if(event.shiftKey || event.ctrlKey)
         event.preventDefault();
 
-        // Defaults to audio dial
-        DialByLine('audio');
+        if(event.ctrlKey && EnableVideoCalling == true){
+            DialByLine('video');
+        }
+        else {
+            // Defaults to audio dial
+            DialByLine('audio');
+        }
+
         return false;
     }
 }
@@ -8832,7 +8913,7 @@ function AddLineHtml(lineObj, direction){
     // Call Transfer
     html += "<div id=\"line-"+ lineObj.LineNumber +"-Transfer\" style=\"text-align: center; line-height:40px; display:none\">";
     html += "<div style=\"margin-top:10px\">";
-    html += "<span class=searchClean><input id=\"line-"+ lineObj.LineNumber +"-txt-FindTransferBuddy\" oninput=\"QuickFindBuddy(this,'"+ lineObj.LineNumber +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\""+ lang.search_or_enter_number +"\"></span>";
+    html += "<span class=searchClean><input id=\"line-"+ lineObj.LineNumber +"-txt-FindTransferBuddy\" oninput=\"QuickFindBuddy(this,'"+ lineObj.LineNumber +"')\" onkeydown=\"transferOnkeydown(event, this, '"+ lineObj.LineNumber +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\""+ lang.search_or_enter_number +"\"></span>";
     html += "<br>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-blind-transfer\" onclick=\"BlindTransfer('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-reply\" style=\"transform: rotateY(180deg)\"></i> "+ lang.blind_transfer +"</button>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-attended-transfer\" onclick=\"AttendedTransfer('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-reply-all\" style=\"transform: rotateY(180deg)\"></i> "+ lang.attended_transfer +"</button>";
@@ -8847,7 +8928,7 @@ function AddLineHtml(lineObj, direction){
     // Call Conference
     html += "<div id=\"line-"+ lineObj.LineNumber +"-Conference\" style=\"text-align: center; line-height:40px; display:none\">";
     html += "<div style=\"margin-top:10px\">";
-    html += "<span class=searchClean><input id=\"line-"+ lineObj.LineNumber +"-txt-FindConferenceBuddy\" oninput=\"QuickFindBuddy(this,'"+ lineObj.LineNumber +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\""+ lang.search_or_enter_number +"\"></span>";
+    html += "<span class=searchClean><input id=\"line-"+ lineObj.LineNumber +"-txt-FindConferenceBuddy\" oninput=\"QuickFindBuddy(this,'"+ lineObj.LineNumber +"')\" onkeydown=\"conferenceOnkeydown(event, this, '"+ lineObj.LineNumber +"')\" type=text autocomplete=none style=\"width:150px;\" autocomplete=none placeholder=\""+ lang.search_or_enter_number +"\"></span>";
     html += "<br>"
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-conference-dial\" onclick=\"ConferenceDial('"+ lineObj.LineNumber +"')\"><i class=\"fa fa-phone\"></i> "+ lang.call +"</button>";
     html += " <button id=\"line-"+ lineObj.LineNumber +"-btn-cancel-conference-dial\" style=\"display:none\"><i class=\"fa fa-phone\" style=\"transform: rotate(135deg);\"></i> "+ lang.cancel_call +"</button>";

@@ -19,6 +19,7 @@
         <link rel="apple-touch-icon" href="icons/512.png">
         <link rel="manifest" href="manifest.json">
         <script type="text/javascript">
+            // If you don't want to use a service worker, you can just take this code out.
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register("sw.js").catch(function(error) {
                     console.error('Service Worker Error', error);
