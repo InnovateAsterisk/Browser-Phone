@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="utf-8">
+
         <title>Browser Phone</title>
         <meta name="description" content="Browser Phone is a fully featured browser based WebRTC SIP phone for Asterisk. Designed to work with Asterisk PBX. It will connect to Asterisk PBX via web socket, and register an extension.  Calls are made between contacts, and a full call detail is saved. Audio and Video Calls can be recorded locally.">
 
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-        
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"/>
 
         <!-- Progressive Web App (PWA) -->
@@ -16,8 +15,8 @@
         <meta name="apple-mobile-web-app-capable" content="yes"/>
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f6f6">
         <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#292929">
-        <link rel="apple-touch-icon" href="icons/512.png">
-        <link rel="manifest" href="manifest.json">
+        <link rel="apple-touch-icon" type="image/png" href="icons/512.png">
+        <link rel="manifest" type="application/manifest+json" href="manifest.json">
         <script type="text/javascript">
             // If you don't want to use a service worker, you can just take this code out.
             if ('serviceWorker' in navigator) {
@@ -30,11 +29,10 @@
         </script>
 
         <!-- Cache -->
-        <meta http-equiv="Pragma" content="no-cache"/>
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
         <meta http-equiv="Expires" content="0"/>
 
-        <link rel="icon" href="favicon.ico">
+        <link rel="icon" type="image/x-icon" href="favicon.ico">
 
         <!-- Styles -->
         <link rel="stylesheet" type="text/css" href="https://dtd6jl0d42sve.cloudfront.net/lib/Normalize/normalize-v8.0.1.css"/>
@@ -51,91 +49,96 @@
                 loadAlternateLang: true
             }
 
+            // Occurs after the language file is loaded
+            var web_hook_on_language_pack_loaded = function(lang){
+                // console.log("web_hook_on_language_pack_loaded", lang);
+            }
+
             // Occurs After the Language Packs load, at the start of the InitUi() function 
-            var web_hook_on_before_init = function(){
-                // console.warn("web_hook_on_before_init");
+            var web_hook_on_before_init = function(options){
+                // console.log("web_hook_on_before_init", options);
             }
             // Occurs at the end of the InitUi() function, before the User Agent is created.
             // In order to follow events after the User Agent is created, use the register
             // and transport events below. 
             var web_hook_on_init = function(){
-                // console.warn("web_hook_on_init");
+                // console.log("web_hook_on_init");
             }
 
             // Connection and Calling Events
             var web_hook_on_transportError = function(t, ua){
-                // console.warn("web_hook_on_transportError",t, ua);
+                // console.log("web_hook_on_transportError",t, ua);
             }
             var web_hook_on_register = function(ua){
-                // console.warn("web_hook_on_register", ua);
+                // console.log("web_hook_on_register", ua);
             }
             var web_hook_on_registrationFailed = function(e){
-                // console.warn("web_hook_on_registrationFailed", e);
+                // console.log("web_hook_on_registrationFailed", e);
             }
             var web_hook_on_unregistered = function(){
-                // console.warn("web_hook_on_unregistered");
+                // console.log("web_hook_on_unregistered");
             }
             var web_hook_on_invite = function(session){
-                // console.warn("web_hook_on_invite", session);
+                // console.log("web_hook_on_invite", session);
             }
             var web_hook_on_message = function(message){
-                // console.warn("web_hook_on_message", message);
+                // console.log("web_hook_on_message", message);
             }
             var web_hook_on_modify = function(action, session){
-                // console.warn("web_hook_on_modify", action, session);
+                // console.log("web_hook_on_modify", action, session);
             }
             var web_hook_on_dtmf = function(item, session){
-                // console.warn("web_hook_on_dtmf", item, session);
+                // console.log("web_hook_on_dtmf", item, session);
             }
             var web_hook_on_terminate = function(session){
-                // console.warn("web_hook_on_terminate", session);
+                // console.log("web_hook_on_terminate", session);
             }
             var web_hook_on_notify = function(ContentType, buddyObj, notify){
-                // console.warn("web_hook_on_notify", ContentType, buddyObj, notify);
+                // console.log("web_hook_on_notify", ContentType, buddyObj, notify);
             }
             var web_hook_on_self_notify = function(ContentType, notify){
-                // console.warn("web_hook_on_self_notify", ContentType, notify);
+                // console.log("web_hook_on_self_notify", ContentType, notify);
             }
 
             // UI events
             var web_hook_dial_out = function(event){
-                // console.warn("web_hook_dial_out", event);
+                // console.log("web_hook_dial_out", event);
             }
             var web_hook_on_add_buddy = function(event){
-                // console.warn("web_hook_on_add_buddy", event);
+                // console.log("web_hook_on_add_buddy", event);
             }
             var web_hook_on_edit_buddy = function(buddyJson){
-                // console.warn("web_hook_on_edit_buddy", buddyJson);
+                // console.log("web_hook_on_edit_buddy", buddyJson);
             }            
             var web_hook_on_config_menu = function(event){
-                // console.warn("web_hook_on_config_menu", event);
+                // console.log("web_hook_on_config_menu", event);
             }
             var web_hook_on_messages_waiting = function(newMsg, oldMsg, ugentNew, ugentOld){
-                // console.warn("web_hook_on_messages_waiting", newMsg, oldMsg, ugentNew, ugentOld);
+                // console.log("web_hook_on_messages_waiting", newMsg, oldMsg, ugentNew, ugentOld);
             }
             var web_hook_on_missed_notify = function(missed){
-                // console.warn("web_hook_on_missed_notify", missed);
+                // console.log("web_hook_on_missed_notify", missed);
             }
             var web_hook_on_expand_video_area = function(lineNum){
-                // console.warn("web_hook_on_expand_video_area", lineNum);
+                // console.log("web_hook_on_expand_video_area", lineNum);
             }
             var web_hook_on_restore_video_area = function(lineNum){
-                // console.warn("web_hook_on_restore_video_area", lineNum);
+                // console.log("web_hook_on_restore_video_area", lineNum);
             }
             var web_hook_on_message_action = function(buddy, obj){
-                // console.warn("web_hook_on_message_action", buddy, obj);
+                // console.log("web_hook_on_message_action", buddy, obj);
             }
             var web_hook_disable_dnd = function(){
-                // console.warn("web_hook_disable_dnd");
+                // console.log("web_hook_disable_dnd");
             }
             var web_hook_enable_dnd = function(){
-                // console.warn("web_hook_enable_dnd");
+                // console.log("web_hook_enable_dnd");
             }
             var web_hook_on_edit_media = function(lineNum, obj){
-                // console.warn("web_hook_on_edit_media", lineNum, obj);
+                // console.log("web_hook_on_edit_media", lineNum, obj);
             }
             var web_hook_sort_and_filter = function(event){
-                // console.warn("web_hook_sort_and_filter", event);
+                // console.log("web_hook_sort_and_filter", event);
             }
 
         </script>

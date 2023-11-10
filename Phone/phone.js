@@ -15,9 +15,11 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.23";
+const appversion = "0.3.24";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
+const instanceID = String(Date.now());
+const localDB = window.localStorage;
 
 // Set the following to null to disable
 let welcomeScreen = "<div class=\"UiWindowField\"><pre style=\"font-size: 12px\">";
@@ -111,8 +113,9 @@ let IceStunCheckTimeout = parseInt(getDbItem("IceStunCheckTimeout", 500));      
 let SubscribeBuddyAccept = getDbItem("SubscribeBuddyAccept", "application/pidf+xml");  // Normally only application/dialog-info+xml and application/pidf+xml
 let SubscribeBuddyEvent = getDbItem("SubscribeBuddyEvent", "presence");                // For application/pidf+xml use presence. For application/dialog-info+xml use dialog 
 let SubscribeBuddyExpires = parseInt(getDbItem("SubscribeBuddyExpires", 300));         // Buddy Subscription expiry time (in seconds)
-let profileDisplayPrefix = getDbItem("profileDisplayPrefix", "");                      // Can display an item from you vCard before you name. Options: Number1 | Number2
-let profileDisplayPrefixSeparator = getDbItem("profileDisplayPrefixSeparator", "");    // Used with profileDisplayPrefix, adds a separating character (string). eg: - ~ * or even 💥
+let ProfileDisplayPrefix = getDbItem("ProfileDisplayPrefix", "");                      // Can display an item from your vCard before your name. Options: Number1 | Number2
+let ProfileDisplayPrefixSeparator = getDbItem("ProfileDisplayPrefixSeparator", "");    // Used with profileDisplayPrefix, adds a separating character (string). eg: - ~ * or even 💥
+let InviteExtraHeaders = getDbItem("InviteExtraHeaders", "{}");                       // Extra SIP headers to be included in the initial INVITE message for each call. (Added to the extra headers in the DialByLine() parameters. e.g {"foo":"bar"})
 
 let NoAnswerTimeout = parseInt(getDbItem("NoAnswerTimeout", 120));          // Time in seconds before automatic Busy Here sent
 let AutoAnswerEnabled = (getDbItem("AutoAnswerEnabled", "0") == "1");       // Automatically answers the phone when the call comes in, if you are not on a call already
@@ -216,8 +219,6 @@ let EnableEmail = false;           // Enables Email sending to the server (requi
 
 // System variables
 // ================
-const instanceID = String(Date.now());
-let localDB = window.localStorage;
 let userAgent = null;
 let CanvasCollection = [];
 let Buddies = [];
@@ -248,6 +249,9 @@ let settingsMicrophoneSoundMeter = null;
 let settingsVideoStream = null;
 let settingsVideoStreamTrack = null;
 
+let CallRecordingsIndexDb = null;
+let CallQosDataIndexDb = null;
+
 // Utilities
 // =========
 function uID(){
@@ -257,7 +261,6 @@ function utcDateNow(){
     return moment().utc().format("YYYY-MM-DD HH:mm:ss UTC");
 }
 function getDbItem(itemIndex, defaultValue){
-    var localDB = window.localStorage;
     if(localDB.getItem(itemIndex) != null) return localDB.getItem(itemIndex);
     return defaultValue;
 }
@@ -475,6 +478,10 @@ $(window).on("keypress", function(event) {
     }
 });
 $(document).ready(function () {
+
+    // We will use the IndexDB, so connect to it now, and perform any upgrade options
+    PrepareIndexDB();
+
     // Load phoneOptions
     // =================
     // Note: These options can be defined in the containing HTML page, and simply defined as a global variable
@@ -518,6 +525,9 @@ $(document).ready(function () {
     if(options.SubscribeBuddyAccept !== undefined) SubscribeBuddyAccept = options.SubscribeBuddyAccept;
     if(options.SubscribeBuddyEvent !== undefined) SubscribeBuddyEvent = options.SubscribeBuddyEvent;
     if(options.SubscribeBuddyExpires !== undefined) SubscribeBuddyExpires = options.SubscribeBuddyExpires;
+    if(options.ProfileDisplayPrefix !== undefined) ProfileDisplayPrefix = options.ProfileDisplayPrefix;
+    if(options.ProfileDisplayPrefixSeparator !== undefined) ProfileDisplayPrefixSeparator = options.ProfileDisplayPrefixSeparator;
+    if(options.InviteExtraHeaders !== undefined) InviteExtraHeaders = options.InviteExtraHeaders;
     if(options.NoAnswerTimeout !== undefined) NoAnswerTimeout = options.NoAnswerTimeout;
     if(options.AutoAnswerEnabled !== undefined) AutoAnswerEnabled = options.AutoAnswerEnabled;
     if(options.DoNotDisturbEnabled !== undefined) DoNotDisturbEnabled = options.DoNotDisturbEnabled;
@@ -590,8 +600,6 @@ $(document).ready(function () {
     if(options.XmppRealmSeparator !== undefined) XmppRealmSeparator = options.XmppRealmSeparator;
     if(options.XmppChatGroupService !== undefined) XmppChatGroupService = options.XmppChatGroupService;
 
-    console.log("Runtime options", options);
-
     // Single Instance Check 
     if(SingleInstance == true){
         console.log("Instance ID :", instanceID);
@@ -606,12 +614,13 @@ $(document).ready(function () {
     // ==================
     $.getJSON(hostingPrefix + "lang/en.json", function(data){
         lang = data;
-        console.log("English Language Pack loaded: ", lang);
+        if(typeof web_hook_on_language_pack_loaded !== 'undefined') web_hook_on_language_pack_loaded(lang);
         if(loadAlternateLang == true){
             var userLang = GetAlternateLanguage();
             if(userLang != ""){
                 console.log("Loading Alternate Language Pack: ", userLang);
                 $.getJSON(hostingPrefix +"lang/"+ userLang +".json", function (alt_data){
+                    if(typeof web_hook_on_language_pack_loaded !== 'undefined') web_hook_on_language_pack_loaded(alt_data);
                     lang = alt_data;
                 }).always(function() {
                     console.log("Alternate Language Pack loaded: ", lang);
@@ -650,7 +659,122 @@ function onLocalStorageEvent(event){
         // Should this unload the entire page, what about calls? 
     }
 }
+function PrepareIndexDB(){
 
+    // CallQosData
+    // ===========
+    const CallQosDataOpenRequest = window.indexedDB.open("CallQosData", 1);
+    // If this is the first visit to this page, this would have now made an empty IndexDB
+    CallQosDataOpenRequest.onerror = function(event) {
+        console.error("CallQosData DBOpenRequest Error:", event);
+    }
+    CallQosDataOpenRequest.onupgradeneeded = function(event) {
+        console.warn("Upgrade Required for CallQosData IndexDB... probably because of first time use.");
+        CallQosDataIndexDb = event.target.result;
+        // Now the CallQosDataIndexDb is activated, but its still empty
+
+        if(CallQosDataIndexDb.objectStoreNames.contains("CallQos") == false){
+            // Create Object Store
+            var objectStore = CallQosDataIndexDb.createObjectStore("CallQos", { keyPath: "uID" });
+            objectStore.createIndex("sessionid", "sessionid", { unique: false });
+            objectStore.createIndex("buddy", "buddy", { unique: false });
+            objectStore.createIndex("QosData", "QosData", { unique: false });
+            console.log("IndexDB created ObjectStore CallQos");
+        }
+        else {
+            console.warn("IndexDB requested upgrade, but object store was in place");
+        }
+        // Will fire .onsuccess now
+    }
+    CallQosDataOpenRequest.onsuccess = function(event) {
+        CallQosDataIndexDb = event.target.result;
+
+        CallQosDataIndexDb.onerror = function(event) {
+            console.error("IndexDB Error:", event);
+        }
+
+        if(CallQosDataIndexDb.objectStoreNames.contains("CallQos") == false){
+            console.warn("IndexDB is open but CallQos does not exist.");
+            // Close the connection to the database
+            CallQosDataIndexDb.close();
+            console.log("IndexDB is closed.");
+            // Drop the Database
+            const DBDeleteRequest = window.indexedDB.deleteDatabase("CallQos");
+            DBDeleteRequest.onerror = function(event) {
+                console.error("Error deleting database CallQos");
+            }
+            DBDeleteRequest.onsuccess = function(event) {
+                console.log("Database deleted successfully");
+
+                // Call the PrepareIndexDB() function again, this time it should make the DB correctly.
+                window.setTimeout(function(){
+                    // This could create a loop if the database keeps failing to create correctly.
+                    PrepareIndexDB();
+                },500);
+            }
+            return;
+        }
+        console.log("IndexDB connected to CallQosData");
+    }
+
+    // Call Recordings
+    // ===============
+    const CallRecordingsOpenRequest = window.indexedDB.open("CallRecordings", 1);
+    // If this is the first visit to this page, this would have now made an empty IndexDB
+    CallRecordingsOpenRequest.onerror = function(event) {
+        console.error("CallRecordings DBOpenRequest Error:", event);
+    }
+    CallRecordingsOpenRequest.onupgradeneeded = function(event) {
+        console.warn("Upgrade Required for CallRecordings IndexDB... probably because of first time use.");
+        CallRecordingsIndexDb = event.target.result;
+        // Now the CallRecordingsIndexDb is activated, but its still empty
+
+        if(CallRecordingsIndexDb.objectStoreNames.contains("Recordings") == false){
+            // Create Object Store (Note: This can only be done here .onupgradeneeded)
+            var objectStore = CallRecordingsIndexDb.createObjectStore("Recordings", { keyPath: "uID" });
+            objectStore.createIndex("sessionid", "sessionid", { unique: false });
+            objectStore.createIndex("bytes", "bytes", { unique: false });
+            objectStore.createIndex("type", "type", { unique: false });
+            objectStore.createIndex("mediaBlob", "mediaBlob", { unique: false });
+            console.log("IndexDB created ObjectStore Recordings");
+        }
+        else {
+            console.warn("IndexDB requested upgrade, but object store was in place");
+        }
+        // Will fire .onsuccess now
+    }
+    CallRecordingsOpenRequest.onsuccess = function(event) {
+        CallRecordingsIndexDb = event.target.result;
+
+        CallRecordingsIndexDb.onerror = function(event) {
+            console.error("IndexDB Error:", event);
+        }
+
+        // Double check structure
+        if(CallRecordingsIndexDb.objectStoreNames.contains("Recordings") == false){
+            console.warn("IndexDB is open but Recordings does not exist.");
+            // Close the connection to the database
+            CallRecordingsIndexDb.close();
+            console.log("IndexDB is closed.");
+            // Drop the Database
+            const DBDeleteRequest = window.indexedDB.deleteDatabase("CallRecordings");
+            DBDeleteRequest.onerror = function(event) {
+                console.error("Error deleting database CallRecordings");
+            }
+            DBDeleteRequest.onsuccess = function(event) {
+                console.log("Database deleted successfully");
+
+                // Call the PrepareIndexDB() function again, this time it should make the DB correctly.
+                window.setTimeout(function(){
+                    // This could create a loop if the database keeps failing to create correctly.
+                    PrepareIndexDB();
+                },500);
+            }
+            return;
+        }
+        console.log("IndexDB connected to CallRecordings");
+    }
+}
 
 // User Interface
 // ==============
@@ -1420,7 +1544,7 @@ function SetStatusWindow(){
 function InitUi(){
 
     // Custom Web hook
-    if(typeof web_hook_on_before_init !== 'undefined') web_hook_on_before_init();
+    if(typeof web_hook_on_before_init !== 'undefined') web_hook_on_before_init(phoneOptions);
 
     ApplyThemeColor()
 
@@ -1513,8 +1637,8 @@ function InitUi(){
     var profileVcard = getDbItem("profileVcard", null);
     if(profileVcard != null) {
         profileVcard = JSON.parse(profileVcard);
-        var displayPrefix = getDbItem("profileDisplayPrefix", "");
-        var displayPrefixSep = getDbItem("profileDisplayPrefixSeparator", "-");
+        var displayPrefix = getDbItem("ProfileDisplayPrefix", "");
+        var displayPrefixSep = getDbItem("ProfileDisplayPrefixSeparator", "-");
         if(displayPrefix != ""){
             try{
                 var vCardValue = profileVcard[displayPrefix];
@@ -1804,6 +1928,7 @@ function CreateUserAgent() {
     console.log("Creating User Agent...");
     if(SipDomain==null || SipDomain=="" || SipDomain=="null" || SipDomain=="undefined") SipDomain = wssServer; // Sets globally
     var options = {
+        logConfiguration: false,            // If true, constructor logs the registerer configuration.
         uri: SIP.UserAgent.makeURI("sip:"+ SipUsername + "@" + SipDomain),
         transportOptions: {
             server: "wss://" + wssServer + ":"+ WebSocketPort +""+ ServerPath,
@@ -1896,9 +2021,11 @@ function CreateUserAgent() {
     }
 
     var RegistererOptions = { 
+        logConfiguration: false,            // If true, constructor logs the registerer configuration.
         expires: RegisterExpires,
         extraHeaders: [],
-        extraContactHeaderParams: []
+        extraContactHeaderParams: [],
+        refreshFrequency : 75              // Determines when a re-REGISTER request is sent. The value should be specified as a percentage of the expiration time (between 50 and 99).
     }
 
     // Added to the SIP Headers
@@ -1921,7 +2048,7 @@ function CreateUserAgent() {
                 if(value == ""){
                     RegistererOptions.extraContactHeaderParams.push(key);
                 } else {
-                    RegistererOptions.extraContactHeaderParams.push(key + ":"+  value);
+                    RegistererOptions.extraContactHeaderParams.push(key + "="+  value);
                 }
             }
         } catch(e){}
@@ -2179,9 +2306,31 @@ function onUnregistered(){
 // Inbound Calls
 // =============
 function ReceiveCall(session) {
+    // First Determine Identity from From
     var callerID = session.remoteIdentity.displayName;
     var did = session.remoteIdentity.uri.user;
     if (typeof callerID === 'undefined') callerID = did;
+
+    var sipHeaders = session.incomingInviteRequest.message.headers;
+    // If a P-Asserted-Identity is parsed, use that
+    if(sipHeaders.hasOwnProperty("P-Asserted-Identity")){
+        var rawUri = sipHeaders["P-Asserted-Identity"][0].raw;
+        if(rawUri.includes("<sip:")) {
+            var uriParts = rawUri.split("<sip:");
+            if(uriParts[1].endsWith(">")) uriParts[1] = uriParts[1].substring(0, uriParts[1].length -1);
+            if(uriParts[1].endsWith("@"+SipDomain)){
+                var assertId = SIP.UserAgent.makeURI("sip:"+ uriParts[1]); // should be sip:123@domain.com
+                did = assertId.user;
+                console.log("Found P-Asserted-Identity, will use that to identify user:", did);
+            }
+            else {
+                console.warn("Found P-Asserted-Identity but not in trust domain: ", rawUri);
+            }
+        }
+        else {
+            console.warn("Found P-Asserted-Identity but not in a URI: ", rawUri);
+        }
+    }
 
     console.log("New Incoming Call!", callerID +" <"+ did +">");
 
@@ -2192,11 +2341,72 @@ function ReceiveCall(session) {
     // Make new contact of its not there
     if(buddyObj == null) {
 
-        // Check if Privacy DND is enabled
-
-        var buddyType = (did.length > DidLength)? "contact" : "extension";
         var focusOnBuddy = (CurrentCalls==0);
-        buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, false, callerID, did, null, false, null, AutoDeleteDefault);
+        
+        // Check for Hints in Headers
+        // Buddy Create Hints: Parse any of the following Sip Headers to help create a buddy
+        // Note: SIP.js will make the header names Lowercase
+        var buddyType = (did.length > DidLength)? "contact" : "extension";
+        // X-Buddytype: xmpp
+        if(sipHeaders.hasOwnProperty("X-Buddytype")){
+            if(sipHeaders["X-Buddytype"][0].raw == "contact" || sipHeaders["X-Buddytype"][0].raw == "extension" || sipHeaders["X-Buddytype"][0].raw == "xmpp" || sipHeaders["X-Buddytype"][0].raw == "group"){
+                buddyType = sipHeaders["X-Buddytype"][0].raw;
+                console.log("Hint Header X-Buddytype:", buddyType)
+            }
+            else {
+                console.warn("Hint Header X-Buddytype must either contact | extension | xmpp | group: ", sipHeaders["X-Buddytype"][0].raw);
+            }
+        }
+        var xmppJid = null;
+        // X-Xmppjid: bob@somedomain.com
+        if(buddyType == "xmpp"){
+            if(sipHeaders.hasOwnProperty("X-Xmppjid")){
+                if(sipHeaders["X-Xmppjid"][0].raw.endsWith("@"+XmppDomain)){
+                    xmppJid = sipHeaders["X-Xmppjid"][0].raw;
+                    console.log("Hint Header X-Xmppjid:", xmppJid)
+                }
+            }
+            else {
+                console.warn("Hint Header X-Xmppjid must end with @XmppDomain", sipHeaders["X-Xmppjid"][0].raw);
+            }
+        }
+        // X-Subscribeuser: sip:1000@somedomain.com
+        var subscribeToBuddy = false;
+        var subscribeUser = null;
+        if(sipHeaders.hasOwnProperty("X-Subscribeuser")){
+            if(sipHeaders["X-Subscribeuser"][0].raw.startsWith("sip:") && sipHeaders["X-Subscribeuser"][0].raw.endsWith("@"+SipDomain)){
+                subscribeUser = sipHeaders["X-Subscribeuser"][0].raw.substring(4, sipHeaders["X-Subscribeuser"][0].raw.indexOf("@"));
+                subscribeToBuddy = true;
+                console.log("Hint Header X-Subscribeuser:", subscribeUser)
+            }
+            else {
+                console.warn("Hint Header X-Subscribeuser must start with sip: and end with @SipDomain", sipHeaders["X-Subscribeuser"][0].raw);
+            }
+        }
+        var allowDuringDnd = false;
+        // X-Allowduringdnd: yes
+        if(sipHeaders.hasOwnProperty("X-Allowduringdnd")){
+            if(sipHeaders["X-Allowduringdnd"][0].raw == "yes" || sipHeaders["X-Allowduringdnd"][0].raw == "no"){
+                allowDuringDnd = (sipHeaders["X-Allowduringdnd"][0].raw == "yes");
+                console.log("Hint Header X-Allowduringdnd:", allowDuringDnd)
+            }
+            else {
+                console.warn("Hint Header X-Allowduringdnd must yes | no :", sipHeaders["X-Allowduringdnd"][0].raw);
+            }
+        }
+        var autoDelete = AutoDeleteDefault;
+        // X-Autodelete: yes
+        if(sipHeaders.hasOwnProperty("X-Autodelete")){
+            if(sipHeaders["X-Autodelete"][0].raw == "yes" || sipHeaders["X-Autodelete"][0].raw == "no"){
+                autoDelete = (sipHeaders["X-Autodelete"][0].raw == "yes");
+                console.log("Hint Header X-Autodelete:", autoDelete)
+            }
+            else {
+                console.warn("Hint Header X-Autodelete must yes | no :", sipHeaders["X-Autodelete"][0].raw);
+            }
+        }
+        
+        buddyObj = MakeBuddy(buddyType, true, focusOnBuddy, subscribeToBuddy, callerID, did, xmppJid, allowDuringDnd, subscribeUser, autoDelete, true);
     }
     else {
         // Double check that the buddy has the same caller ID as the incoming call
@@ -3905,39 +4115,7 @@ function MeterSettingsOutput(audioStream, objectId, direction, interval){
 // QOS
 // ===
 function SaveQosData(QosData, sessionId, buddy){
-    var indexedDB = window.indexedDB;
-    var request = indexedDB.open("CallQosData", 1);
-    request.onerror = function(event) {
-        console.error("IndexDB Request Error:", event);
-    }
-    request.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
-        var IDB = event.target.result;
-
-        // Create Object Store
-        if(IDB.objectStoreNames.contains("CallQos") == false){
-            var objectStore = IDB.createObjectStore("CallQos", { keyPath: "uID" });
-            objectStore.createIndex("sessionid", "sessionid", { unique: false });
-            objectStore.createIndex("buddy", "buddy", { unique: false });
-            objectStore.createIndex("QosData", "QosData", { unique: false });
-        }
-        else {
-            console.warn("IndexDB requested upgrade, but object store was in place");
-        }
-    }
-    request.onsuccess = function(event) {
-        console.log("IndexDB connected to CallQosData");
-
-        var IDB = event.target.result;
-        if(IDB.objectStoreNames.contains("CallQos") == false){
-            console.warn("IndexDB CallQosData.CallQos does not exists");
-            IDB.close();
-            window.indexedDB.deleteDatabase("CallQosData"); // This should help if the table structure has not been created.
-            return;
-        }
-        IDB.onerror = function(event) {
-            console.error("IndexDB Error:", event);
-        }
+    if(CallQosDataIndexDb != null){
 
         // Prepare data to write
         var data = {
@@ -3947,32 +4125,19 @@ function SaveQosData(QosData, sessionId, buddy){
             QosData: QosData
         }
         // Commit Transaction
-        var transaction = IDB.transaction(["CallQos"], "readwrite");
+        var transaction = CallQosDataIndexDb.transaction(["CallQos"], "readwrite");
         var objectStoreAdd = transaction.objectStore("CallQos").add(data);
         objectStoreAdd.onsuccess = function(event) {
             console.log("Call CallQos Success: ", sessionId);
         }
     }
+    else {
+        console.warn("CallQosDataIndexDb is null.");
+    }
 }
 function DisplayQosData(sessionId){
-    var indexedDB = window.indexedDB;
-    var request = indexedDB.open("CallQosData", 1);
-    request.onerror = function(event) {
-        console.error("IndexDB Request Error:", event);
-    }
-    request.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
-    }
-    request.onsuccess = function(event) {
-        console.log("IndexDB connected to CallQosData");
-
-        var IDB = event.target.result;
-        if(IDB.objectStoreNames.contains("CallQos") == false){
-            console.warn("IndexDB CallQosData.CallQos does not exists");
-            return;
-        } 
-
-        var transaction = IDB.transaction(["CallQos"]);
+    if(CallQosDataIndexDb != null){
+        var transaction = CallQosDataIndexDb.transaction(["CallQos"]);
         var objectStoreGet = transaction.objectStore("CallQos").index('sessionid').getAll(sessionId);
         objectStoreGet.onerror = function(event) {
             console.error("IndexDB Get Error:", event);
@@ -4188,29 +4353,13 @@ function DisplayQosData(sessionId){
             }
         }
     }
+    else {
+        console.warn("CallQosDataIndexDb is null.");
+    }
 }
 function DeleteQosData(buddy, stream){
-    var indexedDB = window.indexedDB;
-    var request = indexedDB.open("CallQosData", 1);
-    request.onerror = function(event) {
-        console.error("IndexDB Request Error:", event);
-    }
-    request.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
-        // If this is the case, there will be no call recordings
-    }
-    request.onsuccess = function(event) {
-        console.log("IndexDB connected to CallQosData");
 
-        var IDB = event.target.result;
-        if(IDB.objectStoreNames.contains("CallQos") == false){
-            console.warn("IndexDB CallQosData.CallQos does not exists");
-            return;
-        }
-        IDB.onerror = function(event) {
-            console.error("IndexDB Error:", event);
-        }
-
+    if(CallQosDataIndexDb != null){
         // Loop and Delete
         // Note:  This database can only delete based on Primary Key
         // The The Primary Key is arbitrary, so you must get all the rows based
@@ -4218,7 +4367,7 @@ function DeleteQosData(buddy, stream){
         $.each(stream.DataCollection, function (i, item) {
             if (item.ItemType == "CDR" && item.SessionId && item.SessionId != "") {
                 console.log("Deleting CallQosData: ", item.SessionId);
-                var objectStore = IDB.transaction(["CallQos"], "readwrite").objectStore("CallQos");
+                var objectStore = CallQosDataIndexDb.transaction(["CallQos"], "readwrite").objectStore("CallQos");
                 var objectStoreGet = objectStore.index('sessionid').getAll(item.SessionId);
                 objectStoreGet.onerror = function(event) {
                     console.error("IndexDB Get Error:", event);
@@ -4238,8 +4387,9 @@ function DeleteQosData(buddy, stream){
                 }
             }
         });
-
-
+    }
+    else {
+        console.warn("CallQosDataIndexDb is null.");
     }
 }
 
@@ -5557,6 +5707,20 @@ function VideoCall(lineObj, dialledNumber, extraHeaders) {
     // Extra Headers
     if(extraHeaders) {
         spdOptions.extraHeaders = extraHeaders;
+    } else {
+        spdOptions.extraHeaders = [];
+    }
+    if(InviteExtraHeaders && InviteExtraHeaders != "" && InviteExtraHeaders != "{}"){
+        try{
+            var inviteExtraHeaders = JSON.parse(InviteExtraHeaders);
+            for (const [key, value] of Object.entries(inviteExtraHeaders)) {
+                if(value == ""){
+                    // This is a header, must be format: "Field: Value"
+                } else {
+                    spdOptions.extraHeaders.push(key + ": "+  value);
+                }
+            }
+        } catch(e){}
     }
 
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.starting_video_call);
@@ -5753,9 +5917,23 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
     if(supportedConstraints.noiseSuppression) {
         spdOptions.sessionDescriptionHandlerOptions.constraints.audio.noiseSuppression = NoiseSuppression;
     }
-    // Extra Headers
+    // Added to the SIP Headers
     if(extraHeaders) {
         spdOptions.extraHeaders = extraHeaders;
+    } else {
+        spdOptions.extraHeaders = [];
+    }
+    if(InviteExtraHeaders && InviteExtraHeaders != "" && InviteExtraHeaders != "{}"){
+        try{
+            var inviteExtraHeaders = JSON.parse(InviteExtraHeaders);
+            for (const [key, value] of Object.entries(inviteExtraHeaders)) {
+                if(value == ""){
+                    // This is a header, must be format: "Field: Value"
+                } else {
+                    spdOptions.extraHeaders.push(key + ": "+  value);
+                }
+            }
+        } catch(e){}
     }
 
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.starting_audio_call);
@@ -6110,41 +6288,8 @@ function StartRecording(lineNum){
     updateLineScroll(lineNum);
 }
 function SaveCallRecording(blob, id, buddy, sessionid){
-    var indexedDB = window.indexedDB;
-    var request = indexedDB.open("CallRecordings", 1);
-    request.onerror = function(event) {
-        console.error("IndexDB Request Error:", event);
-    }
-    request.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
-        var IDB = event.target.result;
-
-        // Create Object Store
-        if(IDB.objectStoreNames.contains("Recordings") == false){
-            var objectStore = IDB.createObjectStore("Recordings", { keyPath: "uID" });
-            objectStore.createIndex("sessionid", "sessionid", { unique: false });
-            objectStore.createIndex("bytes", "bytes", { unique: false });
-            objectStore.createIndex("type", "type", { unique: false });
-            objectStore.createIndex("mediaBlob", "mediaBlob", { unique: false });
-        }
-        else {
-            console.warn("IndexDB requested upgrade, but object store was in place.");
-        }
-    }
-    request.onsuccess = function(event) {
-        console.log("IndexDB connected to CallRecordings");
-
-        var IDB = event.target.result;
-        if(IDB.objectStoreNames.contains("Recordings") == false){
-            console.warn("IndexDB CallRecordings.Recordings does not exists, this call recoding will not be saved.");
-            IDB.close();
-            window.indexedDB.deleteDatabase("CallRecordings"); // This should help if the table structure has not been created.
-            return;
-        }
-        IDB.onerror = function(event) {
-            console.error("IndexDB Error:", event);
-        }
-    
+    if(CallRecordingsIndexDb != null){
+        
         // Prepare data to write
         var data = {
             uID: id,
@@ -6154,11 +6299,14 @@ function SaveCallRecording(blob, id, buddy, sessionid){
             mediaBlob: blob
         }
         // Commit Transaction
-        var transaction = IDB.transaction(["Recordings"], "readwrite");
+        var transaction = CallRecordingsIndexDb.transaction(["Recordings"], "readwrite");
         var objectStoreAdd = transaction.objectStore("Recordings").add(data);
         objectStoreAdd.onsuccess = function(event) {
             console.log("Call Recording Success: ", id, blob.size, blob.type, buddy, sessionid);
         }
+    }
+    else {
+        console.warn("CallRecordingsIndexDb is null.");
     }
 }
 function StopRecording(lineNum, noConfirm){
@@ -6222,25 +6370,8 @@ function PlayAudioCallRecording(obj, cdrId, uID){
 
     container.append(audioObj);
 
-    // Get Call Recording
-    var indexedDB = window.indexedDB;
-    var request = indexedDB.open("CallRecordings", 1);
-    request.onerror = function(event) {
-        console.error("IndexDB Request Error:", event);
-    }
-    request.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
-    }
-    request.onsuccess = function(event) {
-        console.log("IndexDB connected to CallRecordings");
-
-        var IDB = event.target.result;
-        if(IDB.objectStoreNames.contains("Recordings") == false){
-            console.warn("IndexDB CallRecordings.Recordings does not exists");
-            return;
-        } 
-
-        var transaction = IDB.transaction(["Recordings"]);
+    if(CallRecordingsIndexDb != null){
+        var transaction = CallRecordingsIndexDb.transaction(["Recordings"]);
         var objectStoreGet = transaction.objectStore("Recordings").get(uID);
         objectStoreGet.onerror = function(event) {
             console.error("IndexDB Get Error:", event);
@@ -6259,6 +6390,9 @@ function PlayAudioCallRecording(obj, cdrId, uID){
                 });
             }
         }
+    }
+    else {
+        console.warn("CallRecordingsIndexDb is null.");
     }
 }
 function PlayVideoCallRecording(obj, cdrId, uID, buddy){
@@ -6288,25 +6422,8 @@ function PlayVideoCallRecording(obj, cdrId, uID, buddy){
 
     container.append(videoObj);
 
-    // Get Call Recording
-    var indexedDB = window.indexedDB;
-    var request = indexedDB.open("CallRecordings", 1);
-    request.onerror = function(event) {
-        console.error("IndexDB Request Error:", event);
-    }
-    request.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
-    }
-    request.onsuccess = function(event) {
-        console.log("IndexDB connected to CallRecordings");
-
-        var IDB = event.target.result;
-        if(IDB.objectStoreNames.contains("Recordings") == false){
-            console.warn("IndexDB CallRecordings.Recordings does not exists");
-            return;
-        } 
-
-        var transaction = IDB.transaction(["Recordings"]);
+    if(CallRecordingsIndexDb != null){
+        var transaction = CallRecordingsIndexDb.transaction(["Recordings"]);
         var objectStoreGet = transaction.objectStore("Recordings").get(uID);
         objectStoreGet.onerror = function(event) {
             console.error("IndexDB Get Error:", event);
@@ -6382,6 +6499,9 @@ function PlayVideoCallRecording(obj, cdrId, uID, buddy){
                 }
             }
         }
+    }
+    else {
+        console.warn("CallRecordingsIndexDb is null.");
     }
 }
 
@@ -8734,7 +8854,7 @@ function DialByLine(type, buddy, numToDial, CallerID, extraHeaders){
         // Assumption but anyway: If the number starts with a * or # then its probably not a subscribable did,  
         // and is probably a feature code.
         if(numDial.substring(0,1) == "*" || numDial.substring(0,1) == "#") buddyType = "contact";
-        buddyObj = MakeBuddy(buddyType, true, false, false, (CallerID)? CallerID : numDial, numDial, null, false, null, AutoDeleteDefault);
+        buddyObj = MakeBuddy(buddyType, true, false, false, (CallerID)? CallerID : numDial, numDial, null, false, null, AutoDeleteDefault, false);
     }
 
     // Create a Line
@@ -9321,8 +9441,9 @@ function InitUserBuddies(){
  * @param {boolean} AllowDuringDnd Option to allowing inbound calls when on DND
  * @param {string} subscribeUser If subscribe=true, you can optionally specify a SipID to subscribe to.
  * @param {boolean} autoDelete Option to have this buddy delete after MaxBuddyAge
+ * @param {boolean} addToXmppRoster Option if the buddy type is Xmpp, can automatically add to remote roster.
 **/
-function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuringDnd, subscribeUser, autoDelete){
+function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuringDnd, subscribeUser, autoDelete, addToXmppRoster){
     var json = JSON.parse(localDB.getItem(profileUserID + "-Buddies"));
     if(json == null) json = InitUserBuddies();
 
@@ -9376,6 +9497,9 @@ function MakeBuddy(type, update, focus, subscribe, callerID, did, jid, AllowDuri
             AutoDelete: autoDelete
         });
         buddyObj = new Buddy("xmpp", id, callerID, did, "", "", "", dateNow, "", "", jid, AllowDuringDnd, subscribe, subscribeUser, autoDelete);
+        if(addToXmppRoster == true){
+            XmppAddBuddyToRoster(buddyObj);
+        }
         AddBuddy(buddyObj, update, focus, subscribe, true);
     }
     if(type == "contact"){
@@ -10073,27 +10197,7 @@ function RemoveBuddyMessageStream(buddyObj, days){
     }
 }
 function DeleteCallRecordings(buddy, stream){
-    var indexedDB = window.indexedDB;
-    var request = indexedDB.open("CallRecordings", 1);
-    request.onerror = function(event) {
-        console.error("IndexDB Request Error:", event);
-    }
-    request.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for IndexDB... probably because of first time use.");
-        // If this is the case, there will be no call recordings
-    }
-    request.onsuccess = function(event) {
-        console.log("IndexDB connected to CallRecordings");
-
-        var IDB = event.target.result;
-        if(IDB.objectStoreNames.contains("Recordings") == false){
-            console.warn("IndexDB CallRecordings.Recordings does not exists");
-            return;
-        }
-        IDB.onerror = function(event) {
-            console.error("IndexDB Error:", event);
-        }
-
+    if(CallRecordingsIndexDb != null){
         // Loop and Delete
         // Note: This database can only delete based on Primary Key
         // The Primary Key is arbitrary, but is saved in item.Recordings.uID
@@ -10101,7 +10205,7 @@ function DeleteCallRecordings(buddy, stream){
             if (item.ItemType == "CDR" && item.Recordings && item.Recordings.length) {
                 $.each(item.Recordings, function (i, recording) {
                     console.log("Deleting Call Recording: ", recording.uID);
-                    var objectStore = IDB.transaction(["Recordings"], "readwrite").objectStore("Recordings");
+                    var objectStore = CallRecordingsIndexDb.transaction(["Recordings"], "readwrite").objectStore("Recordings");
                     try{
                         var deleteRequest = objectStore.delete(recording.uID);
                         deleteRequest.onsuccess = function(event) {
@@ -10113,6 +10217,9 @@ function DeleteCallRecordings(buddy, stream){
                 });
             }
         });
+    }
+    else {
+        console.warn("CallRecordingsIndexDb is null.");
     }
 }
 function ToggleExtraButtons(lineNum, normal, expanded){
@@ -11245,24 +11352,8 @@ function ShowMessageMenu(obj, typeStr, cdrId, buddy) {
                             }
 
                             // Get Call Recording
-                            var indexedDB = window.indexedDB;
-                            var request = indexedDB.open("CallRecordings", 1);
-                            request.onerror = function(event) {
-                                console.error("IndexDB Request Error:", event);
-                            }
-                            request.onupgradeneeded = function(event) {
-                                console.warn("Upgrade Required for IndexDB... probably because of first time use.");
-                            }
-                            request.onsuccess = function(event) {
-                                console.log("IndexDB connected to CallRecordings");
-
-                                var IDB = event.target.result;
-                                if(IDB.objectStoreNames.contains("Recordings") == false){
-                                    console.warn("IndexDB CallRecordings.Recordings does not exists");
-                                    return;
-                                } 
-
-                                var transaction = IDB.transaction(["Recordings"]);
+                            if(CallRecordingsIndexDb != null){
+                                var transaction = CallRecordingsIndexDb.transaction(["Recordings"]);
                                 var objectStoreGet = transaction.objectStore("Recordings").get(recording.uID);
                                 objectStoreGet.onerror = function(event) {
                                     console.error("IndexDB Get Error:", event);
@@ -11281,7 +11372,9 @@ function ShowMessageMenu(obj, typeStr, cdrId, buddy) {
                                     downloadURL.prop("href", mediaBlobUrl);
                                 }
                             }
-
+                            else {
+                                console.warn("CallRecordingsIndexDb is null.");
+                            }
                         });
 
                         // Display QOS data
@@ -14505,11 +14598,11 @@ function XmppGetBuddies(){
                     // Create Cache
                     if(isGroup == true){
                         console.log("Adding roster (group):", buddyDid, "-", displayName);
-                        buddyObj = MakeBuddy("group", false, false, false, displayName, buddyDid, jid, false, buddyDid, false);
+                        buddyObj = MakeBuddy("group", false, false, false, displayName, buddyDid, jid, false, buddyDid, false, false);
                     }
                     else {
                         console.log("Adding roster (xmpp):", buddyDid, "-", displayName);
-                        buddyObj = MakeBuddy("xmpp", false, false, true, displayName, buddyDid, jid, false, buddyDid, false);
+                        buddyObj = MakeBuddy("xmpp", false, false, true, displayName, buddyDid, jid, false, buddyDid, false, false);
                     }
 
                     // RefreshBuddyData(buddyObj);
@@ -15146,8 +15239,10 @@ var reconnectXmpp = function(){
     if(XMPP) XMPP.reset();
 
     var xmpp_websocket_uri = "wss://"+ XmppServer +":"+ XmppWebsocketPort +""+ XmppWebsocketPath; 
-    var xmpp_username = profileUser +"@"+ XmppDomain;
+    var xmpp_username = profileUser +"@"+ XmppDomain; // Xmpp Doesnt like Uppercase 
     if(XmppRealm != "" && XmppRealmSeparator) xmpp_username = XmppRealm + XmppRealmSeparator + xmpp_username;
+    // may need to add /instanceID
+    xmpp_username = xmpp_username.toLowerCase();
     var xmpp_password = SipPassword;
 
     XMPP = null;

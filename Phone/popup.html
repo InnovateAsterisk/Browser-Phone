@@ -29,21 +29,30 @@
         <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery-3.3.1.min.js"></script>
         <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery-ui.min.js"></script>
         <script lang="javascript">
-            function OpenAsWindow(){
-                let windowObj = null;
                 let width = 400;
                 let height = 700;
 
+                let windowObj = null;
+        </script>
+        <script lang="javascript">
+            function CloseWindow(){
                 if(windowObj != null){
                     windowObj.dialog("close");
                     windowObj = null;
                 }
+            }
+            function OpenAsWindow(obj){
+                CloseWindow();
 
                 var iframe = $('<iframe/>');
                 iframe.css("width", "100%");
                 iframe.css("height", "100%");
                 iframe.attr("frameborder", "0");
-                iframe.attr("src", "index.html");
+                if(obj && obj.val() != ""){
+                    iframe.attr("src", "click-to-dial.html?d="+ obj.val());
+                } else {
+                    iframe.attr("src", "index.html");
+                }
 
                 // Create Window
                 windowObj = $('<div/>').html(iframe).dialog({
@@ -85,6 +94,8 @@
             <p>
               <button onclick="OpenAsWindow()">Open As Window</button>
             </p>
+
+            <p><input type="tel" id="dialNumber"><button onclick="OpenAsWindow($('#dialNumber'))">Click to Dial</button></p>
         </div>
     </body>
 </html>
