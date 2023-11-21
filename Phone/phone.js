@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.24";
+const appversion = "0.3.25";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 const instanceID = String(Date.now());
@@ -61,7 +61,7 @@ welcomeScreen += "</div>";
  * "en.json" is always loaded by default
  */
 let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional language packs other thAan /en.json
-const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) available in /lang/ folder
+const availableLang = ["fr", "ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) available in /lang/ folder
 
 /**
  * Image Assets
@@ -1931,7 +1931,7 @@ function CreateUserAgent() {
         logConfiguration: false,            // If true, constructor logs the registerer configuration.
         uri: SIP.UserAgent.makeURI("sip:"+ SipUsername + "@" + SipDomain),
         transportOptions: {
-            server: "wss://" + wssServer + ":"+ WebSocketPort +""+ ServerPath,
+            server: "wss://"+ wssServer +":"+ WebSocketPort +""+ ServerPath,
             traceSip: false,
             connectionTimeout: TransportConnectionTimeout
             // keepAliveInterval: 30 // Uncomment this and make this any number greater then 0 for keep alive... 
@@ -2007,6 +2007,8 @@ function CreateUserAgent() {
     userAgent.lastVoicemailCount = 0;
 
     console.log("Creating User Agent... Done");
+    // Custom Web hook
+    if(typeof web_hook_on_userAgent_created !== 'undefined') web_hook_on_userAgent_created(userAgent);
 
     userAgent.transport.onConnect = function(){
         onTransportConnected();
@@ -2080,6 +2082,7 @@ function CreateUserAgent() {
     userAgent.start().catch(function(error){
         onTransportConnectError(error);
     });
+
 }
 
 // Transport Events

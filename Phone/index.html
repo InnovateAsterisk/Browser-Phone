@@ -50,10 +50,12 @@
             }
 
             // Occurs after the language file is loaded
+            document.addEventListener("language_pack_loaded", function(lang){
+                console.log("web_hook_on_language_pack_loaded", lang);
+            });
             var web_hook_on_language_pack_loaded = function(lang){
                 // console.log("web_hook_on_language_pack_loaded", lang);
             }
-
             // Occurs After the Language Packs load, at the start of the InitUi() function 
             var web_hook_on_before_init = function(options){
                 // console.log("web_hook_on_before_init", options);
@@ -64,7 +66,11 @@
             var web_hook_on_init = function(){
                 // console.log("web_hook_on_init");
             }
-
+            // Occurs after the UserAgent is created.
+            // Note: The registration state would not be know yet, but the registration may have been sent.
+            var web_hook_on_userAgent_created = function(ua){
+                // console.log("web_hook_on_userAgent_created", ua);
+            }
             // Connection and Calling Events
             var web_hook_on_transportError = function(t, ua){
                 // console.log("web_hook_on_transportError",t, ua);
