@@ -12,7 +12,7 @@
 
         <link rel="icon" href="favicon.ico">
 
-        <!-- You Ouwn Scripts -->
+        <!-- You Own Scripts -->
         <link rel="stylesheet" type="text/css" href="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery-ui.min.css"/>
         <style>
             body{
@@ -35,21 +35,19 @@
                 let windowObj = null;
         </script>
         <script lang="javascript">
-            function CloseWindow(){
+            // Sample 1
+            function OpenAsWindow(num){
                 if(windowObj != null){
-                    windowObj.dialog("close");
-                    windowObj = null;
+                    console.warn("Phone window already open");
                 }
-            }
-            function OpenAsWindow(obj){
-                CloseWindow();
 
                 var iframe = $('<iframe/>');
                 iframe.css("width", "100%");
                 iframe.css("height", "100%");
                 iframe.attr("frameborder", "0");
-                if(obj && obj.val() != ""){
-                    iframe.attr("src", "click-to-dial.html?d="+ obj.val());
+                iframe.attr("id", "ThePhone");
+                if(num && num != ""){
+                    iframe.attr("src", "click-to-dial.html?d="+ num);
                 } else {
                     iframe.attr("src", "index.html");
                 }
@@ -62,14 +60,83 @@
                     width: width,
                     height: height,
                     resizable: true,
+                    beforeClose: function( event, ui ) {
+                        let phoneContext = $("#ThePhone").get(0).contentWindow;
+                        // console.log(phoneContext);
+
+                        // check if any active calls
+                        let callCount =  phoneContext.countSessions(0);
+                        if(callCount > 0){
+                            console.warn("You are on a call:", callCount);
+                            alert("You are on a call, please end the call before closing this window.");
+                            return false;
+                        } else {
+                            phoneContext.Unregister(true);
+                            return true;
+                        }
+                    },
                     close: function(event, ui) {
-                        $(this).dialog("destroy");
+                        windowObj.dialog("destroy");
                         windowObj = null;
                     }
                 });
 
                 windowObj.dialog("open");
 
+                CenterWindow();
+            }
+
+            // Sample 2
+            function ConfirmAndCall(num){
+                if(num && confirm(`Would you like to call the number: ${num}`)){
+                    OpenAsWindow(num);
+                }
+            }
+
+            // Sample 3
+            function OpenAsHidden(){
+                if(windowObj != null){
+                    windowObj.dialog("open");
+                    return;
+                }
+
+                var iframe = $('<iframe/>');
+                iframe.css("width", "100%");
+                iframe.css("height", "100%");
+                iframe.attr("frameborder", "0");
+                iframe.attr("id", "ThePhone");
+                iframe.attr("src", "index.html");
+
+                // Create Window
+                windowObj = $('<div/>').html(iframe).dialog({
+                    autoOpen: false,
+                    title: "Browser Phone",
+                    modal: true,
+                    width: width,
+                    height: height,
+                    resizable: true,
+                    close: function(event, ui) {
+                        windowObj.dialog("close");
+                    }
+                });
+
+                windowObj.dialog("open");
+                windowObj.dialog("close"); // to open as hidden
+
+                CenterWindow();
+            }
+            function ShowPhone(){
+                if(windowObj) windowObj.dialog("open");
+            }
+
+            // Window Tools
+            function CloseWindow(){
+                if(windowObj){
+                    windowObj.dialog("destroy");
+                    windowObj = null;
+                }
+            }
+            function CenterWindow(){
                 var windowWidth = $(window).outerWidth();
                 var windowHeight = $(window).outerHeight();
                 var offsetTextHeight = windowObj.parent().outerHeight();
@@ -83,7 +150,6 @@
                 if(windowHeight <= offsetTextHeight) {
                     windowObj.parent().css('top', '0px');
                 }
-
             }
         </script>
     </head>
@@ -91,11 +157,41 @@
     <body>
         <div id=content>
             <p>This is a sample of how the phone can be loaded into you own web site.</p>
-            <p>
-              <button onclick="OpenAsWindow()">Open As Window</button>
-            </p>
 
-            <p><input type="tel" id="dialNumber"><button onclick="OpenAsWindow($('#dialNumber'))">Click to Dial</button></p>
+            <fieldset style="border: 1px solid rgb(70, 139, 167); border-radius: 5px;">
+                <legend>Create & Destroy</legend>
+                <p>
+                <button onclick="OpenAsWindow()">Open Phone</button>
+                </p>
+                <p>
+                    Use this option to create a new phone window, and use the close icon (X) to remove the phone (deletes all trace).
+                </p>
+            </fieldset>
+
+
+            <fieldset style="border: 1px solid rgb(70, 139, 167); border-radius: 5px;">
+                <legend>Click to Dial</legend>
+                <p>
+                    <input type="tel" id="dialNumber"><button onclick="OpenAsWindow($('#dialNumber').val())">Click to Dial</button>
+                    or
+                    <a href="javascript:;" onclick="ConfirmAndCall('123456789')">123456789</a>
+                </p>
+                <p>
+                    Use this option to create an on-demand phone. Its only available for the call, then shuts down.
+                </p>
+            </fieldset>
+
+            <fieldset style="border: 1px solid rgb(70, 139, 167); border-radius: 5px;">
+                <legend>Permanent Phone</legend>
+                <p>
+                    <button onclick="OpenAsHidden()">Register</button>
+                </p>
+                <p>
+                    Use this phone to create a Permanent phone, that is always registered.
+                </p>
+                <p> <a href="javascript:;" onclick="ShowPhone()">show</a> </p>
+            </fieldset>
+
         </div>
     </body>
 </html>
