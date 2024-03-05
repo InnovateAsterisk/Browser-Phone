@@ -77,10 +77,23 @@ You can download the lib folder containing all related library files: https://gi
 
 
 ## Running Browser-Phone on localhost
-```bash
-cd phone
-python3 -m http.server 8000
-```
+Getting started, follow the steps below:
+1. Clone the repo to your current system.
+    ```bash
+    git clone https://github.com/InnovateAsterisk/Browser-Phone.git
+    ``` 
+2. Navigate to the Phone directory
+    ```bash
+    cd Phone
+    ```
+3. Running the application
+    ```bash
+    python3 -m http.server 8000
+    ```
+    
+Now, you should be able to access and interact with the Browser-Phone application by opening [http://127.0.0.1:8000](http:127.0.0.1) in your browser.
+
+**Note**: Running the application on local host , it will not be using the https standard.
 
 ## Step-by-step Guide
 
