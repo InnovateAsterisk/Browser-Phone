@@ -75,6 +75,13 @@ You can download the lib folder containing all related library files: https://gi
 
 > Note: These files are provided "as-is" for your convenience. Each library folder may contain its own licence and terms of use please refer to the original license holder for more details.
 
+
+## Running Browser-Phone on localhost
+```bash
+cd phone
+python3 -m http.server 8000
+```
+
 ## Step-by-step Guide
 
 You can follow the How-to video to achieve the outcome for this project:
