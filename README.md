@@ -91,7 +91,7 @@ Getting started, follow the steps below:
     python3 -m http.server 8000
     ```
     
-Now, you should be able to access and interact with the Browser-Phone application by opening [http://127.0.0.1:8000](http:127.0.0.1) in your browser.
+Now, you should be able to access and interact with the Browser-Phone application by opening [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser.
 
 **Note**: Running the application on local host , it will not be using the https standard.
 
