@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.26";
+const appversion = "0.3.27";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 const instanceID = String(Date.now());
@@ -4731,7 +4731,10 @@ function ReceiveNotify(notification, selfSubscribe) {
     var dotClass = "dotOffline";
     var Presence = "Unknown";
 
-    var ContentType = notification.request.headers["Content-Type"][0].parsed;
+    var ContentType = "";
+    if(notification.request.headers.length > 0 && notification.request.headers["Content-Type"] && notification.request.headers["Content-Type"][0]){
+        ContentType = notification.request.headers["Content-Type"][0].parsed;
+    }
     if (ContentType == "application/pidf+xml") {
         // Handle Presence
         /*
