@@ -7925,6 +7925,13 @@ function switchVideoSource(lineNum, srcId){
 
     var pc = session.sessionDescriptionHandler.peerConnection;
 
+    pc.getSenders().forEach(function (RTCRtpSender) {
+            if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
+                RTCRtpSender.track.stop();
+             }
+    });
+
+
     var localStream = new MediaStream();
     navigator.mediaDevices.getUserMedia(constraints).then(function(newStream){
         var newMediaTrack = newStream.getVideoTracks()[0];
@@ -7932,7 +7939,7 @@ function switchVideoSource(lineNum, srcId){
         pc.getSenders().forEach(function (RTCRtpSender) {
             if(RTCRtpSender.track && RTCRtpSender.track.kind == "video") {
                 console.log("Switching Video Track : "+ RTCRtpSender.track.label + " to "+ newMediaTrack.label);
-                RTCRtpSender.track.stop();
+                //RTCRtpSender.track.stop();
                 RTCRtpSender.replaceTrack(newMediaTrack);
                 localStream.addTrack(newMediaTrack);
             }
