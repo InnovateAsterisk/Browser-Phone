@@ -1,7 +1,7 @@
 {
     "create_group" : "Criar Grupo",
-    "add_someone" : "Adicionar usuário",
-    "find_someone" : "Encontrar usuário...",
+    "add_someone" : "Adicionar contato",
+    "find_someone" : "Encontrar contato...",
     "refresh_registration" : "Atualizar Autenticação",
     "configure_extension" : "Configurar Ramal",
     "auto_answer" : "Auto Atendimento",
