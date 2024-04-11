@@ -189,6 +189,7 @@ let EnableRingtone = (getDbItem("EnableRingtone", "1") == "1");                 
 let MaxBuddies = parseInt(getDbItem("MaxBuddies", 999));                                // Sets the Maximum number of buddies the system will accept. Older ones get deleted. (Considered when(after) adding buddies)
 let MaxBuddyAge = parseInt(getDbItem("MaxBuddyAge", 365));                              // Sets the Maximum age in days (by latest activity). Older ones get deleted. (Considered when(after) adding buddies)
 let AutoDeleteDefault = (getDbItem("AutoDeleteDefault", "1") == "1");                   // For automatically created buddies (inbound and outbound), should the buddy be set to AutoDelete.
+let EnableDoNotDisturb = (getDbItem("EnableDoNotDisturb", "1") == "1");                 // Controls the visibility of the DND button
 
 let ChatEngine = getDbItem("ChatEngine", "SIMPLE");    // Select the chat engine XMPP | SIMPLE
 
@@ -588,6 +589,7 @@ $(document).ready(function () {
     if(options.EnableTextExpressions !== undefined) EnableTextExpressions = options.EnableTextExpressions;
     if(options.EnableTextDictate !== undefined) EnableTextDictate = options.EnableTextDictate;
     if(options.EnableRingtone !== undefined) EnableRingtone = options.EnableRingtone;
+    if(options.EnableDoNotDisturb !== undefined) EnableDoNotDisturb = options.EnableDoNotDisturb;
     if(options.MaxBuddies !== undefined) MaxBuddies = options.MaxBuddies;
     if(options.MaxBuddyAge !== undefined) MaxBuddyAge = options.MaxBuddyAge;
     if(options.ChatEngine !== undefined) ChatEngine = options.ChatEngine;
@@ -1782,12 +1784,15 @@ function ShowMyProfileMenu(obj){
     else {
         items.push({ icon: "fa fa-phone", text: lang.auto_answer, value: 5});
     }
-    if(DoNotDisturbEnabled == true){
-        items.push({ icon: "fa fa-ban", text: lang.do_no_disturb + enabledHtml, value: 6});
+    if (EnableDoNotDisturb == true) {
+        if(DoNotDisturbEnabled == true){
+            items.push({ icon: "fa fa-ban", text: lang.do_no_disturb + enabledHtml, value: 6});
+        }
+        else {
+            items.push({ icon: "fa fa-ban", text: lang.do_no_disturb, value: 6});
+        }
     }
-    else {
-        items.push({ icon: "fa fa-ban", text: lang.do_no_disturb, value: 6});
-    }
+
     if(CallWaitingEnabled == true){
         items.push({ icon: "fa fa-volume-control-phone", text: lang.call_waiting + enabledHtml, value: 7});
     }
