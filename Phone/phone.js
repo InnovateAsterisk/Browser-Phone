@@ -190,6 +190,7 @@ let MaxBuddies = parseInt(getDbItem("MaxBuddies", 999));                        
 let MaxBuddyAge = parseInt(getDbItem("MaxBuddyAge", 365));                              // Sets the Maximum age in days (by latest activity). Older ones get deleted. (Considered when(after) adding buddies)
 let AutoDeleteDefault = (getDbItem("AutoDeleteDefault", "1") == "1");                   // For automatically created buddies (inbound and outbound), should the buddy be set to AutoDelete.
 let EnableDoNotDisturb = (getDbItem("EnableDoNotDisturb", "1") == "1");                 // Controls the visibility of the DND button
+let EnableRecordAllCalls = (getDbItem("EnableRecordAllCalls", "1") == "1");             // Controls the visibility of the Recording Call button
 
 let ChatEngine = getDbItem("ChatEngine", "SIMPLE");    // Select the chat engine XMPP | SIMPLE
 
@@ -590,6 +591,7 @@ $(document).ready(function () {
     if(options.EnableTextDictate !== undefined) EnableTextDictate = options.EnableTextDictate;
     if(options.EnableRingtone !== undefined) EnableRingtone = options.EnableRingtone;
     if(options.EnableDoNotDisturb !== undefined) EnableDoNotDisturb = options.EnableDoNotDisturb;
+    if(options.EnableRecordAllCalls !== undefined) EnableRecordAllCalls = options.EnableRecordAllCalls;
     if(options.MaxBuddies !== undefined) MaxBuddies = options.MaxBuddies;
     if(options.MaxBuddyAge !== undefined) MaxBuddyAge = options.MaxBuddyAge;
     if(options.ChatEngine !== undefined) ChatEngine = options.ChatEngine;
@@ -1799,11 +1801,12 @@ function ShowMyProfileMenu(obj){
     else {
         items.push({ icon: "fa fa-volume-control-phone", text: lang.call_waiting, value: 7});
     }
-    if(RecordAllCalls == true){
-        items.push({ icon: "fa fa-dot-circle-o", text: lang.record_all_calls + enabledHtml, value: 8});
-    }
-    else {
-        items.push({ icon: "fa fa-dot-circle-o", text: lang.record_all_calls, value: 8});
+    if (EnableRecordAllCalls == true) {
+        if (RecordAllCalls == true) {
+            items.push({icon: "fa fa-dot-circle-o", text: lang.record_all_calls + enabledHtml, value: 8});
+        } else {
+            items.push({icon: "fa fa-dot-circle-o", text: lang.record_all_calls, value: 8});
+        }
     }
     
     if(ChatEngine == "XMPP") {
