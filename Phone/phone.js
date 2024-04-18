@@ -1786,6 +1786,7 @@ function ShowMyProfileMenu(obj){
     else {
         items.push({ icon: "fa fa-phone", text: lang.auto_answer, value: 5});
     }
+
     if (EnableDoNotDisturb == true) {
         if(DoNotDisturbEnabled == true){
             items.push({ icon: "fa fa-ban", text: lang.do_no_disturb + enabledHtml, value: 6});
@@ -1801,6 +1802,7 @@ function ShowMyProfileMenu(obj){
     else {
         items.push({ icon: "fa fa-volume-control-phone", text: lang.call_waiting, value: 7});
     }
+
     if (EnableRecordAllCalls == true) {
         if (RecordAllCalls == true) {
             items.push({icon: "fa fa-dot-circle-o", text: lang.record_all_calls + enabledHtml, value: 8});
