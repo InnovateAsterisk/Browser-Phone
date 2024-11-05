@@ -4,19 +4,25 @@ A fully featured browser based WebRTC SIP phone for Asterisk
 ### Description
 This web application is designed to work with Asterisk PBX. Once loaded application will connect to Asterisk PBX on its web socket, and register an extension. Calls are made between contacts, and a full call detail is saved. Audio Calls can be recorded. Video Calls can be recorded, and can be saved with 5 different recording layouts and 3 different quality settings. This application does not use any cloud systems or services, and is designed to be stand-alone. Additional libraries will be downloaded at run time (but can also be saved to the web server for a complete off-line solution).
 
-**Hosted versions/samples**
-- https://www.innovateasterisk.com/phone/ *(Default Layout - contains a welcome screen)*
-- https://www.innovateasterisk.com/phone/responsive.html *(Responsive Sample Layout - contains ads)*
-- https://www.innovateasterisk.com/phone/popup.html *(Popup Sample Layout - contains ads)*
-
 ## Browser Phone v4.0
 > [!IMPORTANT]
 > The Browser Phone project version 4.0 will be developed under Siperb (https://www.siperb.com/). Siperb is already hosted and offers a mobile version, **and the necessary SIP proxy** to connect to your PBX. Siperb offers much more, including: Hosting, Provisioning, Transcoding (from DTLS to regular RTP), and a complete history of calls and conversations. Try it out: https://www.siperb.com/phone/.
 
 > [!WARNING]
-> Siperb Browser Phone is in __beta phase__, but we are moving fast to become the best **WebRTC Browser Phone on the market**. https://github.com/Siperb/Browser-Phone
+> Siperb Browser Phone is in __beta phase__, but we are moving fast to become the best **WebRTC Browser Phone on the market**.
+
+> [!NOTE]
+> We are looking for Beta testers for Siperb. Please see here: https://www.siperb.com/kb/article/welcome-to-the-siperb-beta-program/ 
 
 ![Buddy Stream](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Screenshots/Buddy_Stream.jpg)
+
+### Hosted versions/samples
+- https://www.innovateasterisk.com/phone/ *(Default Layout - contains a welcome screen)*
+- https://www.innovateasterisk.com/phone/responsive.html *(Responsive Sample Layout - contains ads)*
+- https://www.innovateasterisk.com/phone/popup.html *(Popup Sample Layout - contains ads)*
+
+### Docker
+Browser Phone now offers a [Dockerfile](https://github.com/InnovateAsterisk/Browser-Phone/blob/master/Dockerfile). It is by far "The easiest way to kick the tires on WebRTC". It comes fully configured with 3 users, and the SSL certificate needed to run your tests. It may take a while to build, but it's literally a 1, 2, 3 process.
 
 ## Features v0.3.x
 - SIP Audio Calling
